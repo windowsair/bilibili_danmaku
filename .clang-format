@@ -1,0 +1,8 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 90
+AlignAfterOpenBracket: Align
+AlignConsecutiveMacros: AcrossEmptyLines
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: None
+ReflowComments: False
