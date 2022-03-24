@@ -3,7 +3,7 @@ name: Bulild Binary
 on: [push]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc..)
   BUILD_TYPE: Release
 
 jobs:
