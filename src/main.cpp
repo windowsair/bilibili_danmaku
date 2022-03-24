@@ -15,8 +15,9 @@ int main(int argc, char **argv) {
 
     if (argc < 2) {
         fmt::print(fg(fmt::color::yellow) | fmt::emphasis::italic,
-                   "Usage: xml2ass <input_file>\n "
+                   "Usage: xml2ass <input_file>\n"
                    "example: xml2ass 1.xml 2.xml\n");
+        return -1;
     }
 
     std::vector<std::string> input_files;
