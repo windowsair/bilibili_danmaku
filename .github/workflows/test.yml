@@ -1,0 +1,20 @@
+name: test
+
+on:
+  push:
+    paths:
+      - 'src/**'
+      - 'examples/**'
+      - '.github/**'
+
+
+jobs:
+  new-test:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: before_install
+      run: |
+        sudo apt update
+        sudo apt install -y gcc git wget make libncurses-dev flex bison python python-serial ninja-build
