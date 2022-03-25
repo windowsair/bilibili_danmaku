@@ -1,4 +1,4 @@
-name: Bulild Binary
+name: Build Binary
 
 on:
   push:
