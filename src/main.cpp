@@ -1,4 +1,4 @@
-#include <atomic>
+﻿#include <atomic>
 #include <chrono>
 #include <condition_variable>
 #include <iostream>
@@ -13,11 +13,13 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 
 int main(int argc, char **argv) {
+    // get config
+    auto user_config = config::get_user_config();
 
     if (argc < 2) {
         fmt::print(fg(fmt::color::yellow) | fmt::emphasis::italic,
-                   "Usage: xml2ass <input_file>\n"
-                   "example: xml2ass 1.xml 2.xml\n");
+                   "用法: xml2ass <input_file>\n"
+                   "例如: xml2ass 1.xml 2.xml\n");
         return -1;
     }
 
@@ -37,7 +39,7 @@ int main(int argc, char **argv) {
 
     for (auto &item : valid_file_list) {
         std::thread([&]() {
-            danmuku::danmuku_main_process(item);
+            danmuku::danmuku_main_process(item, user_config);
             count--;
             cv.notify_all();
         }).detach();

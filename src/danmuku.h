@@ -90,7 +90,7 @@ int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
                                   config::ass_config_t &config,
                                   std::vector<ass_dialogue_t> &ass_result_list);
 
-int danmuku_main_process(std::string xml_file);
+int danmuku_main_process(std::string xml_file, config::ass_config_t config);
 
 } // namespace danmuku
 

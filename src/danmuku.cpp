@@ -277,7 +277,8 @@ int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
     return 0;
 }
 
-int danmuku_main_process(std::string xml_file) {
+// do not share config parameter cuz we will change it.
+int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
     std::vector<danmuku_item_t> danmuku_all_list, danmuku_move_list, danmuku_pos_list;
     danmuku_info_t danmuku_info;
     int ret = parse_danmuku_xml(xml_file, danmuku_all_list, danmuku_info);
@@ -317,7 +318,7 @@ int danmuku_main_process(std::string xml_file) {
 
     ret = process_danmuku_list(danmuku_all_list, danmuku_move_list, danmuku_pos_list);
 
-    auto config = config::get_default_config();
+
     config.font_size_ = font_size;
     config.font_color_ = font_color;
     config.chat_server_ = danmuku_info.chat_server_;

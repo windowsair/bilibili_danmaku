@@ -5,6 +5,11 @@ project(${project_name})
 set(CMAKE_CXX_STANDARD 20)
 
 
+# force MSVC to use utf8
+add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+
+
 set(SOURCES src/main.cpp
         thirdparty/pugixml/pugixml.cpp
         thirdparty/fmt/src/format.cc thirdparty/fmt/src/os.cc

@@ -13,8 +13,8 @@ typedef struct ass_config_ {
 
     // font config
     std::string font_family_;
-    int font_color_;
-    int font_size_;
+    int font_color_;  // user not change
+    int font_size_;   // user not change
     float font_scale_;
     float font_alpha_;
     bool font_bold_;
@@ -33,7 +33,7 @@ typedef struct ass_config_ {
 } ass_config_t;
 
 
-ass_config_t get_default_config();
+ass_config_t get_user_config();
 
 
 } // namespace config

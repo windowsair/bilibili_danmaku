@@ -42,6 +42,41 @@ $ ./xml2ass ./xml_path
 $ ./xml2ass ./xml_path ./1.xml
 ```
 
+### 自定义配置
+
+在首次运行时，会自动生成默认的配置文件`config.json`
+您可以按照文件中的提示修改配置
+
+```json
+{
+	"video_width": 1920,
+	"#video_width": "视频宽度",
+
+	"video_height": 1080,
+	"#video_height": "视频高度",
+
+	"font_family": "微软雅黑",
+	"#font_family": "采用的字体集",
+  
+	"font_scale": 1.6,
+	"#font_scale": "字体缩放倍数，为1.0时保持原始大小",
+
+	"font_alpha": 0.75,
+	"#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
+  
+	"font_bold": true,
+	"#font_bold": "是否设置字体加粗,true加粗,false不加粗",
+
+	"danmuku_show_range": 0.45,
+	"#danmuku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+
+	"danmuku_move_time": 15,
+	"#danmuku_move_time": "滚动弹幕的停留时间(以秒计)",
+
+	"danmuku_pos_time": 5,
+	"#danmuku_pos_time": "固定弹幕的停留时间(以秒计)"
+}
+```
 
 
 ## 构建与编译
@@ -69,11 +104,11 @@ $ make
 
 本项目直接或间接使用到了这些项目，感谢他们。
 
-- `pugixml` MIT license
-- `scnlib` Apache license
-- `fmtlib` MIT license
+- `pugixml` MIT License
+- `scnlib` Apache License
+- `fmtlib` MIT License
 - `utfcpp` BSL-1.0 License
-
+- `rapidjson` MIT License
 
 # Credit
 
