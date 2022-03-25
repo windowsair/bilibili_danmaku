@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "ass.h"
+#include "file_helper.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
@@ -25,13 +26,16 @@ int main(int argc, char **argv) {
         input_files.push_back(argv[i]);
     }
 
+    auto valid_file_list = file_helper::get_xml_file_list(input_files);
+
     std::mutex m;
     std::condition_variable cv;
-    std::atomic<int> count{static_cast<int>(input_files.size())};
+    std::atomic<int> count{static_cast<int>(valid_file_list.size())};
+    int total_file_num = static_cast<int>(valid_file_list.size());
 
     auto job_start_time = std::chrono::high_resolution_clock::now();
 
-    for (auto &item : input_files) {
+    for (auto &item : valid_file_list) {
         std::thread([&]() {
             danmuku::danmuku_main_process(item);
             count--;
@@ -48,7 +52,8 @@ int main(int argc, char **argv) {
     auto job_end_time = std::chrono::high_resolution_clock::now();
     double cost_time_ms =
         std::chrono::duration<double, std::milli>(job_end_time - job_start_time).count();
-    fmt::print(fg(fmt::color::green), "完成.用时{:.4f}s\n", cost_time_ms / 1000.0f);
+    fmt::print(fg(fmt::color::green), "完成。共{}个文件，用时{:.4f}s\n", total_file_num,
+               cost_time_ms / 1000.0f);
 
     return 0;
 }

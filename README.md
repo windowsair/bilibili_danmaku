@@ -21,12 +21,28 @@
 
 ## 用法
 
+
+基本使用
 ```bash
 ./xml2ass <xml_file1> <xml_file2> ...
 
 # 可以这样做->
 $ ./xml2ass 1.xml 2.xml 3.xml 
 ```
+
+或者输入一个目录，将转换该目录下同级的所有xml
+
+```bash
+$ ./xml2ass ./xml_path
+```
+
+混合输入也是可行的
+
+```bash
+$ ./xml2ass ./xml_path ./1.xml
+```
+
+
 
 ## 构建与编译
 

@@ -116,3 +116,4 @@ __pycache__/
 
 # Local History for Visual Studio
 .localhistory/
+tmp/
