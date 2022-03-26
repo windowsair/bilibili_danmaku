@@ -93,7 +93,7 @@ $ make
 
 ## 预构建二进制文件下载
 
-目前已有amd64体系架构的Windows, Linux, MacOS的预编译二进制文件。 ARM等体系架构的二进制文件需要您自行进行编译。
+目前已有amd64体系架构的Windows, Linux, MacOS的预编译二进制文件。 ARM等体系架构的二进制文件需要您自行编译。
 这些预构建二进制文件可以在这里下载到： [预编译文件](https://github.com/windowsair/bilibili_danmuku/actions/workflows/build-binary.yml)
 
 

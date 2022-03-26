@@ -9,7 +9,6 @@
 
 namespace danmuku {
 
-
 // TODO: i18n
 inline std::string_view trim(std::string_view s) {
     s.remove_prefix(std::min(s.find_first_not_of(" \t\r\v\n"), s.size()));
@@ -129,16 +128,18 @@ inline void insert_dialogue(std::vector<ass_dialogue_t> &screen_dialogue, int in
 }
 
 int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
-                                 config::ass_config_t &config,
+                                 const config::ass_config_t &config,
                                  std::vector<ass_dialogue_t> &ass_result_list) {
-    if (danmuku_list.empty() || danmuku_list[0].danmuku_type_ == static_cast<int>(danmu_type::MOVE)) {
+    if (danmuku_list.empty() ||
+        danmuku_list[0].danmuku_type_ == static_cast<int>(danmu_type::MOVE)) {
         return -1;
     }
 
     int font_size_scale = config.font_size_ * config.font_scale_;
 
-    const int danmuku_line_count =
-        (float)config.video_height_ / (float)font_size_scale * config.danmuku_show_range_;
+    const int danmuku_line_count = (float)config.video_height_ *
+                                   (float)config.danmuku_show_range_ /
+                                   ((float)config.font_size_ * (float)config.font_scale_);
 
     std::vector<ass_dialogue_t> top_screen_dialogue(danmuku_line_count);
     std::vector<ass_dialogue_t> bottom_screen_dialogue(danmuku_line_count);
@@ -152,8 +153,9 @@ int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
     // find a valid location to insert danmuku
     for (auto &item : danmuku_list) {
         int font_size = item.font_size_ * config.font_scale_;
-        auto &screen_dialogue =
-            item.danmuku_type_ == static_cast<int>(danmu_type::TOP) ? top_screen_dialogue : bottom_screen_dialogue;
+        auto &screen_dialogue = item.danmuku_type_ == static_cast<int>(danmu_type::TOP)
+                                    ? top_screen_dialogue
+                                    : bottom_screen_dialogue;
 
         for (int i = 0; i < danmuku_line_count; i++) {
             auto &cur_danmuku_on_screen = screen_dialogue[i];
@@ -177,14 +179,17 @@ int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
 }
 
 int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
-                                  config::ass_config_t &config,
+                                  const config::ass_config_t &config,
                                   std::vector<ass_dialogue_t> &ass_result_list) {
-    if (danmuku_list.empty() || danmuku_list[0].danmuku_type_ != static_cast<int>(danmu_type::MOVE)) {
+    if (danmuku_list.empty() ||
+        danmuku_list[0].danmuku_type_ != static_cast<int>(danmu_type::MOVE)) {
         return -1;
     }
 
-    const int danmuku_line_count = (float)config.video_height_ /
-                                   (float)config.font_size_ * config.danmuku_show_range_;
+
+    const int danmuku_line_count = (float)config.video_height_ *
+                                   (float)config.danmuku_show_range_ /
+                                   ((float)config.font_size_ * (float)config.font_scale_);
 
     std::vector<ass_dialogue_t> screen_dialogue(danmuku_line_count);
     for (auto &item : screen_dialogue) {
@@ -203,7 +208,7 @@ int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
                 insert_dialogue(screen_dialogue, i, item, ass_result_list);
                 break;
             } else {
-                int cur_start_time = cur_danmuku_on_screen.start_time_;
+                float cur_start_time = cur_danmuku_on_screen.start_time_;
                 int cur_font_size = config.font_scale_ * cur_danmuku_on_screen.font_size_;
 
                 int cur_danmuku_length = cur_danmuku_on_screen.length_ * cur_font_size;
@@ -264,8 +269,8 @@ int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
                 // Must be inserted after the previous item is fully visible
                 // As an additional condition, we expect that the new danmuku
                 // cannot catch up with the previous danmuku.
-                if (item.start_time_ >= cur_danmuku_full_enter_time_first &&
-                    new_danmuku_enter_time_left >= cur_danmuku_exit_time) {
+                if (item.start_time_ > cur_danmuku_full_enter_time_first &&
+                    new_danmuku_enter_time_left > cur_danmuku_exit_time) {
                     // insert danmuku!
                     insert_dialogue(screen_dialogue, i, item, ass_result_list);
                     break;
@@ -313,11 +318,7 @@ int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
                          [](const auto &x, const auto &y) { return x.second < y.second; })
             ->first;
 
-    int font_color_tmp = mp_color.begin()->first;
-    int font_size_tmp = mp_size.begin()->first;
-
     ret = process_danmuku_list(danmuku_all_list, danmuku_move_list, danmuku_pos_list);
-
 
     config.font_size_ = font_size;
     config.font_color_ = font_color;

@@ -63,7 +63,7 @@ int ass_render(const std::string &output_file_name, const config::ass_config_t &
     std::string ass_font_alpha =
         fmt::format("{:X}", static_cast<uint8_t>(255 * (1.0f - config.font_alpha_)));
     int layer = 0;
-    int ass_font_size = config.font_size_ ; // do not scale
+    int ass_font_size = config.font_size_ * config.font_scale_;
     std::string name = "Danmu";
 
     auto out = fmt::output_file(output_file_name);
@@ -81,11 +81,11 @@ int ass_render(const std::string &output_file_name, const config::ass_config_t &
             self_effect = fmt::format("\\c&H{}", rgb2bgr(item.font_color_));
         }
 
-        int item_font_size_origin = item.font_size_;
+        int item_font_size = item.font_size_ * config.font_scale_;
 
-        int start_x = config.video_width_ + item.length_ * item_font_size_origin / 2;
-        int end_x = 0 - item.length_ * item_font_size_origin / 2;
-        int start_y = item_font_size_origin * (item.dialogue_line_index_ + 1);
+        int start_x = config.video_width_ + item.length_ * item_font_size / 2;
+        int end_x = 0 - item.length_ * item_font_size / 2;
+        int start_y = item_font_size * (item.dialogue_line_index_ + 1);
         int end_y = start_y;
 
         out.print(ass_dialogue_format, layer, time2ass(item.start_time_),
