@@ -26,7 +26,7 @@
 ```bash
 ./xml2ass <xml_file1> <xml_file2> ...
 
-# 可以这样做->
+# 可以这样做--->
 $ ./xml2ass 1.xml 2.xml 3.xml 
 ```
 
@@ -109,7 +109,8 @@ $ make
 - `fmtlib` MIT License
 - `utfcpp` BSL-1.0 License
 - `rapidjson` MIT License
+- `simdutf` MIT License
 
 # Credit
 
-- [海面烧烧炮](https://space.bilibili.com/2437955)
+- [海面烧烧炮](https://space.bilibili.com/2437955) 感谢他提供的想法，没有他就没有本项目。
