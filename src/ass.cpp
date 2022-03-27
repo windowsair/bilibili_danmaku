@@ -4,6 +4,7 @@
 #include "ass.h"
 #include "config.h"
 #include "danmuku.h"
+#include "time_table.h"
 
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/fmt/include/fmt/os.h"
@@ -35,6 +36,9 @@ inline std::string rgb2bgr(int rgb) {
  */
 //// FIXME: float point accuracy and representation errors
 inline std::string time2ass(float time) {
+    char time_str[] = "00:00:00.00";
+    //       index :   0  3  6  9
+
     // 1s -> 100 hundredths
     // 0.123-> 12.3 -> 12
     int Mins = (int)time / 60;
@@ -48,9 +52,17 @@ inline std::string time2ass(float time) {
 
     int tmp = (int)(fract * 1000) % 1000; // 0.123 -> 123
 
+    //FIXME: overflow
     int hundredths = (tmp / 10) + ((tmp % 10) >= 5);
 
-    return fmt::format("{:02d}:{:02d}:{:02d}.{:02d}", Hrs, Mins, Secs, hundredths);
+    memcpy(&time_str[0], time_table[Hrs], 2);
+    memcpy(&time_str[3], time_table[Mins], 2);
+    memcpy(&time_str[6], time_table[Secs], 2);
+    memcpy(&time_str[9], time_table[hundredths], 2);
+
+    return time_str;
+
+    //return fmt::format("{:02d}:{:02d}:{:02d}.{:02d}", Hrs, Mins, Secs, hundredths);
 }
 
 int ass_render(const std::string &output_file_name, const config::ass_config_t &config,

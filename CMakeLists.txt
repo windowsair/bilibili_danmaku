@@ -13,6 +13,7 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 set(SOURCES src/main.cpp
         thirdparty/pugixml/pugixml.cpp
         thirdparty/fmt/src/format.cc thirdparty/fmt/src/os.cc
+        thirdparty/simdutf/simdutf.cpp
         src/danmuku.cpp src/danmuku.h src/config.cpp src/config.h src/ass.cpp src/ass.h src/file_helper.cpp src/file_helper.h)
 
 add_subdirectory(thirdparty/scnlib)

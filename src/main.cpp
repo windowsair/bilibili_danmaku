@@ -37,18 +37,22 @@ int main(int argc, char **argv) {
 
     auto job_start_time = std::chrono::high_resolution_clock::now();
 
-    for (auto &item : valid_file_list) {
-        std::thread([&]() {
-            danmuku::danmuku_main_process(item, user_config);
-            count--;
-            cv.notify_all();
-        }).detach();
-    }
+    if (valid_file_list.size() > 1) {
+        for (auto &item : valid_file_list) {
+            std::thread([&]() {
+                danmuku::danmuku_main_process(item, user_config);
+                count--;
+                cv.notify_all();
+            }).detach();
+        }
 
-    // wait all jobs done.
-    std::unique_lock<std::mutex> lk(m);
-    while (count != 0) {
-        cv.wait(lk, [&] { return count == 0; });
+        // wait all jobs done.
+        std::unique_lock<std::mutex> lk(m);
+        while (count != 0) {
+            cv.wait(lk, [&] { return count == 0; });
+        }
+    } else if (valid_file_list.size() == 1) {
+        danmuku::danmuku_main_process(valid_file_list[0], user_config);
     }
 
     auto job_end_time = std::chrono::high_resolution_clock::now();

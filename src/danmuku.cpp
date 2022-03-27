@@ -24,12 +24,12 @@ inline std::string_view trim(std::string_view s) {
  * @return  0: success
  *          other: fail
  */
-int parse_danmuku_xml(std::string file_path,
+int parse_danmuku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
+                      std::string file_path,
                       std::vector<danmuku_item_t> &danmuku_all_list,
                       danmuku_info_t &danmuku_info) {
 
-    pugi::xml_document doc;
-    pugi::xml_parse_result parse_result = doc.load_file(file_path.c_str());
+    parse_result = doc.load_file(file_path.c_str());
     if (parse_result.status == pugi::status_end_element_mismatch) {
         // maybe <i> mismatch in tail
     }
@@ -48,10 +48,21 @@ int parse_danmuku_xml(std::string file_path,
     //       raw="...">
     //       快快快快 </d>
     for (auto &d : root_node.children("d")) {
-        auto p = std::string(d.attribute("p").value());
-        std::string context = std::string(trim(d.text().get()));
+        const char *p = d.attribute("p").value();
+
+        //// FIXME: escape space
+        char *origin_context = const_cast<char *>(d.text().get());
+
+        if (*origin_context == '\0') {
+            continue; // does not have value
+        }
+
+        std::string trim_context = std::string(trim(origin_context));
+        memcpy(origin_context, trim_context.c_str(),
+               trim_context.size() + 1); // with "\0"
+
         // already escape
-        danmuku_all_list.emplace_back(context, p);
+        danmuku_all_list.emplace_back(origin_context, p);
     }
 
     return 0;
@@ -186,7 +197,6 @@ int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
         return -1;
     }
 
-
     const int danmuku_line_count = (float)config.video_height_ *
                                    (float)config.danmuku_show_range_ /
                                    ((float)config.font_size_ * (float)config.font_scale_);
@@ -286,7 +296,11 @@ int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
 int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
     std::vector<danmuku_item_t> danmuku_all_list, danmuku_move_list, danmuku_pos_list;
     danmuku_info_t danmuku_info;
-    int ret = parse_danmuku_xml(xml_file, danmuku_all_list, danmuku_info);
+    pugi::xml_document doc;
+    pugi::xml_parse_result parse_result;
+
+    int ret =
+        parse_danmuku_xml(doc, parse_result, xml_file, danmuku_all_list, danmuku_info);
     if (ret != 0) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "{}:无效的XML文件\n",
                    xml_file);
