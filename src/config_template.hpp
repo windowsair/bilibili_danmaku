@@ -22,10 +22,10 @@ R"--({
 	"#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
 
 	"danmaku_move_time": 15,
-	"#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
+	"#danmaku_move_time": "滚动弹幕的停留时间(以秒计)，设置为-1表示忽略滚动弹幕",
 
 	"danmaku_pos_time": 5,
-	"#danmaku_pos_time": "固定弹幕的停留时间(以秒计)"
+	"#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，设置为-1表示忽略固定弹幕"
 }
 )--"; // \n here
 

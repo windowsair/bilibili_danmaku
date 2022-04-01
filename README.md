@@ -67,14 +67,14 @@ $ ./xml2ass ./xml_path ./1.xml
 	"font_bold": true,
 	"#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
-	"danmuku_show_range": 0.45,
-	"#danmuku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+	"danmaku_show_range": 0.45,
+	"#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
 
-	"danmuku_move_time": 15,
-	"#danmuku_move_time": "滚动弹幕的停留时间(以秒计)",
+	"danmaku_move_time": 15,
+	"#danmaku_move_time": "滚动弹幕的停留时间(以秒计)，设置为-1表示忽略滚动弹幕",
 
-	"danmuku_pos_time": 5,
-	"#danmuku_pos_time": "固定弹幕的停留时间(以秒计)"
+	"danmaku_pos_time": 5,
+	"#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，设置为-1表示忽略固定弹幕"
 }
 ```
 
@@ -94,7 +94,7 @@ $ make
 ## 预构建二进制文件下载
 
 目前已有amd64体系架构的Windows, Linux, MacOS的预编译二进制文件。 ARM等体系架构的二进制文件需要您自行编译。
-这些预构建二进制文件可以在这里下载到： [预编译文件](https://github.com/windowsair/bilibili_danmuku/actions/workflows/build-binary.yml)
+这些预构建二进制文件可以在这里下载到： [预编译文件](https://github.com/windowsair/bilibili_danmaku/actions/workflows/build-binary.yml)
 
 
 有关如何下载，请参考：[github action帮助](https://docs.github.com/cn/actions/managing-workflow-runs/downloading-workflow-artifacts)
