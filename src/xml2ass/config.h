@@ -1,5 +1,5 @@
-#ifndef BILIBILI_DANMUKU_CONFIG_H
-#define BILIBILI_DANMUKU_CONFIG_H
+#ifndef BILIBILI_DANMAKU_CONFIG_H
+#define BILIBILI_DANMAKU_CONFIG_H
 
 #include <string>
 
@@ -13,17 +13,17 @@ typedef struct ass_config_ {
 
     // font config
     std::string font_family_;
-    int font_color_;
-    int font_size_;
+    int font_color_;  // user not change
+    int font_size_;   // user not change
     float font_scale_;
     float font_alpha_;
     bool font_bold_;
 
-    // danmuku config
-    float danmuku_show_range_;
-    int danmuku_move_time_;
-    int danmuku_pos_time_;
-    //int danmuku_max_count_;
+    // danmaku config
+    float danmaku_show_range_;
+    int danmaku_move_time_;
+    int danmaku_pos_time_;
+    //int danmaku_max_count_;
 
     // ass config
     std::string chat_server_;
@@ -33,9 +33,9 @@ typedef struct ass_config_ {
 } ass_config_t;
 
 
-ass_config_t get_default_config();
+ass_config_t get_user_config();
 
 
 } // namespace config
 
-#endif // BILIBILI_DANMUKU_CONFIG_H
+#endif // BILIBILI_DANMAKU_CONFIG_H

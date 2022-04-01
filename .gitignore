@@ -3,6 +3,9 @@
 cmake-build-debug/
 cmake-build-release/
 
+# config
+config.json
+
 # Build results
 [Dd]ebug/
 [Dd]ebugPublic/
@@ -18,6 +21,7 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+out/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -116,3 +120,4 @@ __pycache__/
 
 # Local History for Visual Studio
 .localhistory/
+tmp/

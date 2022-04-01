@@ -1,19 +1,25 @@
-cmake_minimum_required(VERSION 3.16)
-set(project_name xml2ass)
-project(${project_name})
+cmake_minimum_required(VERSION 3.10)
+project(bilibili_danmaku)
 
-set(CMAKE_CXX_STANDARD 20)
+set(THIRDPARTY_SRC
+        ${CMAKE_SOURCE_DIR}/thirdparty/pugixml/pugixml.cpp
+        ${CMAKE_SOURCE_DIR}/thirdparty/fmt/src/format.cc ${CMAKE_SOURCE_DIR}/thirdparty/fmt/src/os.cc
+        ${CMAKE_SOURCE_DIR}/thirdparty/simdutf/simdutf.cpp
+        )
+
+include_directories(
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/thirdparty/fmt/include
+        )
 
 
-set(SOURCES src/main.cpp
-        thirdparty/pugixml/pugixml.cpp
-        thirdparty/fmt/src/format.cc thirdparty/fmt/src/os.cc
-        src/danmuku.cpp src/danmuku.h src/config.cpp src/config.h src/ass.cpp src/ass.h)
-
-add_subdirectory(thirdparty/scnlib)
-include_directories(./ thirdparty/fmt/include thirdparty/utf8)
+add_subdirectory(src/xml2ass)
 
 
-add_executable(${project_name} ${SOURCES})
+install(TARGETS xml2ass
+        CONFIGURATIONS Debug
+        DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
-target_link_libraries(${project_name} scn::scn -lpthread)
+install(TARGETS xml2ass
+        CONFIGURATIONS Release
+        DESTINATION ${CMAKE_BINARY_DIR}/bin)
