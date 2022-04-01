@@ -31,9 +31,9 @@ inline ass_config_t get_default_config() {
         .font_scale_ = 1.6f,
         .font_alpha_ = 0.75f,
         .font_bold_ = true,
-        .danmuku_show_range_ = 0.45f,
-        .danmuku_move_time_ = 15,
-        .danmuku_pos_time_ = 5,
+        .danmaku_show_range_ = 0.45f,
+        .danmaku_move_time_ = 15,
+        .danmaku_pos_time_ = 5,
     };
 
     return config;
@@ -100,9 +100,9 @@ ass_config_t get_user_config() {
         .font_scale_ = doc["font_scale"].GetFloat(),
         .font_alpha_ = doc["font_alpha"].GetFloat(),
         .font_bold_ = doc["font_bold"].GetBool(),
-        .danmuku_show_range_ = doc["danmuku_show_range"].GetFloat(),
-        .danmuku_move_time_ = doc["danmuku_move_time"].GetInt(),
-        .danmuku_pos_time_ = doc["danmuku_pos_time"].GetInt(),
+        .danmaku_show_range_ = doc["danmaku_show_range"].GetFloat(),
+        .danmaku_move_time_ = doc["danmaku_move_time"].GetInt(),
+        .danmaku_pos_time_ = doc["danmaku_pos_time"].GetInt(),
     };
 
     fclose(fp);

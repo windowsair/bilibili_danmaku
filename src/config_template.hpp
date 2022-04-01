@@ -18,14 +18,14 @@ R"--({
 	"font_bold": true,
 	"#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
-	"danmuku_show_range": 0.45,
-	"#danmuku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+	"danmaku_show_range": 0.45,
+	"#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
 
-	"danmuku_move_time": 15,
-	"#danmuku_move_time": "滚动弹幕的停留时间(以秒计)",
+	"danmaku_move_time": 15,
+	"#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
 
-	"danmuku_pos_time": 5,
-	"#danmuku_pos_time": "固定弹幕的停留时间(以秒计)"
+	"danmaku_pos_time": 5,
+	"#danmaku_pos_time": "固定弹幕的停留时间(以秒计)"
 }
 )--"; // \n here
 
@@ -54,15 +54,15 @@ R"--({
         "font_bold": {
             "type": "boolean"
         },
-        "danmuku_show_range": {
+        "danmaku_show_range": {
             "type": "number",
             "minimum": 0,
             "maximum": 1
         },
-        "danmuku_move_time": {
+        "danmaku_move_time": {
             "type": "integer"
         },
-        "danmuku_pos_time": {
+        "danmaku_pos_time": {
             "type": "integer"
         }
     },
@@ -73,8 +73,8 @@ R"--({
         "font_scale",
         "font_alpha",
         "font_bold",
-        "danmuku_show_range",
-        "danmuku_move_time",
-        "danmuku_pos_time"
+        "danmaku_show_range",
+        "danmaku_move_time",
+        "danmaku_pos_time"
     ]
 })--";

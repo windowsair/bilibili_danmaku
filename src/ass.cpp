@@ -3,7 +3,7 @@
 
 #include "ass.h"
 #include "config.h"
-#include "danmuku.h"
+#include "danmaku.h"
 #include "time_table.h"
 
 #include "thirdparty/fmt/include/fmt/core.h"
@@ -73,7 +73,7 @@ inline std::string time2ass(float time) {
 }
 
 int ass_render(const std::string &output_file_name, const config::ass_config_t &config,
-               std::vector<danmuku::ass_dialogue_t> &ass_dialogue_list) {
+               std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
 
 #include "ass_header.hpp"
     using namespace fmt::literals;
@@ -108,8 +108,8 @@ int ass_render(const std::string &output_file_name, const config::ass_config_t &
         int end_y = start_y;
 
         out.print(ass_dialogue_format, layer, time2ass(item.start_time_),
-                  time2ass(item.start_time_ + config.danmuku_move_time_), name,
-                  item.danmuku_type_ == static_cast<int>(danmuku::danmu_type::MOVE) ? "move" : "pos", (float)start_x,
+                  time2ass(item.start_time_ + config.danmaku_move_time_), name,
+                  item.danmaku_type_ == static_cast<int>(danmaku::danmu_type::MOVE) ? "move" : "pos", (float)start_x,
                   (float)start_y, (float)end_x, (float)end_y,
                   item.font_color_ != config.font_color_ ? self_effect : "",
                   item.context_);

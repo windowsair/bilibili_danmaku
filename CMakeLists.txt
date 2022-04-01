@@ -14,12 +14,15 @@ set(SOURCES src/main.cpp
         thirdparty/pugixml/pugixml.cpp
         thirdparty/fmt/src/format.cc thirdparty/fmt/src/os.cc
         thirdparty/simdutf/simdutf.cpp
-        src/danmuku.cpp src/danmuku.h src/config.cpp src/config.h src/ass.cpp src/ass.h src/file_helper.cpp src/file_helper.h)
+        src/danmaku.cpp src/danmaku.h src/config.cpp src/config.h src/ass.cpp src/ass.h src/file_helper.cpp src/file_helper.h)
 
-add_subdirectory(thirdparty/scnlib)
-include_directories(./ thirdparty/fmt/include thirdparty/utf8)
+#add_subdirectory(thirdparty/scnlib)
+include_directories(./ thirdparty/fmt/include thirdparty/utf8
+        thirdparty/libdeflate
+        thirdparty/libdeflate/lib
+        )
 
 
 add_executable(${project_name} ${SOURCES})
 
-target_link_libraries(${project_name} scn::scn -lpthread)
+target_link_libraries(${project_name} -lpthread)

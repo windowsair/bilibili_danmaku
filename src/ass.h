@@ -1,11 +1,11 @@
-#ifndef BILIBILI_DANMUKU_ASS_H
-#define BILIBILI_DANMUKU_ASS_H
+#ifndef BILIBILI_DANMAKU_ASS_H
+#define BILIBILI_DANMAKU_ASS_H
 
-#include "danmuku.h"
+#include "danmaku.h"
 
 namespace ass {
 int ass_render(const std::string &output_file_name, const config::ass_config_t &config,
-               std::vector<danmuku::ass_dialogue_t> &ass_dialogue_list);
+               std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list);
 }
 
-#endif //BILIBILI_DANMUKU_ASS_H
+#endif //BILIBILI_DANMAKU_ASS_H

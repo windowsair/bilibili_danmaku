@@ -2,12 +2,12 @@
 #include <map>
 
 #include "ass.h"
-#include "danmuku.h"
+#include "danmaku.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 
-namespace danmuku {
+namespace danmaku {
 
 // TODO: i18n
 inline std::string_view trim(std::string_view s) {
@@ -20,14 +20,14 @@ inline std::string_view trim(std::string_view s) {
 /**
  *
  * @param file_path
- * @param danmuku_all_list
+ * @param danmaku_all_list
  * @return  0: success
  *          other: fail
  */
-int parse_danmuku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
+int parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
                       std::string file_path,
-                      std::vector<danmuku_item_t> &danmuku_all_list,
-                      danmuku_info_t &danmuku_info) {
+                      std::vector<danmaku_item_t> &danmaku_all_list,
+                      danmaku_info_t &danmaku_info) {
 
     parse_result = doc.load_file(file_path.c_str());
     if (parse_result.status == pugi::status_end_element_mismatch) {
@@ -40,8 +40,8 @@ int parse_danmuku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_res
         return -1;
     }
 
-    danmuku_info.chat_server_ = std::string(root_node.child("chatserver").text().get());
-    danmuku_info.chat_id_ = std::string(root_node.child("chatid").text().get());
+    danmaku_info.chat_server_ = std::string(root_node.child("chatserver").text().get());
+    danmaku_info.chat_id_ = std::string(root_node.child("chatid").text().get());
 
     //    <d p="10.625,4,25,14893055,1647777274392,0,281193139,0"
     //       user="..."
@@ -62,7 +62,7 @@ int parse_danmuku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_res
                trim_context.size() + 1); // with "\0"
 
         // already escape
-        danmuku_all_list.emplace_back(origin_context, p);
+        danmaku_all_list.emplace_back(origin_context, p);
     }
 
     return 0;
@@ -71,43 +71,43 @@ int parse_danmuku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_res
 /**
  * Sort list, get move and pos list
  *
- * @param danmuku_all_list [in]
- * @param danmuku_move_list [out]
- * @param danmuku_pos_list [out]
+ * @param danmaku_all_list [in]
+ * @param danmaku_move_list [out]
+ * @param danmaku_pos_list [out]
  * @return
  */
-int process_danmuku_list(const std::vector<danmuku_item_t> &danmuku_all_list,
-                         std::vector<danmuku_item_t> &danmuku_move_list,
-                         std::vector<danmuku_item_t> &danmuku_pos_list) {
-    if (danmuku_all_list.empty()) {
+int process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
+                         std::vector<danmaku_item_t> &danmaku_move_list,
+                         std::vector<danmaku_item_t> &danmaku_pos_list) {
+    if (danmaku_all_list.empty()) {
         return -1;
     }
 
-    for (auto &item : danmuku_all_list) {
-        if (item.danmuku_type_ == static_cast<int>(danmu_type::MOVE)) {
-            danmuku_move_list.emplace_back(item);
+    for (auto &item : danmaku_all_list) {
+        if (item.danmaku_type_ == static_cast<int>(danmu_type::MOVE)) {
+            danmaku_move_list.emplace_back(item);
         } else {
-            danmuku_pos_list.emplace_back(item);
+            danmaku_pos_list.emplace_back(item);
         }
     }
 
-    std::sort(danmuku_pos_list.begin(), danmuku_pos_list.end(),
-              [](danmuku_item_t &a, danmuku_item_t &b) {
+    std::sort(danmaku_pos_list.begin(), danmaku_pos_list.end(),
+              [](danmaku_item_t &a, danmaku_item_t &b) {
                   return static_cast<bool>((a.start_time_ - b.start_time_) < 0);
               });
 
     // Promise earliest in time and longest in time
-    std::sort(danmuku_move_list.begin(), danmuku_move_list.end(),
-              [](danmuku_item_t &a, danmuku_item_t &b) {
+    std::sort(danmaku_move_list.begin(), danmaku_move_list.end(),
+              [](danmaku_item_t &a, danmaku_item_t &b) {
                   return static_cast<bool>((a.start_time_ - b.start_time_) < 0);
               });
 
-    const size_t sz = danmuku_move_list.size();
+    const size_t sz = danmaku_move_list.size();
     bool sort_fun = false;
     for (size_t i = 0; i < sz - 1;) {
         size_t j;
         for (j = i + 1; j < sz; j++) {
-            if (danmuku_move_list[i].start_time_ != danmuku_move_list[j].start_time_) {
+            if (danmaku_move_list[i].start_time_ != danmaku_move_list[j].start_time_) {
                 break;
             }
         }
@@ -115,13 +115,13 @@ int process_danmuku_list(const std::vector<danmuku_item_t> &danmuku_all_list,
         if (j - i > 1) {
             sort_fun = !sort_fun;
             if (sort_fun)
-                std::sort(danmuku_move_list.begin() + i, danmuku_move_list.begin() + j,
-                      [](danmuku_item_t &a, danmuku_item_t &b) {
+                std::sort(danmaku_move_list.begin() + i, danmaku_move_list.begin() + j,
+                      [](danmaku_item_t &a, danmaku_item_t &b) {
                           return a.length_ > b.length_;
                       });
             else {
-                std::sort(danmuku_move_list.begin() + i, danmuku_move_list.begin() + j,
-                          [](danmuku_item_t &a, danmuku_item_t &b) {
+                std::sort(danmaku_move_list.begin() + i, danmaku_move_list.begin() + j,
+                          [](danmaku_item_t &a, danmaku_item_t &b) {
                               return a.length_ < b.length_;
                           });
             }
@@ -131,10 +131,10 @@ int process_danmuku_list(const std::vector<danmuku_item_t> &danmuku_all_list,
     }
 
 #ifdef TEST_MOVE_LIST_SORT
-    for (int i = 0; i < danmuku_move_list.size(); i++) {
-        for (int j = i + 1; j < danmuku_move_list.size(); j++) {
-            if (danmuku_move_list[i].start_time_ == danmuku_move_list[j].start_time_) {
-                if (danmuku_move_list[i].length_ < danmuku_move_list[j].length_) {
+    for (int i = 0; i < danmaku_move_list.size(); i++) {
+        for (int j = i + 1; j < danmaku_move_list.size(); j++) {
+            if (danmaku_move_list[i].start_time_ == danmaku_move_list[j].start_time_) {
+                if (danmaku_move_list[i].length_ < danmaku_move_list[j].length_) {
                     std::abort();
                 }
             }
@@ -149,52 +149,52 @@ int process_danmuku_list(const std::vector<danmuku_item_t> &danmuku_all_list,
  *
  * @param screen_dialogue
  * @param index screen dialogue index
- * @param danmuku danmuku to insert
+ * @param danmaku danmaku to insert
  * @param ass_result_list
  */
 inline void insert_dialogue(std::vector<ass_dialogue_t> &screen_dialogue, int index,
-                            danmuku_item_t &danmuku,
+                            danmaku_item_t &danmaku,
                             std::vector<ass_dialogue_t> &ass_result_list) {
 
     // screen_dialogue focus on: start_time, font_size
     ass_dialogue_t ass = {
-        .length_ = danmuku.length_,
-        .start_time_ = danmuku.start_time_,
-        .font_size_ = danmuku.font_size_,
+        .length_ = danmaku.length_,
+        .start_time_ = danmaku.start_time_,
+        .font_size_ = danmaku.font_size_,
         .is_valid_ = true,
     };
 
-    screen_dialogue[index] = ass; // replace old danmuku
+    screen_dialogue[index] = ass; // replace old danmaku
 
-    ass.context_ = danmuku.context_;
-    ass.font_color_ = danmuku.font_color_;
-    ass.danmuku_type_ = danmuku.danmuku_type_;
+    ass.context_ = danmaku.context_;
+    ass.font_color_ = danmaku.font_color_;
+    ass.danmaku_type_ = danmaku.danmaku_type_;
     ass.dialogue_line_index_ = index; // calculate the y-axis coordinates
 
     ass_result_list.push_back(ass);
 }
 
-int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
+int process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
                                  const config::ass_config_t &config,
                                  std::vector<ass_dialogue_t> &ass_result_list) {
-    if (danmuku_list.empty()) {
+    if (danmaku_list.empty()) {
         return 0;
     }
 
-    if (danmuku_list[0].danmuku_type_ == static_cast<int>(danmu_type::MOVE)) {
+    if (danmaku_list[0].danmaku_type_ == static_cast<int>(danmu_type::MOVE)) {
         return -1;
     }
 
-    if (config.danmuku_pos_time_ < 0) {
-        return 0; // ignore danmuku
+    if (config.danmaku_pos_time_ < 0) {
+        return 0; // ignore danmaku
     }
 
-    const int danmuku_line_count = (float)config.video_height_ *
-                                   (float)config.danmuku_show_range_ /
+    const int danmaku_line_count = (float)config.video_height_ *
+                                   (float)config.danmaku_show_range_ /
                                    ((float)config.font_size_ * (float)config.font_scale_);
 
-    std::vector<ass_dialogue_t> top_screen_dialogue(danmuku_line_count);
-    std::vector<ass_dialogue_t> bottom_screen_dialogue(danmuku_line_count);
+    std::vector<ass_dialogue_t> top_screen_dialogue(danmaku_line_count);
+    std::vector<ass_dialogue_t> bottom_screen_dialogue(danmaku_line_count);
     for (auto &item : top_screen_dialogue) {
         item.is_valid_ = false;
     }
@@ -202,23 +202,23 @@ int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
         item.is_valid_ = false;
     }
 
-    // find a valid location to insert danmuku
-    for (auto &item : danmuku_list) {
-        auto &screen_dialogue = item.danmuku_type_ == static_cast<int>(danmu_type::TOP)
+    // find a valid location to insert danmaku
+    for (auto &item : danmaku_list) {
+        auto &screen_dialogue = item.danmaku_type_ == static_cast<int>(danmu_type::TOP)
                                     ? top_screen_dialogue
                                     : bottom_screen_dialogue;
 
-        for (int i = 0; i < danmuku_line_count; i++) {
-            auto &cur_danmuku_on_screen = screen_dialogue[i];
-            if (!cur_danmuku_on_screen.is_valid_) {
+        for (int i = 0; i < danmaku_line_count; i++) {
+            auto &cur_danmaku_on_screen = screen_dialogue[i];
+            if (!cur_danmaku_on_screen.is_valid_) {
                 // okay. Just insert.
                 insert_dialogue(screen_dialogue, i, item, ass_result_list);
                 break;
             } else {
-                float cur_danmuku_exit_time =
-                    cur_danmuku_on_screen.start_time_ + config.danmuku_pos_time_;
+                float cur_danmaku_exit_time =
+                    cur_danmaku_on_screen.start_time_ + config.danmaku_pos_time_;
                 // staggered timing to ensure no overlay
-                if (item.start_time_ > cur_danmuku_exit_time) {
+                if (item.start_time_ > cur_danmaku_exit_time) {
                     insert_dialogue(screen_dialogue, i, item, ass_result_list);
                     break;
                 }
@@ -229,106 +229,106 @@ int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
     return 0;
 }
 
-int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
+int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
                                   const config::ass_config_t &config,
                                   std::vector<ass_dialogue_t> &ass_result_list) {
-    if (danmuku_list.empty()) {
+    if (danmaku_list.empty()) {
         return 0;
     }
 
-    if (danmuku_list[0].danmuku_type_ != static_cast<int>(danmu_type::MOVE)) {
+    if (danmaku_list[0].danmaku_type_ != static_cast<int>(danmu_type::MOVE)) {
         return -1;
     }
 
-    if (config.danmuku_move_time_ < 0) {
-        return 0; // ignore danmuku
+    if (config.danmaku_move_time_ < 0) {
+        return 0; // ignore danmaku
     }
 
-    const int danmuku_line_count = (float)config.video_height_ *
-                                   (float)config.danmuku_show_range_ /
+    const int danmaku_line_count = (float)config.video_height_ *
+                                   (float)config.danmaku_show_range_ /
                                    ((float)config.font_size_ * (float)config.font_scale_);
 
-    std::vector<ass_dialogue_t> screen_dialogue(danmuku_line_count);
+    std::vector<ass_dialogue_t> screen_dialogue(danmaku_line_count);
     for (auto &item : screen_dialogue) {
         item.is_valid_ = false;
     }
 
-    // find a valid location to insert danmuku
-    for (auto &item : danmuku_list) {
+    // find a valid location to insert danmaku
+    for (auto &item : danmaku_list) {
         int font_size = item.font_size_ * config.font_scale_;
 
         // check if there is currently a suitable position on the screen
-        for (int i = 0; i < danmuku_line_count; i++) {
-            auto &cur_danmuku_on_screen = screen_dialogue[i];
-            if (!cur_danmuku_on_screen.is_valid_) {
+        for (int i = 0; i < danmaku_line_count; i++) {
+            auto &cur_danmaku_on_screen = screen_dialogue[i];
+            if (!cur_danmaku_on_screen.is_valid_) {
                 // okay. just insert
                 insert_dialogue(screen_dialogue, i, item, ass_result_list);
                 break;
             } else {
-                float cur_start_time = cur_danmuku_on_screen.start_time_;
-                int cur_font_size = config.font_scale_ * cur_danmuku_on_screen.font_size_;
+                float cur_start_time = cur_danmaku_on_screen.start_time_;
+                int cur_font_size = config.font_scale_ * cur_danmaku_on_screen.font_size_;
 
-                int cur_danmuku_length = cur_danmuku_on_screen.length_ * cur_font_size;
+                int cur_danmaku_length = cur_danmaku_on_screen.length_ * cur_font_size;
 
                 /*
-                   |    danmuku_length   |    <-----------   |    danmuku_length   |
+                   |    danmaku_length   |    <-----------   |    danmaku_length   |
                                          |        screen     |
 
-                    distance  =  screen_length + danmuku_length
-                    speed =  distance / danmuku_move_time;
+                    distance  =  screen_length + danmaku_length
+                    speed =  distance / danmaku_move_time;
 
 
-                    case 1: danmuku fully visible(first time)
-                                            |    danmuku_length   |
+                    case 1: danmaku fully visible(first time)
+                                            |    danmaku_length   |
                     |        screen                               |
 
-                    fully_visible_distance = danmuku_length;
+                    fully_visible_distance = danmaku_length;
                     fully_visible_time_cost =  full_visible_distance /  speed
 
 
-                    case 2: danmuku fully visible(last time)
+                    case 2: danmaku fully visible(last time)
 
 
-                    |    danmuku_length   |
+                    |    danmaku_length   |
                     |        screen                               |
 
                     fully_visible_distance = screen_length;
                     fully_visible_time_cost = fully_visible_distance / speed;
 
 
-                    case 3: danmuku exit
-                    |    danmuku_length   |
+                    case 3: danmaku exit
+                    |    danmaku_length   |
                                           |        screen                               |
 
-                    exit_distance  =  screen_length + danmuku_length;
+                    exit_distance  =  screen_length + danmaku_length;
                     exit_time_cost =  exit_distance / speed;
 
 
                 */
 
                 // Exactly the time fully visible (first time)
-                float cur_danmuku_full_enter_time_first =
-                    (float)(config.danmuku_move_time_ * cur_danmuku_length) /
-                    (float)(config.video_width_ + cur_danmuku_length);
-                cur_danmuku_full_enter_time_first += cur_start_time;
+                float cur_danmaku_full_enter_time_first =
+                    (float)(config.danmaku_move_time_ * cur_danmaku_length) /
+                    (float)(config.video_width_ + cur_danmaku_length);
+                cur_danmaku_full_enter_time_first += cur_start_time;
 
-                float cur_danmuku_exit_time = cur_start_time + config.danmuku_move_time_;
+                float cur_danmaku_exit_time = cur_start_time + config.danmaku_move_time_;
                 //
 
-                int new_danmuku_length = font_size * item.length_;
+                int new_danmaku_length = font_size * item.length_;
 
                 // Exactly the time fully visible (last time)
-                float new_danmuku_enter_time_left =
-                    (float)(config.video_width_ * config.danmuku_move_time_) /
-                    (float)(config.video_width_ + new_danmuku_length);
-                new_danmuku_enter_time_left += item.start_time_;
+                float new_danmaku_enter_time_left =
+                    (float)(config.video_width_ * config.danmaku_move_time_) /
+                    (float)(config.video_width_ + new_danmaku_length);
+                new_danmaku_enter_time_left += item.start_time_;
 
                 // Must be inserted after the previous item is fully visible
-                // As an additional condition, we expect that the new danmuku
-                // cannot catch up with the previous danmuku.
-                if (item.start_time_ > cur_danmuku_full_enter_time_first &&
-                    new_danmuku_enter_time_left > cur_danmuku_exit_time) {
-                    // insert danmuku!
+                // As an additional condition, we expect that the new danmaku
+                // cannot catch up with the previous danmaku.
+                if (item.start_time_ > cur_danmaku_full_enter_time_first &&
+                    new_danmaku_enter_time_left > cur_danmaku_exit_time) {
+                    // insert danmaku!
                     insert_dialogue(screen_dialogue, i, item, ass_result_list);
                     break;
                 }
@@ -340,20 +340,20 @@ int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
 }
 
 // do not share config parameter cuz we will change it.
-int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
-    std::vector<danmuku_item_t> danmuku_all_list, danmuku_move_list, danmuku_pos_list;
-    danmuku_info_t danmuku_info;
+int danmaku_main_process(std::string xml_file, config::ass_config_t config) {
+    std::vector<danmaku_item_t> danmaku_all_list, danmaku_move_list, danmaku_pos_list;
+    danmaku_info_t danmaku_info;
     pugi::xml_document doc;
     pugi::xml_parse_result parse_result;
 
     int ret =
-        parse_danmuku_xml(doc, parse_result, xml_file, danmuku_all_list, danmuku_info);
+        parse_danmaku_xml(doc, parse_result, xml_file, danmaku_all_list, danmaku_info);
     if (ret != 0) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "{}:无效的XML文件\n",
                    xml_file);
         return -1;
     }
-    if (danmuku_all_list.empty()) {
+    if (danmaku_all_list.empty()) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "{}:未找到有效项目\n",
                    xml_file);
         return 0;
@@ -365,7 +365,7 @@ int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
     std::map<font_size_t, int> mp_size;
     std::map<font_color_t, int> mp_color;
 
-    for (auto &item : danmuku_all_list) {
+    for (auto &item : danmaku_all_list) {
         mp_size[item.font_size_]++;
         mp_color[item.font_color_]++;
     }
@@ -379,23 +379,23 @@ int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
                          [](const auto &x, const auto &y) { return x.second < y.second; })
             ->first;
 
-    ret = process_danmuku_list(danmuku_all_list, danmuku_move_list, danmuku_pos_list);
+    ret = process_danmaku_list(danmaku_all_list, danmaku_move_list, danmaku_pos_list);
 
     config.font_size_ = font_size;
     config.font_color_ = font_color;
-    config.chat_server_ = danmuku_info.chat_server_;
-    config.chat_id_ = danmuku_info.chat_id_;
+    config.chat_server_ = danmaku_info.chat_server_;
+    config.chat_id_ = danmaku_info.chat_id_;
 
     std::vector<ass_dialogue_t> ass_result_list;
 
 
 
-    if (config.danmuku_move_time_ > 0) {
-        process_danmuku_dialogue_move(danmuku_move_list, config, ass_result_list);
+    if (config.danmaku_move_time_ > 0) {
+        process_danmaku_dialogue_move(danmaku_move_list, config, ass_result_list);
     }
 
-    if (config.danmuku_pos_time_ > 0 ) {
-        process_danmuku_dialogue_pos(danmuku_pos_list, config, ass_result_list);
+    if (config.danmaku_pos_time_ > 0 ) {
+        process_danmaku_dialogue_pos(danmaku_pos_list, config, ass_result_list);
     }
 
 
@@ -418,4 +418,4 @@ int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
     return 0;
 }
 
-} // namespace danmuku
+} // namespace danmaku
