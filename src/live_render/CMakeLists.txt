@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.10)
-project(xml2ass)
+project(live_render)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -9,20 +9,19 @@ add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
 
-set(XML2ASS_SOURCES main.cpp
-        danmaku.cpp danmaku.h config.cpp config.h ass.cpp ass.h
-        file_helper.cpp file_helper.h)
+set(LIVE_RENDER_SOURCES main.cpp live_danmaku.cpp live_danmaku.h)
 
-#add_subdirectory(thirdparty/scnlib)
 
-add_executable(xml2ass ${DANMAKU_THIRDPARTY_SRC} ${XML2ASS_SOURCES})
+add_executable(live_render ${DANMAKU_THIRDPARTY_SRC} ${LIVE_RENDER_SOURCES} )
 
-target_link_libraries(xml2ass -lpthread)
+target_link_libraries(live_render -lpthread  OpenSSL::SSL OpenSSL::Crypto ixwebsocket)
 
-install(TARGETS xml2ass
+## install
+
+install(TARGETS live_render
         CONFIGURATIONS Debug
         DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
-install(TARGETS xml2ass
+install(TARGETS live_render
         CONFIGURATIONS Release
         DESTINATION ${CMAKE_BINARY_DIR}/bin)
