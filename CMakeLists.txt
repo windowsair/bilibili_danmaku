@@ -1,28 +1,25 @@
 cmake_minimum_required(VERSION 3.10)
-set(project_name xml2ass)
-project(${project_name})
+project(bilibili_danmaku)
 
-set(CMAKE_CXX_STANDARD 20)
+set(THIRDPARTY_SRC
+        ${CMAKE_SOURCE_DIR}/thirdparty/pugixml/pugixml.cpp
+        ${CMAKE_SOURCE_DIR}/thirdparty/fmt/src/format.cc ${CMAKE_SOURCE_DIR}/thirdparty/fmt/src/os.cc
+        ${CMAKE_SOURCE_DIR}/thirdparty/simdutf/simdutf.cpp
+        )
 
-
-# force MSVC to use utf8
-add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
-
-
-set(SOURCES src/main.cpp
-        thirdparty/pugixml/pugixml.cpp
-        thirdparty/fmt/src/format.cc thirdparty/fmt/src/os.cc
-        thirdparty/simdutf/simdutf.cpp
-        src/danmaku.cpp src/danmaku.h src/config.cpp src/config.h src/ass.cpp src/ass.h src/file_helper.cpp src/file_helper.h)
-
-#add_subdirectory(thirdparty/scnlib)
-include_directories(./ thirdparty/fmt/include thirdparty/utf8
-        thirdparty/libdeflate
-        thirdparty/libdeflate/lib
+include_directories(
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/thirdparty/fmt/include
         )
 
 
-add_executable(${project_name} ${SOURCES})
+add_subdirectory(src/xml2ass)
 
-target_link_libraries(${project_name} -lpthread)
+
+install(TARGETS xml2ass
+        CONFIGURATIONS Debug
+        DESTINATION ${CMAKE_BINARY_DIR}/bin)
+
+install(TARGETS xml2ass
+        CONFIGURATIONS Release
+        DESTINATION ${CMAKE_BINARY_DIR}/bin)
