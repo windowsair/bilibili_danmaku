@@ -99,12 +99,48 @@ int process_danmuku_list(const std::vector<danmuku_item_t> &danmuku_all_list,
     // Promise earliest in time and longest in time
     std::sort(danmuku_move_list.begin(), danmuku_move_list.end(),
               [](danmuku_item_t &a, danmuku_item_t &b) {
-                  if (a.start_time_ == b.start_time_) {
-                      return static_cast<bool>((a.length_ - b.length_) < 0);
-                  } else {
-                      return static_cast<bool>((a.start_time_ - b.start_time_) < 0);
-                  }
+                  return static_cast<bool>((a.start_time_ - b.start_time_) < 0);
               });
+
+    const size_t sz = danmuku_move_list.size();
+    bool sort_fun = false;
+    for (size_t i = 0; i < sz - 1;) {
+        size_t j;
+        for (j = i + 1; j < sz; j++) {
+            if (danmuku_move_list[i].start_time_ != danmuku_move_list[j].start_time_) {
+                break;
+            }
+        }
+
+        if (j - i > 1) {
+            sort_fun = !sort_fun;
+            if (sort_fun)
+                std::sort(danmuku_move_list.begin() + i, danmuku_move_list.begin() + j,
+                      [](danmuku_item_t &a, danmuku_item_t &b) {
+                          return a.length_ > b.length_;
+                      });
+            else {
+                std::sort(danmuku_move_list.begin() + i, danmuku_move_list.begin() + j,
+                          [](danmuku_item_t &a, danmuku_item_t &b) {
+                              return a.length_ < b.length_;
+                          });
+            }
+        }
+
+        i = j;
+    }
+
+#ifdef TEST_MOVE_LIST_SORT
+    for (int i = 0; i < danmuku_move_list.size(); i++) {
+        for (int j = i + 1; j < danmuku_move_list.size(); j++) {
+            if (danmuku_move_list[i].start_time_ == danmuku_move_list[j].start_time_) {
+                if (danmuku_move_list[i].length_ < danmuku_move_list[j].length_) {
+                    std::abort();
+                }
+            }
+        }
+    }
+#endif
 
     return 0;
 }
@@ -141,12 +177,17 @@ inline void insert_dialogue(std::vector<ass_dialogue_t> &screen_dialogue, int in
 int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
                                  const config::ass_config_t &config,
                                  std::vector<ass_dialogue_t> &ass_result_list) {
-    if (danmuku_list.empty() ||
-        danmuku_list[0].danmuku_type_ == static_cast<int>(danmu_type::MOVE)) {
+    if (danmuku_list.empty()) {
+        return 0;
+    }
+
+    if (danmuku_list[0].danmuku_type_ == static_cast<int>(danmu_type::MOVE)) {
         return -1;
     }
 
-    int font_size_scale = config.font_size_ * config.font_scale_;
+    if (config.danmuku_pos_time_ < 0) {
+        return 0; // ignore danmuku
+    }
 
     const int danmuku_line_count = (float)config.video_height_ *
                                    (float)config.danmuku_show_range_ /
@@ -163,7 +204,6 @@ int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
 
     // find a valid location to insert danmuku
     for (auto &item : danmuku_list) {
-        int font_size = item.font_size_ * config.font_scale_;
         auto &screen_dialogue = item.danmuku_type_ == static_cast<int>(danmu_type::TOP)
                                     ? top_screen_dialogue
                                     : bottom_screen_dialogue;
@@ -192,9 +232,16 @@ int process_danmuku_dialogue_pos(std::vector<danmuku_item_t> &danmuku_list,
 int process_danmuku_dialogue_move(std::vector<danmuku_item_t> &danmuku_list,
                                   const config::ass_config_t &config,
                                   std::vector<ass_dialogue_t> &ass_result_list) {
-    if (danmuku_list.empty() ||
-        danmuku_list[0].danmuku_type_ != static_cast<int>(danmu_type::MOVE)) {
+    if (danmuku_list.empty()) {
+        return 0;
+    }
+
+    if (danmuku_list[0].danmuku_type_ != static_cast<int>(danmu_type::MOVE)) {
         return -1;
+    }
+
+    if (config.danmuku_move_time_ < 0) {
+        return 0; // ignore danmuku
     }
 
     const int danmuku_line_count = (float)config.video_height_ *
@@ -340,13 +387,19 @@ int danmuku_main_process(std::string xml_file, config::ass_config_t config) {
     config.chat_id_ = danmuku_info.chat_id_;
 
     std::vector<ass_dialogue_t> ass_result_list;
-    ret = process_danmuku_dialogue_move(danmuku_move_list, config, ass_result_list);
 
-    if (ret != 0) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "{}:处理时发生错误\n",
-                   xml_file);
-        ////TODO:
+
+
+    if (config.danmuku_move_time_ > 0) {
+        process_danmuku_dialogue_move(danmuku_move_list, config, ass_result_list);
     }
+
+    if (config.danmuku_pos_time_ > 0 ) {
+        process_danmuku_dialogue_pos(danmuku_pos_list, config, ass_result_list);
+    }
+
+
+    // Ass file output
 
     // "abc.xml" => "abc.ass"
     auto xml_index = xml_file.find_last_of(".xml");

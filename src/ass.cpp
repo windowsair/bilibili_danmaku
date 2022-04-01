@@ -15,6 +15,8 @@ namespace ass {
 
 inline std::string rgb2bgr(int rgb) {
     // 0xRRGGBB
+    char bgr_str[] = "BBGGRR";
+    // index          0 2 4
     uint8_t *p = reinterpret_cast<uint8_t *>(&rgb);
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     uint8_t b = p[0];
@@ -26,7 +28,12 @@ inline std::string rgb2bgr(int rgb) {
     uint8_t r = p[0];
 #endif
 
-    return fmt::format("{:X}{:X}{:X}", b, g, r);
+    memcpy(&bgr_str[0] , hex_table[b], 2);
+    memcpy(&bgr_str[2] , hex_table[g], 2);
+    memcpy(&bgr_str[4] , hex_table[r], 2);
+
+    return bgr_str;
+    //return fmt::format("{:X}{:X}{:X}", b, g, r);
 }
 
 /**

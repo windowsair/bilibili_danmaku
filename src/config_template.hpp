@@ -60,12 +60,10 @@ R"--({
             "maximum": 1
         },
         "danmuku_move_time": {
-            "type": "integer",
-            "minimum": 0
+            "type": "integer"
         },
         "danmuku_pos_time": {
-            "type": "integer",
-            "minimum": 0
+            "type": "integer"
         }
     },
     "required": [
