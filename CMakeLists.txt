@@ -39,6 +39,8 @@ include_directories(
 # use prebuild openssl libary on windows
 if (WIN32)
     set(OPENSSL_ROOT_DIR ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows)
+elseif (CLR_CMAKE_PLATFORM_DARWIN) # for macos
+    set(OPENSSL_ROOT_DIR /usr/local/opt/openssl)
 endif ()
 find_package(OpenSSL REQUIRED)
 

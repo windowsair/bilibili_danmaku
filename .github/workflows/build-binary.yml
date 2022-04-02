@@ -31,7 +31,7 @@ jobs:
     - name: Install dependency(Mac)
       if: matrix.os == 'macos-latest'
       shell: bash
-      run: brew install openssl@1.1
+      run: brew install openssl@1.1 && ls /usr/local/opt/openssl && ls /usr/local/opt/
 
 
     - name: Configure CMake
