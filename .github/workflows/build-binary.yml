@@ -28,6 +28,12 @@ jobs:
       # We'll use this as our working directory for all subsequent commands
       run: cmake -E make_directory ${{github.workspace}}/build
 
+    - name: Install dependency(Mac)
+      if: matrix.os == 'macos-latest'
+      shell: bash
+      run: brew install openssl@1.1
+
+
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
