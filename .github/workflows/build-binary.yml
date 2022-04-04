@@ -48,12 +48,12 @@ jobs:
       working-directory: ${{github.workspace}}/build
       shell: bash
       # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE
+      run: cmake --build . --parallel --config $BUILD_TYPE
 
     - name: Install Binary
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake --install . --parallel --config $BUILD_TYPE
+      run: cmake --install . --config $BUILD_TYPE
 
     - name: Upload Binary
 #      if: matrix.os != 'windows-latest'
