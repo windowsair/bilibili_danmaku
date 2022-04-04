@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <map>
 
-#include "ass.h"
+#include "ass_danmaku.h"
 #include "danmaku.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
@@ -24,7 +24,7 @@ inline std::string_view trim(std::string_view s) {
  * @return  0: success
  *          other: fail
  */
-int parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
+int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
                       std::string file_path,
                       std::vector<danmaku_item_t> &danmaku_all_list,
                       danmaku_info_t &danmaku_info) {
@@ -76,7 +76,7 @@ int parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_res
  * @param danmaku_pos_list [out]
  * @return
  */
-int process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
+int DanmakuHandle::process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
                          std::vector<danmaku_item_t> &danmaku_move_list,
                          std::vector<danmaku_item_t> &danmaku_pos_list) {
     if (danmaku_all_list.empty()) {
@@ -145,6 +145,29 @@ int process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
     return 0;
 }
 
+
+void DanmakuHandle::init_danmaku_screen_dialogue(const config::ass_config_t &config) {
+    this->danmaku_line_count_ = (float)config.video_height_ *
+                                   (float)config.danmaku_show_range_ /
+                                   ((float)config.font_size_ * (float)config.font_scale_);
+
+    this->top_screen_dialogue_.resize(danmaku_line_count_);
+    this->bottom_screen_dialogue_.resize(danmaku_line_count_);
+    this->move_screen_dialogue_.resize(danmaku_line_count_);
+
+    for (auto &item : this->top_screen_dialogue_) {
+        item.is_valid_ = false;
+    }
+    for (auto &item : this->bottom_screen_dialogue_) {
+        item.is_valid_ = false;
+    }
+    for (auto &item : this->move_screen_dialogue_) {
+        item.is_valid_ = false;
+    }
+
+
+}
+
 /**
  *
  * @param screen_dialogue
@@ -174,7 +197,7 @@ inline void insert_dialogue(std::vector<ass_dialogue_t> &screen_dialogue, int in
     ass_result_list.push_back(ass);
 }
 
-int process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
+int DanmakuHandle::process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
                                  const config::ass_config_t &config,
                                  std::vector<ass_dialogue_t> &ass_result_list) {
     if (danmaku_list.empty()) {
@@ -189,26 +212,14 @@ int process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
         return 0; // ignore danmaku
     }
 
-    const int danmaku_line_count = (float)config.video_height_ *
-                                   (float)config.danmaku_show_range_ /
-                                   ((float)config.font_size_ * (float)config.font_scale_);
-
-    std::vector<ass_dialogue_t> top_screen_dialogue(danmaku_line_count);
-    std::vector<ass_dialogue_t> bottom_screen_dialogue(danmaku_line_count);
-    for (auto &item : top_screen_dialogue) {
-        item.is_valid_ = false;
-    }
-    for (auto &item : bottom_screen_dialogue) {
-        item.is_valid_ = false;
-    }
 
     // find a valid location to insert danmaku
     for (auto &item : danmaku_list) {
         auto &screen_dialogue = item.danmaku_type_ == static_cast<int>(danmu_type::TOP)
-                                    ? top_screen_dialogue
-                                    : bottom_screen_dialogue;
+                                    ? top_screen_dialogue_
+                                    : bottom_screen_dialogue_;
 
-        for (int i = 0; i < danmaku_line_count; i++) {
+        for (int i = 0; i < danmaku_line_count_; i++) {
             auto &cur_danmaku_on_screen = screen_dialogue[i];
             if (!cur_danmaku_on_screen.is_valid_) {
                 // okay. Just insert.
@@ -229,7 +240,7 @@ int process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
     return 0;
 }
 
-int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
+int DanmakuHandle::process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
                                   const config::ass_config_t &config,
                                   std::vector<ass_dialogue_t> &ass_result_list) {
     if (danmaku_list.empty()) {
@@ -244,25 +255,17 @@ int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
         return 0; // ignore danmaku
     }
 
-    const int danmaku_line_count = (float)config.video_height_ *
-                                   (float)config.danmaku_show_range_ /
-                                   ((float)config.font_size_ * (float)config.font_scale_);
-
-    std::vector<ass_dialogue_t> screen_dialogue(danmaku_line_count);
-    for (auto &item : screen_dialogue) {
-        item.is_valid_ = false;
-    }
 
     // find a valid location to insert danmaku
     for (auto &item : danmaku_list) {
         int font_size = item.font_size_ * config.font_scale_;
 
         // check if there is currently a suitable position on the screen
-        for (int i = 0; i < danmaku_line_count; i++) {
-            auto &cur_danmaku_on_screen = screen_dialogue[i];
+        for (int i = 0; i < danmaku_line_count_; i++) {
+            auto &cur_danmaku_on_screen = move_screen_dialogue_[i];
             if (!cur_danmaku_on_screen.is_valid_) {
                 // okay. just insert
-                insert_dialogue(screen_dialogue, i, item, ass_result_list);
+                insert_dialogue(move_screen_dialogue_, i, item, ass_result_list);
                 break;
             } else {
                 float cur_start_time = cur_danmaku_on_screen.start_time_;
@@ -329,7 +332,7 @@ int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
                 if (item.start_time_ > cur_danmaku_full_enter_time_first &&
                     new_danmaku_enter_time_left > cur_danmaku_exit_time) {
                     // insert danmaku!
-                    insert_dialogue(screen_dialogue, i, item, ass_result_list);
+                    insert_dialogue(move_screen_dialogue_, i, item, ass_result_list);
                     break;
                 }
             }
@@ -340,7 +343,7 @@ int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
 }
 
 // do not share config parameter cuz we will change it.
-int danmaku_main_process(std::string xml_file, config::ass_config_t config) {
+int DanmakuHandle::danmaku_main_process(std::string xml_file, config::ass_config_t config) {
     std::vector<danmaku_item_t> danmaku_all_list, danmaku_move_list, danmaku_pos_list;
     danmaku_info_t danmaku_info;
     pugi::xml_document doc;
@@ -388,7 +391,7 @@ int danmaku_main_process(std::string xml_file, config::ass_config_t config) {
 
     std::vector<ass_dialogue_t> ass_result_list;
 
-
+    init_danmaku_screen_dialogue(config);
 
     if (config.danmaku_move_time_ > 0) {
         process_danmaku_dialogue_move(danmaku_move_list, config, ass_result_list);

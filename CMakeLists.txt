@@ -19,6 +19,8 @@ set(DANMAKU_THIRDPARTY_SRC
         )
 
 
+
+
 include(detect_platform.cmake)
 
 if ((CLR_CMAKE_PLATFORM_ARCH_AMD64) OR (CLR_CMAKE_PLATFORM_ARCH_I386))
@@ -34,6 +36,7 @@ include_directories(
         ${CMAKE_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/thirdparty/fmt/include
         ${CMAKE_SOURCE_DIR}/thirdparty/libdeflate/
+        ${CMAKE_SOURCE_DIR}/thirdparty/re2
 )
 
 # use prebuild openssl libary on windows
@@ -46,8 +49,13 @@ find_package(OpenSSL REQUIRED)
 
 set(USE_ZLIB FALSE)
 set(IXWEBSOCKET_INSTALL FALSE)
+set(USE_TLS ON)
+set(USE_OPEN_SSL ON)
 
 add_subdirectory(${DANMAKU_THIRDPARTY_PATH}/IXWebSocket)
+
+set(RE2_BUILD_TESTING OFF)
+add_subdirectory(${DANMAKU_THIRDPARTY_PATH}/re2)
 
 add_subdirectory(src/xml2ass)
 add_subdirectory(src/live_render)

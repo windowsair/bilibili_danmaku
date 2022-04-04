@@ -104,13 +104,19 @@ $ make
 
 本项目直接或间接使用到了这些项目，感谢他们。
 
+某些项目可能有改动，改动后的项目遵循其原有的许可证。
+
 - `pugixml` MIT License
-- `scnlib` Apache License
 - `fmtlib` MIT License
-- `utfcpp` BSL-1.0 License
 - `rapidjson` MIT License
 - `simdutf` MIT License
+- `re2` BSD 3-Clause License
+- `IXWebSocket` BSD 3-Clause License
+- `openssl` Apache License 2.0
+- `readwritequeue` BSD License
+- `libdeflate` MIT License
 
 # Credit
 
 - [海面烧烧炮](https://space.bilibili.com/2437955) 感谢他提供的想法，没有他就没有本项目。
+

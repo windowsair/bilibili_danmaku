@@ -93,24 +93,36 @@ typedef struct ass_dialogue_ {
     bool is_valid_;
 } ass_dialogue_t;
 
-int parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
-                      std::string file_path,
-                      std::vector<danmaku_item_t> &danmaku_all_list,
-                      danmaku_info_t &danmaku_info);
 
-int process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
-                         std::vector<danmaku_item_t> &danmaku_move_list,
-                         std::vector<danmaku_item_t> &danmaku_pos_list);
+class DanmakuHandle {
+  public:
+    DanmakuHandle() :danmaku_line_count_(0) {}
 
-int process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
-                                 const config::ass_config_t &config,
-                                 std::vector<ass_dialogue_t> &ass_result_list);
+    void init_danmaku_screen_dialogue(const config::ass_config_t &config);
 
-int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
-                                  const config::ass_config_t &config,
-                                  std::vector<ass_dialogue_t> &ass_result_list);
+    int parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
+                          std::string file_path,
+                          std::vector<danmaku_item_t> &danmaku_all_list,
+                          danmaku_info_t &danmaku_info);
+    int process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
+                             std::vector<danmaku_item_t> &danmaku_move_list,
+                             std::vector<danmaku_item_t> &danmaku_pos_list);
+    int process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
+                                     const config::ass_config_t &config,
+                                     std::vector<ass_dialogue_t> &ass_result_list);
+    int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
+                                      const config::ass_config_t &config,
+                                      std::vector<ass_dialogue_t> &ass_result_list);
+    int danmaku_main_process(std::string xml_file, config::ass_config_t config);
 
-int danmaku_main_process(std::string xml_file, config::ass_config_t config);
+  private:
+    int danmaku_line_count_;
+    std::vector<ass_dialogue_t> top_screen_dialogue_;
+    std::vector<ass_dialogue_t> bottom_screen_dialogue_;
+    std::vector<ass_dialogue_t> move_screen_dialogue_;
+
+
+};
 
 } // namespace danmaku
 

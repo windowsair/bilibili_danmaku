@@ -5,14 +5,20 @@
 
 #include "thirdparty/libdeflate/libdeflate.h"
 
+#include "thirdparty/IXWebSocket/ixwebsocket/IXNetSystem.h"
+#include "thirdparty/IXWebSocket/ixwebsocket/IXUserAgent.h"
+#include "thirdparty/IXWebSocket/ixwebsocket/IXWebSocket.h"
+
 #pragma pack(push, 1)
 typedef struct {
     uint32_t packet_len;
-    uint32_t magic; // don't know...
+    uint8_t magic[4]; // don't know...
     uint32_t com_1;
     uint32_t com_2;
 } live_danmaku_req_header_t;
 #pragma pack(pop)
+
+static_assert(sizeof(live_danmaku_req_header_t) == 16);
 
 #pragma pack(push, 1)
 typedef struct {
@@ -31,9 +37,14 @@ class live_danmaku {
     live_danmaku() {
         zlib_handle_ = libdeflate_alloc_decompressor();
         zlib_buffer_.resize(10240);
+        ix::initNetSystem();
     }
+    ~live_danmaku() {
+        libdeflate_free_decompressor(zlib_handle_);
+    }
+    std::string get_room_detail(int live_id);
 
-    void run();
+    void run(std::string room_info);
 
   private:
     /**
@@ -45,12 +56,12 @@ class live_danmaku {
      *  return 0 when error occur
      */
     size_t zlib_decompress(void *buffer_in, size_t buffer_in_size);
-
+    void process_websocket_data(const ix::WebSocketMessagePtr &msg);
 
 
   private:
     struct libdeflate_decompressor *zlib_handle_;
-    std::vector<uint8_t> zlib_buffer_;
+    std::vector<char> zlib_buffer_;
 };
 
 #endif //BILIBILI_DANMAKU_LIVE_DANMAKU_H
