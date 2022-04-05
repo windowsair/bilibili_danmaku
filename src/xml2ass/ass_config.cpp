@@ -2,7 +2,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include "config.h"
+#include "ass_config.h"
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/fmt/include/fmt/os.h"
@@ -27,9 +27,8 @@ inline ass_config_t get_default_config() {
         .video_height_ = 1080,
         .font_family_ = "微软雅黑",
         .font_color_ = 0xFFFFFF, // white
-        .font_size_ = 1,
+        .font_size_ = 25,
         .font_scale_ = 1.6f,
-        .font_alpha_ = 0.75f,
         .font_bold_ = true,
         .danmaku_show_range_ = 0.45f,
         .danmaku_move_time_ = 15,
@@ -96,7 +95,7 @@ ass_config_t get_user_config() {
         .video_height_ = doc["video_height"].GetInt(),
         .font_family_ = doc["font_family"].GetString(),
         .font_color_ = 0xFFFFFF, // white
-        .font_size_ = 1,
+        .font_size_ = 25,
         .font_scale_ = doc["font_scale"].GetFloat(),
         .font_alpha_ = doc["font_alpha"].GetFloat(),
         .font_bold_ = doc["font_bold"].GetBool(),

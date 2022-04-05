@@ -10,7 +10,7 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
 
 set(XML2ASS_SOURCES main.cpp
-        danmaku.cpp danmaku.h config.cpp config.h ass_danmaku.cpp ass_danmaku.h
+        danmaku.cpp danmaku.h ass_config.cpp ass_config.h ass_danmaku.cpp ass_danmaku.h
         file_helper.cpp file_helper.h)
 
 

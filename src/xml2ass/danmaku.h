@@ -9,13 +9,10 @@
 //#include "thirdparty/utf8/utf8.h"
 #include "thirdparty/simdutf/simdutf.h"
 
-#include "config.h"
+#include "ass_config.h"
 
 namespace danmaku {
 
-//inline size_t get_utf8_len(const std::string &s) {
-//    return utf8::distance(s.begin(), s.end());
-//}
 
 inline size_t get_utf8_len(const char *s) {
     return simdutf::count_utf8(s, strlen(s));
@@ -44,13 +41,21 @@ typedef struct danmaku_item_ {
     int danmaku_type_;
     int font_size_;
     int font_color_;
+    std::string raw_string_;
 
     //uint64_t create_time_;
     //int pool_;
     //int uid_;
     //int history_id_;
 
-    danmaku_item_(){};
+    danmaku_item_(std::string &&raw_string, float start_time, int danmaku_type,
+                  int font_size, int font_color)
+        : raw_string_(std::move(raw_string)), start_time_(start_time),
+          danmaku_type_(danmaku_type), font_size_(font_size), font_color_(font_color) {
+
+        context_ = raw_string.c_str();
+        length_ = get_utf8_len(context_);
+    };
 
     inline void fast_sscanf(const char *token) {
         // sscanf version: sscanf("%f,%d,%d,%d") for:
@@ -93,10 +98,10 @@ typedef struct ass_dialogue_ {
     bool is_valid_;
 } ass_dialogue_t;
 
-
 class DanmakuHandle {
   public:
-    DanmakuHandle() :danmaku_line_count_(0) {}
+    DanmakuHandle() : danmaku_line_count_(0) {
+    }
 
     void init_danmaku_screen_dialogue(const config::ass_config_t &config);
 
@@ -120,8 +125,6 @@ class DanmakuHandle {
     std::vector<ass_dialogue_t> top_screen_dialogue_;
     std::vector<ass_dialogue_t> bottom_screen_dialogue_;
     std::vector<ass_dialogue_t> move_screen_dialogue_;
-
-
 };
 
 } // namespace danmaku

@@ -1,5 +1,5 @@
-#ifndef BILIBILI_DANMAKU_CONFIG_H
-#define BILIBILI_DANMAKU_CONFIG_H
+#ifndef BILIBILI_DANMAKU_ASS_CONFIG_H
+#define BILIBILI_DANMAKU_ASS_CONFIG_H
 
 #include <string>
 
@@ -38,4 +38,4 @@ ass_config_t get_user_config();
 
 } // namespace config
 
-#endif // BILIBILI_DANMAKU_CONFIG_H
+#endif // BILIBILI_DANMAKU_ASS_CONFIG_H

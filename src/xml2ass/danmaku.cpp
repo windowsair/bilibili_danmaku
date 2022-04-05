@@ -24,10 +24,11 @@ inline std::string_view trim(std::string_view s) {
  * @return  0: success
  *          other: fail
  */
-int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
-                      std::string file_path,
-                      std::vector<danmaku_item_t> &danmaku_all_list,
-                      danmaku_info_t &danmaku_info) {
+int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc,
+                                     pugi::xml_parse_result &parse_result,
+                                     std::string file_path,
+                                     std::vector<danmaku_item_t> &danmaku_all_list,
+                                     danmaku_info_t &danmaku_info) {
 
     parse_result = doc.load_file(file_path.c_str());
     if (parse_result.status == pugi::status_end_element_mismatch) {
@@ -76,9 +77,10 @@ int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_re
  * @param danmaku_pos_list [out]
  * @return
  */
-int DanmakuHandle::process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
-                         std::vector<danmaku_item_t> &danmaku_move_list,
-                         std::vector<danmaku_item_t> &danmaku_pos_list) {
+int DanmakuHandle::process_danmaku_list(
+    const std::vector<danmaku_item_t> &danmaku_all_list,
+    std::vector<danmaku_item_t> &danmaku_move_list,
+    std::vector<danmaku_item_t> &danmaku_pos_list) {
     if (danmaku_all_list.empty()) {
         return -1;
     }
@@ -116,9 +118,9 @@ int DanmakuHandle::process_danmaku_list(const std::vector<danmaku_item_t> &danma
             sort_fun = !sort_fun;
             if (sort_fun)
                 std::sort(danmaku_move_list.begin() + i, danmaku_move_list.begin() + j,
-                      [](danmaku_item_t &a, danmaku_item_t &b) {
-                          return a.length_ > b.length_;
-                      });
+                          [](danmaku_item_t &a, danmaku_item_t &b) {
+                              return a.length_ > b.length_;
+                          });
             else {
                 std::sort(danmaku_move_list.begin() + i, danmaku_move_list.begin() + j,
                           [](danmaku_item_t &a, danmaku_item_t &b) {
@@ -145,11 +147,11 @@ int DanmakuHandle::process_danmaku_list(const std::vector<danmaku_item_t> &danma
     return 0;
 }
 
-
 void DanmakuHandle::init_danmaku_screen_dialogue(const config::ass_config_t &config) {
+
     this->danmaku_line_count_ = (float)config.video_height_ *
-                                   (float)config.danmaku_show_range_ /
-                                   ((float)config.font_size_ * (float)config.font_scale_);
+                                (float)config.danmaku_show_range_ /
+                                ((float)config.font_size_ * (float)config.font_scale_);
 
     this->top_screen_dialogue_.resize(danmaku_line_count_);
     this->bottom_screen_dialogue_.resize(danmaku_line_count_);
@@ -164,8 +166,6 @@ void DanmakuHandle::init_danmaku_screen_dialogue(const config::ass_config_t &con
     for (auto &item : this->move_screen_dialogue_) {
         item.is_valid_ = false;
     }
-
-
 }
 
 /**
@@ -197,9 +197,10 @@ inline void insert_dialogue(std::vector<ass_dialogue_t> &screen_dialogue, int in
     ass_result_list.push_back(ass);
 }
 
-int DanmakuHandle::process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
-                                 const config::ass_config_t &config,
-                                 std::vector<ass_dialogue_t> &ass_result_list) {
+int DanmakuHandle::process_danmaku_dialogue_pos(
+    std::vector<danmaku_item_t> &danmaku_list, const config::ass_config_t &config,
+    std::vector<ass_dialogue_t> &ass_result_list) {
+
     if (danmaku_list.empty()) {
         return 0;
     }
@@ -211,7 +212,6 @@ int DanmakuHandle::process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &dan
     if (config.danmaku_pos_time_ < 0) {
         return 0; // ignore danmaku
     }
-
 
     // find a valid location to insert danmaku
     for (auto &item : danmaku_list) {
@@ -240,9 +240,10 @@ int DanmakuHandle::process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &dan
     return 0;
 }
 
-int DanmakuHandle::process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
-                                  const config::ass_config_t &config,
-                                  std::vector<ass_dialogue_t> &ass_result_list) {
+int DanmakuHandle::process_danmaku_dialogue_move(
+    std::vector<danmaku_item_t> &danmaku_list, const config::ass_config_t &config,
+    std::vector<ass_dialogue_t> &ass_result_list) {
+
     if (danmaku_list.empty()) {
         return 0;
     }
@@ -254,7 +255,6 @@ int DanmakuHandle::process_danmaku_dialogue_move(std::vector<danmaku_item_t> &da
     if (config.danmaku_move_time_ < 0) {
         return 0; // ignore danmaku
     }
-
 
     // find a valid location to insert danmaku
     for (auto &item : danmaku_list) {
@@ -343,7 +343,8 @@ int DanmakuHandle::process_danmaku_dialogue_move(std::vector<danmaku_item_t> &da
 }
 
 // do not share config parameter cuz we will change it.
-int DanmakuHandle::danmaku_main_process(std::string xml_file, config::ass_config_t config) {
+int DanmakuHandle::danmaku_main_process(std::string xml_file,
+                                        config::ass_config_t config) {
     std::vector<danmaku_item_t> danmaku_all_list, danmaku_move_list, danmaku_pos_list;
     danmaku_info_t danmaku_info;
     pugi::xml_document doc;
@@ -397,10 +398,9 @@ int DanmakuHandle::danmaku_main_process(std::string xml_file, config::ass_config
         process_danmaku_dialogue_move(danmaku_move_list, config, ass_result_list);
     }
 
-    if (config.danmaku_pos_time_ > 0 ) {
+    if (config.danmaku_pos_time_ > 0) {
         process_danmaku_dialogue_pos(danmaku_pos_list, config, ass_result_list);
     }
-
 
     // Ass file output
 

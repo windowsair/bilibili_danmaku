@@ -1,7 +1,7 @@
 #include <cmath>
 
+#include "ass_config.h"
 #include "ass_danmaku.h"
-#include "config.h"
 #include "danmaku.h"
 #include "time_table.h"
 

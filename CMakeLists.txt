@@ -19,8 +19,6 @@ set(DANMAKU_THIRDPARTY_SRC
         )
 
 
-
-
 include(detect_platform.cmake)
 
 if ((CLR_CMAKE_PLATFORM_ARCH_AMD64) OR (CLR_CMAKE_PLATFORM_ARCH_I386))
@@ -58,4 +56,8 @@ set(RE2_BUILD_TESTING OFF)
 add_subdirectory(${DANMAKU_THIRDPARTY_PATH}/re2)
 
 add_subdirectory(src/xml2ass)
-add_subdirectory(src/live_render)
+
+# TODO:
+if (WIN32)
+    add_subdirectory(src/live_render)
+endif ()
