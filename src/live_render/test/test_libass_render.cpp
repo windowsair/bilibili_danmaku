@@ -33,6 +33,7 @@ int main() {
 
     ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> danmaku_queue(100);
     s.set_danmaku_queue(&danmaku_queue);
+    s.set_ffmpeg_input_address("K:/ff/1.flv");
     s.main_thread();
 
     // process danmaku

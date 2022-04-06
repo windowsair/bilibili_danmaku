@@ -13,9 +13,12 @@
 
 namespace danmaku {
 
-
 inline size_t get_utf8_len(const char *s) {
     return simdutf::count_utf8(s, strlen(s));
+}
+
+inline size_t get_utf8_len(const std::string &s) {
+    return simdutf::count_utf8(s.c_str(), s.size());
 }
 
 enum class danmu_type {
@@ -35,27 +38,37 @@ typedef struct danmaku_info_ {
 } danmaku_info_t;
 
 typedef struct danmaku_item_ {
-    const char *context_;
+    const char *context_; // We always use this item. If raw_string_ is used,
+                          // then the context should point to the data of raw_string_ .
+    std::string raw_string_;
     size_t length_; // UTF8 length
     float start_time_;
     int danmaku_type_;
     int font_size_;
     int font_color_;
-    std::string raw_string_;
+
 
     //uint64_t create_time_;
     //int pool_;
     //int uid_;
     //int history_id_;
 
-    danmaku_item_(std::string &&raw_string, float start_time, int danmaku_type,
+    danmaku_item_(std::string &raw_string, float start_time, int danmaku_type,
                   int font_size, int font_color)
         : raw_string_(std::move(raw_string)), start_time_(start_time),
           danmaku_type_(danmaku_type), font_size_(font_size), font_color_(font_color) {
 
-        context_ = raw_string.c_str();
-        length_ = get_utf8_len(context_);
+        context_ = raw_string_.c_str(); // Be careful!
+                                        // This can easily lead to memory problems.
+        length_ = get_utf8_len(raw_string_);
     };
+
+    // Only used when raw_string is set and the context needs to be read.
+    // Be careful! This can easily lead to memory problems.
+    void update_context() {
+        context_ = raw_string_.c_str();
+    }
+
 
     inline void fast_sscanf(const char *token) {
         // sscanf version: sscanf("%f,%d,%d,%d") for:

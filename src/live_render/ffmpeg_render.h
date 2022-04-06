@@ -36,11 +36,16 @@ class ffmpeg_render {
         danmaku_queue_ = p;
     }
 
+    void set_ffmpeg_input_address(std::string s) {
+        ffmpeg_input_address_ = s;
+    }
+
     void main_thread();
     void run();
 
   private:
     FILE *ffmpeg_pipe_;
+    std::string ffmpeg_input_address_;
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *danmaku_queue_;
     image_t ass_img_;
     config::ass_config_t config_;

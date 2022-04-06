@@ -6,4 +6,3 @@ AlignConsecutiveMacros: AcrossEmptyLines
 AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: None
 ReflowComments: False
-PPIndentWidth: 2

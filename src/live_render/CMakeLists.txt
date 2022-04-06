@@ -18,7 +18,9 @@ function(copy_lib)
     endif ()
 endfunction(copy_lib)
 
-set(LIVE_RENDER_SOURCES live_danmaku.cpp live_danmaku.h ffmpeg_render.cpp ffmpeg_render.h
+set(LIVE_RENDER_SOURCES
+        live_danmaku.cpp live_danmaku.h ffmpeg_render.cpp ffmpeg_render.h
+        live_info.cpp
         ../xml2ass/ass_danmaku.cpp
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
@@ -76,6 +78,13 @@ if (LIVE_RENDER_BUILD_TESTING)
                 )
         copy_lib()
     endif ()
+
+
+    set(TEST_FFMPEG_GET_INFO_SOURCES
+            test/test_ffmpeg_get_info.cpp
+            )
+    add_executable(test_ffmpeg_get_info ${TEST_FFMPEG_GET_INFO_SOURCES})
+
 
 endif () # LIVE_RENDER_BUILD_TESTING
 

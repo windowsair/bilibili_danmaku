@@ -10,6 +10,8 @@
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 
+int all_count = 0;
+
 extern "C" {
 int ass_process_events_line(ASS_Track *track, char *str);
 }
@@ -150,7 +152,12 @@ inline void update_libass_event(
         }
 
         if (render_danmaku) {
+            for (auto &item : danmaku_list) {
+                item.update_context();
+            }
+
             std::vector<danmaku::ass_dialogue_t> ass_dialogue_list;
+
             // TODO: pos type?
             handle.process_danmaku_dialogue_move(danmaku_list, config, ass_dialogue_list);
             for (auto &item : ass_dialogue_list) {
@@ -160,6 +167,9 @@ inline void update_libass_event(
                 // insert danmaku
                 ass_process_events_line(ass_track, event_str.data());
             }
+
+            all_count += ass_dialogue_list.size();
+            printf("[%d]\n", all_count);
         }
 
         queue->pop();
@@ -167,14 +177,22 @@ inline void update_libass_event(
 }
 
 void ffmpeg_render::run() {
-    ASS_Library *ass_library = nullptr;
-    ASS_Renderer *ass_renderer = nullptr;
+    using namespace fmt::literals;
 
     if (this->danmaku_queue_ == nullptr) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                    "内部错误：未设置弹幕队列\n");
         std::abort();
     }
+
+    if (this->ffmpeg_input_address_.empty()) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "内部错误：未设置直播流地址\n");
+        std::abort();
+    }
+
+    ASS_Library *ass_library = nullptr;
+    ASS_Renderer *ass_renderer = nullptr;
 
     libass_init(&ass_library, &ass_renderer, config_.video_width_, config_.video_height_);
 
@@ -190,12 +208,18 @@ void ffmpeg_render::run() {
     int tm = 0;
 
     // TODO: is ffmpeg exist?
-    char cmd[] = "K:/ff/ffmpeg.exe -y  -vsync 0   -hwaccel nvdec -hwaccel_device 0   -i "
-                 "K:/ff/1.flv -f rawvideo -s 1920x1080 -pix_fmt rgba -r 60 -i - "
-                 "-filter_complex [0:v][1:v]overlay=0:0[v] -map \"[v]\"  -map  \"0:a\"   "
-                 "-c:v:0 h264_nvenc -b:v:0 5650k -f mp4 \"my_test1.mp4\"";
+    std::string ffmpeg_cmd = fmt::format(
+        "K:/ff/ffmpeg.exe -y  -vsync 0 -hwaccel nvdec  " // -hwaccel_device 0
+        "-i \"{input_address}\" -f rawvideo -s {video_width}x{video_height}"
+        " -pix_fmt rgba -r 60 -i - "
+        "-filter_complex [0:v][1:v]overlay=0:0[v] -map \"[v]\"  -map  \"0:a\"   "
+        "-c:v:0 h264_nvenc -b:v:0 5650k -f mp4 \"K:/ff/my_test1.mp4\"",
 
-    FILE *ffmpeg_ = POPEN(cmd, kOpenOption);
+        "input_address"_a = this->ffmpeg_input_address_,
+        "video_width"_a = this->config_.video_width_,
+        "video_height"_a = this->config_.video_height_);
+
+    FILE *ffmpeg_ = POPEN(ffmpeg_cmd.c_str(), kOpenOption);
     if (ffmpeg_ == NULL) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法打开ffmpeg\n");
         exit(0);
