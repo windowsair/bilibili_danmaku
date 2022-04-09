@@ -1,16 +1,25 @@
-﻿#include <algorithm>
+﻿/**
+ *  Process danmaku recv, ass render and ffmpeg overlay sender
+ */
+#include <algorithm>
 #include <string>
 #include <thread>
 
 #include "ass_danmaku.h"
 #include "ffmpeg_render.h"
+#include "live_monitor.h"
 
 #include "thirdparty/libass/include/ass.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 
+#include "thirdparty/subprocess/subprocess.h"
+
 int all_count = 0;
+int ffmpeg_output_time = 0; // time in ms
+
+extern live_monitor *kLive_monitor_handle;
 
 extern "C" {
 int ass_process_events_line(ASS_Track *track, char *str);
@@ -31,7 +40,7 @@ const char *kOpenOption = "w";
 #define TO_B(c) (((c) >> 8) & 0xFF)
 #define TO_A(c) ((c)&0xFF)
 
-inline void blend_single(image_t *frame, ASS_Image *img) {
+inline void blend_single(image_t *frame, ASS_Image *img, uint64_t offset) {
     int x, y;
     unsigned char opacity = 255 - TO_A(img->color);
     unsigned char r = TO_R(img->color);
@@ -42,10 +51,10 @@ inline void blend_single(image_t *frame, ASS_Image *img) {
     unsigned char *dst;
 
     src = img->bitmap;
-    dst = frame->buffer + img->dst_y * frame->stride + img->dst_x * 4;
+    dst = (frame->buffer + offset) + img->dst_y * frame->stride + img->dst_x * 4;
     for (y = 0; y < img->h; ++y) {
         for (x = 0; x < img->w; ++x) {
-            unsigned k = ((unsigned)src[x]) * opacity;
+            uint32_t k = ((uint32_t)src[x]) * opacity;
             // possible endianness problems
             dst[x * 4] = (k * r + (255 * 255 - k) * dst[x * 4]) / (255 * 255);
             dst[x * 4 + 1] = (k * g + (255 * 255 - k) * dst[x * 4 + 1]) / (255 * 255);
@@ -57,10 +66,10 @@ inline void blend_single(image_t *frame, ASS_Image *img) {
     }
 }
 
-inline void blend(image_t *frame, ASS_Image *img) {
+inline void blend(image_t *frame, ASS_Image *img, uint64_t offset) {
     int cnt = 0;
     while (img) {
-        blend_single(frame, img);
+        blend_single(frame, img, offset);
         ++cnt;
         img = img->next;
     }
@@ -112,17 +121,23 @@ inline void wait_queue_ready(
 inline void update_libass_event(
     ASS_Track *ass_track, danmaku::DanmakuHandle &handle, config::ass_config_t &config,
     int base_time,
-    moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *queue) {
+    moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *queue,
+    live_monitor *monitor) {
 
     // TODO:
     // We should ensure that the list is sorted in ascending chronological order.
+
+    static bool restart = false;
+    static int last_restart_time = 0;
 
     while (auto p = queue->peek()) {
         std::vector<danmaku::danmaku_item_t> &danmaku_list = *p;
         assert(!danmaku_list.empty());
 
+        static int delay_count = 0;
+
         // get minimum start time
-        float min_start_time_ =
+        float _min_start_time =
             (std::min_element(
                  danmaku_list.begin(), danmaku_list.end(),
                  [](const danmaku::danmaku_item_t &a, const danmaku::danmaku_item_t &b) {
@@ -130,11 +145,11 @@ inline void update_libass_event(
                  }))
                 ->start_time_;
 
-        int min_start_time = min_start_time_ * 1000;
+        int min_start_time = _min_start_time * 1000;
 
         bool render_danmaku = false;
         if (min_start_time < base_time) {
-            if (base_time - min_start_time < 1000) { // distance 1s
+            if (base_time - min_start_time < 3000) { // distance 1s
                 // The danmaku appear behind the current rendering time.
                 // If the time difference is relatively short, then we pull the base time
                 // of these danmaku after the current base time and render them.
@@ -149,6 +164,26 @@ inline void update_libass_event(
         } else {
             // The rendering can't keep up for now, so just insert danmaku directly.
             render_danmaku = true;
+
+            //if (min_start_time - base_time > 3000) {
+            //    delay_count++;
+            //    render_danmaku = false;
+            //    printf("{drop:%d}\n", min_start_time - base_time);
+
+            //    queue->pop();
+            //    while (auto _ = queue->peek()) {
+            //        queue->pop(); // drop all data
+            //    }
+
+            //    return;
+
+            //} else if (delay_count > 0) {
+            //    delay_count--;
+            //}
+
+            //if (delay_count % 100 == 0) {
+            //    printf("{dis:%d}\n", min_start_time - base_time);
+            //}
         }
 
         if (render_danmaku) {
@@ -169,7 +204,10 @@ inline void update_libass_event(
             }
 
             all_count += ass_dialogue_list.size();
-            printf("[%d]\n", all_count);
+            fmt::print("[{}]\n", all_count);
+
+            monitor->update_danmaku_time(min_start_time);
+            monitor->print_live_time();
         }
 
         queue->pop();
@@ -191,6 +229,8 @@ void ffmpeg_render::run() {
         std::abort();
     }
 
+    assert(this->live_monitor_handle_ != nullptr);
+
     ASS_Library *ass_library = nullptr;
     ASS_Renderer *ass_renderer = nullptr;
 
@@ -208,24 +248,129 @@ void ffmpeg_render::run() {
     int tm = 0;
 
     // TODO: is ffmpeg exist?
+    std::string ffmpeg_input_info = fmt::format(
+        "{video_width}x{video_height}", "video_width"_a = this->config_.video_width_,
+        "video_height"_a = this->config_.video_height_);
+
     std::string ffmpeg_cmd = fmt::format(
-        "K:/ff/ffmpeg.exe -y  -vsync 0 -hwaccel nvdec  " // -hwaccel_device 0
-        "-i \"{input_address}\" -f rawvideo -s {video_width}x{video_height}"
+        "K:/ff/ffmpeg.exe -y -headers \"User-Agent: Mozilla/5.0 (Linux; Android 5.0; "
+        "SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/75.0.3770.100 Mobile Safari/537.36\" -fflags \"+discardcorrupt\" "
+        "-hwaccel nvdec  -hwaccel_device 0 " //
+        "-i \"{input_address}\"  -f rawvideo -s "
+        "{video_width}x{video_height}"
         " -pix_fmt rgba -r 60 -i - "
         "-filter_complex [0:v][1:v]overlay=0:0[v] -map \"[v]\"  -map  \"0:a\"   "
         "-c:v:0 h264_nvenc -b:v:0 5650k -f mp4 \"K:/ff/my_test1.mp4\"",
-
-        "input_address"_a = this->ffmpeg_input_address_,
         "video_width"_a = this->config_.video_width_,
-        "video_height"_a = this->config_.video_height_);
+        "video_height"_a = this->config_.video_height_,
+        "input_address"_a = this->ffmpeg_input_address_);
 
-    FILE *ffmpeg_ = POPEN(ffmpeg_cmd.c_str(), kOpenOption);
-    if (ffmpeg_ == NULL) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法打开ffmpeg\n");
-        exit(0);
+    const char *my_line[] = {
+        ffmpeg_cmd.c_str(),
+        NULL,
+    };
+
+    const char *ffmpeg_cmd_line[] = {
+        "K:/ff/ffmpeg.exe",
+        "-y",
+        "-headers",
+        "Content-Type: application/x-www-form-urlencoded\r\nUser-Agent: Mozilla/5.0 "
+        "(Linux; Android 5.0; SM-G900P Build/LRX21T)\r\n"
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.100 Mobile "
+        "Safari/537.36",
+        "-fflags",
+        "+discardcorrupt",
+        "-vsync",
+        "0",
+        "-analyzeduration",
+        "60",
+        "-hwaccel",
+        "nvdec",
+        "-hwaccel_device",
+        "0",
+        "-i",
+        this->ffmpeg_input_address_.c_str(),
+        "-f",
+        "rawvideo",
+        "-s",
+        ffmpeg_input_info.c_str(),
+        "-pix_fmt",
+        "rgba",
+        "-r",
+        "60",
+        "-i",
+        "-",
+        "-filter_complex",
+        "[0:v][1:v]overlay=0:0[v]",
+        "-map",
+        "[v]",
+        "-map",
+        "0:a",
+        "-c:v:0",
+        "h264_nvenc",
+        "-b:v:0",
+        "5650k",
+        "-f",
+        "mp4",
+        "K:/ff/my_test22.mp4",
+        NULL};
+    // original version
+    //        FILE *ffmpeg_ = POPEN(ffmpeg_cmd.c_str(), kOpenOption);
+    //        if (ffmpeg_ == NULL) {
+    //            fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法打开ffmpeg\n");
+    //            exit(0);
+    //        }
+
+    //
+
+    struct subprocess_s subprocess;
+    int result = subprocess_create(ffmpeg_cmd_line, subprocess_option_inherit_environment,
+                                   &subprocess);
+    if (0 != result) {
+        std::abort();
     }
+    kLive_monitor_handle->set_ffmpeg_process_handle(&subprocess);
+
+    FILE *ffmpeg_ = subprocess_stdin(&subprocess);
+    FILE *p_stderr = subprocess_stderr(&subprocess);
+    if (ffmpeg_ == NULL || p_stderr == NULL) {
+        std::abort();
+    }
+
+    // start ffmpeg monitor thread.
+    this->live_monitor_handle_->set_ffmpeg_output_handle(p_stderr);
+    this->live_monitor_handle_->ffmpeg_monitor_thread();
+
+    //    std::thread([&]() {
+    //        std::string ffmpeg_monitor_str(1024, 0);
+    //        while (1) {
+    //            if (!fgets(ffmpeg_monitor_str.data(), 1023, p_stderr) || ferror(p_stderr) ||
+    //                feof(p_stderr)) {
+    //                break;
+    //            }
+    //            printf("%s\n", ffmpeg_monitor_str.data());
+    //
+    //            auto it_time = ffmpeg_monitor_str.find("time=");
+    //            auto it_speed = ffmpeg_monitor_str.find("speed=");
+    //            if (it_time != std::string::npos && it_speed != std::string::npos) {
+    //                // time=00:00:19.32
+    //                int _hour, _mins, _secs, _hundredths;
+    //                sscanf(ffmpeg_monitor_str.data() + it_time + 5, "%d:%d:%d.%d", &_hour,
+    //                       &_mins, &_secs, &_hundredths);
+    //
+    //                ffmpeg_output_time = (60 * 60 * 1000) * _hour + (60 * 1000) * _mins +
+    //                                     (1000) * _secs + (10) * _hundredths;
+    //
+    //
+    //                printf(">com:%d<\n", ffmpeg_output_time - tm);
+    //            }
+    //        }
+    //        exit(0);
+    //    }).detach();
+
     image_t *frame = &(this->ass_img_);
-    //ass_set_cache_limits(ass_renderer, 0, 50);
+    //ass_set_cache_limits(ass_renderer, 0, 50); // save memory
 
     const size_t buffer_count = config_.video_height_ * config_.video_width_ * 4;
 
@@ -233,19 +378,80 @@ void ffmpeg_render::run() {
     handle.init_danmaku_screen_dialogue(this->config_);
 
     wait_queue_ready(this->danmaku_queue_);
-
+    auto sz = fwrite(frame->buffer, 1, buffer_count, ffmpeg_);
     // TODO: stop cond
-    while (tm < 1000 * 60 * 60 * 24) {
-        update_libass_event(ass_track, handle, this->config_, tm, this->danmaku_queue_);
+    bool stop_cond = true;
 
-        ASS_Image *img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+    bool wait_render = false;
+    int wait_render_count = 0;
+    int wait_render_offset_time = -1;
+
+    ASS_Image *img;
+    while (stop_cond) {
+        if (ffmpeg_output_time - tm > 3000) {
+            wait_render_count++;
+        } else {
+            update_libass_event(ass_track, handle, this->config_, tm,
+                                this->danmaku_queue_, this->live_monitor_handle_);
+            wait_render_count = (std::max)(0, wait_render_count - 1);
+        }
+
+        if (wait_render_count > 5 && !wait_render) { // 5times render-> 5 //before:10
+            printf("{dis:%d}\n", ffmpeg_output_time - tm);
+            wait_render = true;
+        }
+
+        if (wait_render) {
+            if (wait_render_offset_time == -1) {
+                // set
+                wait_render_offset_time = handle.get_max_danmaku_end_time(
+                    config_.danmaku_move_time_,
+                    config_.danmaku_move_time_); // TODO: pos time handle
+            } else if (tm > wait_render_offset_time) {
+                // wait done.
+                printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
+                       ffmpeg_output_time);
+                printf("{before} %d\n", ffmpeg_output_time - tm);
+                tm = ffmpeg_output_time + 1000; // FIXME: real time ffmpeg!
+                printf("{after} %d\n", ffmpeg_output_time - tm);
+                wait_render = false;
+                wait_render_count = 0;
+                wait_render_offset_time = -1;
+            }
+        }
+
+        memset(frame->buffer, 0, 1920 * 1080 * 4 * 5);
+
+        const int step = ((double)(1000) / (double)(60));
+
+        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        blend(frame, img, 0);
+        tm += step;
+
+        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        blend(frame, img, 1920 * 1080 * 4);
+        tm += step;
+
+        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        blend(frame, img, 1920 * 1080 * 4 * 2);
+        tm += step;
+
+        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        blend(frame, img, 1920 * 1080 * 4 * 3);
+        tm += step;
+
+        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        blend(frame, img, 1920 * 1080 * 4 * 4);
+        tm += step;
         // clear buffer
-        memset(frame->buffer, 0, 1920 * 1080 * 4);
-        blend(frame, img);
 
-        tm += ((double)(1000) / (double)(60)); // TODO: 60fps
+        auto sz = fwrite(frame->buffer, 5, buffer_count, ffmpeg_);
 
-        auto sz = fwrite(frame->buffer, 1, buffer_count, ffmpeg_);
+        if (tm % 32000 == 0) {
+            printf("<%d>\n", tm);
+        }
+
+        this->live_monitor_handle_->update_danmaku_time(tm);
     }
 }
 

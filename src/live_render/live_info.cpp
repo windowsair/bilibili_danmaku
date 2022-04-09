@@ -13,6 +13,71 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+#define POPEN  _popen
+#define PCLOSE _pclose
+const char *kOpenReadOption = "rb";
+#else
+#define POPEN  popen
+#define PCLOSE pclose
+const char *kOpenReadOption = "r";
+#endif
+
+//Metadata:
+//    Rawdata         :
+//    displayWidth    : 1920
+//    displayHeight   : 1080
+//    fps             : 30
+//    profile         :
+//    level           :
+//    encoder         : BVC-SRT LiveHime/4.14.1 (Windows)
+//    Duration: N/A, start: 11856.011000, bitrate: 4358 kb/s
+//    Stream #0:0: Audio: aac (LC), 48000 Hz, stereo, fltp, 262 kb/s
+//    Stream #0:1: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 4096 kb/s, 30 fps, 30 tbr, 1k tbn, 60 tbc
+live_stream_info_t live_danmaku::get_live_stream_info(std::string &stream_address) {
+    live_stream_info_t ret{.video_height_ = -1, .video_width_ = -1, .fps_ = -1};
+
+    std::string buffer;
+    buffer.resize(10240);
+
+    // TODO: ffmpeg path
+    std::string cmd = fmt::format("ffmpeg -i {} 2>&1",
+                                  stream_address.c_str()); // stderr > stdout
+
+    FILE *ffmpeg_ = POPEN(cmd.c_str(), kOpenReadOption);
+    if (ffmpeg_ == NULL) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法打开ffmpeg\n");
+        exit(0);
+    }
+
+    auto get_item = [&](auto index, int &item) {
+        if (index != std::string::npos) {
+            auto start_index = strstr(buffer.data() + index, ":");
+            assert(start_index != nullptr);
+            sscanf(start_index, ":%d", &item);
+        }
+    };
+
+    while (!feof(ffmpeg_)) {
+        if (fgets(buffer.data(), 10240 - 1, ffmpeg_) != NULL) {
+            auto displayWidth_it = buffer.find("displayWidth");
+            auto displayHeight_it = buffer.find("displayHeight");
+            auto fps_it = buffer.find("fps");
+
+            get_item(displayWidth_it, ret.video_width_);
+            get_item(displayHeight_it, ret.video_height_);
+            get_item(fps_it, ret.fps_);
+
+            if (ret.video_width_ != -1 && ret.video_height_ != -1 && ret.fps_ != -1) {
+                break;
+            }
+        }
+    }
+
+    PCLOSE(ffmpeg_);
+
+    return ret;
+}
 
 live_detail_t live_danmaku::get_room_detail(int live_id) {
     using namespace ix;
@@ -138,7 +203,7 @@ std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn)
     HttpResponsePtr res;
     std::string url = fmt::format(
         "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo"
-        "?platform=h5&ptype=8&qn={}&protocol=0,1&format=0,1,2&codec=0,1&room_id={}",
+        "?platform=web&ptype=8&qn={}&protocol=0,1&format=0,1,2&codec=0,1&room_id={}",
         qn, room_id);
 
     // qn 20000 -> 4K

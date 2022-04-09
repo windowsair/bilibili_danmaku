@@ -14,7 +14,6 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
 
-#include "hexdump.hpp"
 
 size_t live_danmaku::zlib_decompress(void *buffer_in, size_t buffer_in_size) {
     size_t ret;
@@ -67,9 +66,8 @@ void live_danmaku::run(std::string room_info) {
                 this->process_websocket_data(msg);
 
         } else if (msg->type == ix::WebSocketMessageType::Open) {
-            std::cout << Hexdump(start_msg_buffer.data(), start_msg_buffer.size())
-                      << std::endl;
             webSocket.sendBinary(start_msg_buffer);
+            // TODO: output msg
             std::cout << "Connection established" << std::endl;
         } else if (msg->type == ix::WebSocketMessageType::Error) {
             // Maybe SSL is not configured properly
@@ -235,6 +233,7 @@ void live_danmaku::init_parser() {
 
 int count = 0;
 
+// TODO: trim raw content
 void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
     int color;
     int danmaku_origin_type;
@@ -281,3 +280,4 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
 
     danmaku_queue_->enqueue(danmaku_list);
 }
+

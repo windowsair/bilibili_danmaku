@@ -24,7 +24,7 @@ set(LIVE_RENDER_SOURCES
         ../xml2ass/ass_danmaku.cpp
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
-        )
+        live_monitor.cpp live_monitor.h)
 
 # DANMAKU_THIRDPARTY_PATH
 
@@ -96,6 +96,7 @@ add_executable(live_render ./main.cpp ${DANMAKU_THIRDPARTY_SRC} ${LIVE_RENDER_SO
 target_link_libraries(live_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
         re2::re2
         ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library.lib
         )
 
 

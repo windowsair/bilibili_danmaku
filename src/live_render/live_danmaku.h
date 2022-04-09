@@ -35,6 +35,13 @@ typedef struct {
 
 static_assert(sizeof(live_danmaku_res_header_t) == 16);
 
+
+typedef struct live_stream_info {
+    int video_height_;
+    int video_width_;
+    int fps_;
+} live_stream_info_t;
+
 typedef struct live_detail {
     int code_;
     enum live_status_enum { VALID = 1, INVALID };
@@ -64,6 +71,8 @@ class live_danmaku {
     live_detail_t get_room_detail(int live_id);
 
     std::vector<std::string> get_live_room_stream(int room_id, int qn);
+
+    live_stream_info_t get_live_stream_info(std::string& stream_address);
 
     void run(std::string room_info);
 

@@ -133,6 +133,8 @@ class DanmakuHandle {
                                       std::vector<ass_dialogue_t> &ass_result_list);
     int danmaku_main_process(std::string xml_file, config::ass_config_t config);
 
+    float get_max_danmaku_end_time(int move_time, int pos_time);
+
   private:
     int danmaku_line_count_;
     std::vector<ass_dialogue_t> top_screen_dialogue_;

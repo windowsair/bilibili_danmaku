@@ -69,6 +69,34 @@ int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc,
     return 0;
 }
 
+float DanmakuHandle::get_max_danmaku_end_time(int move_time, int pos_time) {
+    float max_move_time = -1;
+    float max_top_time = -1;
+    float max_bottom_time = -1;
+
+    auto get_max_time = [](const std::vector<ass_dialogue_t> &ass_list) {
+        float max_time = -1.0f;
+        
+        if (ass_list.empty()) {
+            return max_time;
+        }
+
+        for (auto &item : ass_list) {
+            if (item.is_valid_) {
+                max_time = (std::max)(max_time, item.start_time_);
+            }
+        }
+
+        return max_time;
+    };
+
+    max_move_time = get_max_time(move_screen_dialogue_) + move_time;
+    max_top_time = get_max_time(top_screen_dialogue_) + pos_time;
+    max_bottom_time = get_max_time(bottom_screen_dialogue_) + pos_time;
+
+    return (std::max)(max_move_time, (std::max)(max_top_time, max_bottom_time));
+}
+
 /**
  * Sort list, get move and pos list
  *

@@ -32,7 +32,6 @@ const char *kOpenReadOption = "r";
 int main() {
     std::string buffer;
     buffer.resize(10240);
-    memset(buffer.data(), 0xFF, 10240);
 
     char cmd[] = "K:/ff/ffmpeg.exe -i "
                  "K:/ff/1.flv 2>&1"; // stderr > stdout
