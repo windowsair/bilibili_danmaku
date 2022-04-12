@@ -233,7 +233,8 @@ void live_danmaku::init_parser() {
 
 int count = 0;
 
-// TODO: trim raw content
+// FIXME: trim raw content
+// FIXME: vertical type danmaku with \\r, delete it!
 void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
     int color;
     int danmaku_origin_type;

@@ -3,10 +3,12 @@
 #include <thread>
 
 #include "ffmpeg_render.h"
+#include "ffmpeg_utils.h"
+
 #include "live_danmaku.h"
 #include "live_monitor.h"
 
-#include "ass_config.h"
+#include "live_render_config.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
@@ -14,8 +16,9 @@
 #include <stdio.h>
 #include <windows.h>
 
-live_monitor *kLive_monitor_handle = nullptr;
+inline live_monitor *kLive_monitor_handle = nullptr;
 
+#if defined(_WIN32) || defined(_WIN64)
 BOOL WINAPI consoleHandler(DWORD signal) {
 
     if (signal == CTRL_C_EVENT)
@@ -26,43 +29,78 @@ BOOL WINAPI consoleHandler(DWORD signal) {
     }
     return TRUE;
 }
+#endif
 
-int main() {
+void set_console_handle() {
+#if defined(_WIN32) || defined(_WIN64)
+    if (!SetConsoleCtrlHandler(consoleHandler, TRUE)) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "ERROR: Could not set control handler\n");
+        std::abort();
+    }
+#endif
+}
+
+int main(int argc, char **argv) {
+    // TODO: extract
+    SetConsoleOutputCP(65001);
+    SetConsoleCP(65001);
+
+    using namespace std::chrono_literals;
+
     live_monitor global_monitor;
     kLive_monitor_handle = &global_monitor;
 
-    if (!SetConsoleCtrlHandler(consoleHandler, TRUE)) {
-        printf("\nERROR: Could not set control handler");
-        return 1;
-    }
+    set_console_handle();
+
+    auto config = config::get_user_live_render_config();
+    //check_live_render_path(config);
+    //// FIXME:
 
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> queue(100);
-
     live_danmaku live;
     live.set_danmaku_queue(&queue);
 
-    auto room_detail = live.get_room_detail(22634198);
-    // TODO: verify
+    // step1: get live info
+    // TODO: parameter
+    auto room_id = 5050;
+    auto room_detail = live.get_room_detail(room_id);
 
-    int room_id = room_detail.room_id_;
-    auto address_list = live.get_live_room_stream(room_id, 20000);
-    if (address_list.empty()) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法获取直播地址\n");
+
+    if (room_detail.live_status_ != live_detail_t::VALID) {
+        fmt::print(fg(fmt::color::yellow), "暂未开播，等待中...");
+
+        while (room_detail.live_status_ != live_detail_t::VALID) {
+            std::this_thread::sleep_for(30s);
+            room_detail = live.get_room_detail(room_id);
+        }
     }
 
-    auto config = config::get_user_config();
-    ffmpeg_render s(config);
-    s.set_danmaku_queue(&queue);
-    s.set_live_monitor_handle(&global_monitor);
+    if (room_detail.room_detail_str_.empty()) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间信息失败");
+        std::abort();
+    }
 
-    // TODO: try addres list
-    s.set_ffmpeg_input_address(address_list[0]);
+    config.user_uid_ = room_detail.user_uid_;
 
-    s.main_thread();
+    auto live_title = live.get_live_room_title(room_detail.user_uid_);
+    config.filename_ = live_title;
 
-    using namespace std::chrono_literals;
+    auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000);
+    // get stream meta info and update config.
+    init_stream_video_info(stream_list, config);
+
+    //
+    //
+    ffmpeg_render render(config, &global_monitor);
+    render.set_danmaku_queue(&queue);
+
+    // start ffmpeg render
+    render.main_thread();
+
     std::this_thread::sleep_for(1s);
 
+    // capture live danmaku
     live.run(room_detail.room_detail_str_);
 
     while (1) {

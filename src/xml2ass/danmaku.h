@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "thirdparty/pugixml/pugixml.hpp"
-//#include "thirdparty/utf8/utf8.h"
 #include "thirdparty/simdutf/simdutf.h"
 
 #include "ass_config.h"

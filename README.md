@@ -114,7 +114,10 @@ $ make
 - `IXWebSocket` BSD 3-Clause License
 - `openssl` Apache License 2.0
 - `readwritequeue` BSD License
+- `libass` ISC License
 - `libdeflate` MIT License
+- `subprocess.h` Unlicense License
+- `windows-kill-library` MIT License
 
 # Credit
 

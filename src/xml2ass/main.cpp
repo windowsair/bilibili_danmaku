@@ -14,7 +14,7 @@
 
 int main(int argc, char **argv) {
     // get config
-    auto user_config = config::get_user_config();
+    auto user_config = config::get_user_ass_config();
 
     if (argc < 2) {
         fmt::print(fg(fmt::color::yellow) | fmt::emphasis::italic,

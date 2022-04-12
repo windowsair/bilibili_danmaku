@@ -374,7 +374,7 @@ struct subprocess_s {
   void *hStdInput;
   void *hEventOutput;
   void *hEventError;
-  uint32_t dwProcessId;
+  uint64_t dwProcessId;
 #else
   pid_t child;
   int return_status;

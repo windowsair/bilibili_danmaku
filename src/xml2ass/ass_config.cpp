@@ -19,9 +19,9 @@
 
 namespace config {
 
-constexpr auto user_config_path = "config.json";
+constexpr auto user_ass_config_path = "config.json";
 
-inline ass_config_t get_default_config() {
+inline ass_config_t get_default_ass_config() {
     ass_config_t config = {
         .video_width_ = 1920,
         .video_height_ = 1080,
@@ -38,9 +38,9 @@ inline ass_config_t get_default_config() {
     return config;
 }
 
-inline void generate_default_config() {
+inline void generate_default_ass_config() {
 
-    auto out = fmt::output_file(user_config_path);
+    auto out = fmt::output_file(user_ass_config_path);
     out.print("{}", config_template_json);
 
     out.flush();
@@ -52,13 +52,13 @@ inline void generate_default_config() {
  * If the user configuration is invalid, use the default configuration.
  * @return ass config
  */
-ass_config_t get_user_config() {
-    std::filesystem::path file_path(user_config_path);
+ass_config_t get_user_ass_config() {
+    std::filesystem::path file_path(user_ass_config_path);
 
     if (!std::filesystem::exists(file_path)) {
         // not exist, then generate
-        generate_default_config();
-        return get_default_config();
+        generate_default_ass_config();
+        return get_default_ass_config();
     }
 
     // get user config
@@ -66,7 +66,7 @@ ass_config_t get_user_config() {
 
     std::vector<char> buffer(65536);
 
-    FILE *fp = fopen(user_config_path, "rb");
+    FILE *fp = fopen(user_ass_config_path, "rb");
     FileReadStream is(fp, buffer.data(), buffer.size());
 
     Document doc;
@@ -77,7 +77,8 @@ ass_config_t get_user_config() {
     if (origin_schema_doc.Parse(config_template_schema).HasParseError()) {
         // should not be happen...
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "内部错误：Schema无效\n");
-        return get_default_config();
+        fclose(fp);
+        return get_default_ass_config();
     }
     SchemaDocument schema_doc(origin_schema_doc);
     SchemaValidator validator(schema_doc);
@@ -86,7 +87,7 @@ ass_config_t get_user_config() {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                    "配置文件无效。将尝试使用默认配置\n");
         fclose(fp);
-        return get_default_config();
+        return get_default_ass_config();
     }
 
     // Accept!

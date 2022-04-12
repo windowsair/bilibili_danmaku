@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <utility>
 
-#include "ass_config.h"
 #include "danmaku.h"
+#include "live_render_config.h"
 #include "live_monitor.h"
 
 #include "thirdparty/readerwriterqueue/readerwriterqueue.h"
@@ -19,8 +19,8 @@ class ffmpeg_render {
 
   public:
     // TODO: do not use config width and height
-    ffmpeg_render(config::ass_config_t &config)
-        : config_(config), live_monitor_handle_(nullptr) {
+    ffmpeg_render(config::live_render_config_t &config, live_monitor *handle = nullptr)
+        : config_(config), live_monitor_handle_(handle) {
         ass_img_.stride = config.video_width_ * 4;
         ass_img_.width = config.video_width_;
         ass_img_.height = config.video_height_;
@@ -38,9 +38,6 @@ class ffmpeg_render {
         danmaku_queue_ = p;
     }
 
-    void set_ffmpeg_input_address(std::string s) {
-        ffmpeg_input_address_ = s;
-    }
 
     void set_live_monitor_handle(live_monitor *handle) {
         live_monitor_handle_ = handle;
@@ -51,10 +48,9 @@ class ffmpeg_render {
 
   private:
     live_monitor *live_monitor_handle_;
-    std::string ffmpeg_input_address_;
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *danmaku_queue_;
     image_t ass_img_;
-    config::ass_config_t config_;
+    config::live_render_config_t config_;
 };
 
 #endif //BILIBILI_DANMAKU_FFMPEG_RENDER_H

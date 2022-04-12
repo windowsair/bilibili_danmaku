@@ -14,6 +14,9 @@ namespace ass {
 const int danmaku_layer = 0;
 const char *danmaku_name = "Danmu";
 
+// TODO: thread safe init
+auto kTmp_save_file = fmt::output_file("danmaku_save.txt");
+
 std::string rgb2bgr(int rgb) {
     // 0xRRGGBB
     char bgr_str[] = "BBGGRR";
@@ -71,6 +74,9 @@ std::string timestamp2ass(int time) {
  * @return std::string "Hrs:Mins:Secs.hundredths"
  */
 //// FIXME: float point accuracy and representation errors
+// Oh hell, this is a serious design mistake. When the length of time comes to just 24 hours,
+// the accuracy is already unacceptable. We should switch to an integer solution.
+
 std::string time2ass(float time) {
     char time_str[] = "00:00:00.00";
     //       index :   0  3  6  9
@@ -88,8 +94,20 @@ std::string time2ass(float time) {
 
     int tmp = (int)(fract * 1000) % 1000; // 0.123 -> 123
 
-    //FIXME: overflow
+    // FIXME: remove round?
     int hundredths = (tmp / 10) + ((tmp % 10) >= 5);
+    if (hundredths == 100) {
+        hundredths = 0;
+        Secs++;
+        if (Secs == 60) {
+            Secs = 0;
+            Mins++;
+            if (Mins == 60) {
+                Mins = 0;
+                Hrs++;
+            }
+        }
+    }
 
     memcpy(&time_str[0], time_table[Hrs], 2);
     memcpy(&time_str[3], time_table[Mins], 2);
@@ -137,13 +155,21 @@ inline std::string get_ass_event_impl(const config::ass_config_t &config,
     int start_y = item_font_size * (item.dialogue_line_index_ + 1);
     int end_y = start_y;
 
-    return fmt::format(
+
+    // TODO: remove this
+    std::string ss =  fmt::format(
         ass_dialogue_format, danmaku_layer, time2ass(item.start_time_),
         time2ass(item.start_time_ + config.danmaku_move_time_), danmaku_name,
         item.danmaku_type_ == static_cast<int>(danmaku::danmu_type::MOVE) ? "move"
                                                                           : "pos",
         (float)start_x, (float)start_y, (float)end_x, (float)end_y,
         item.font_color_ != config.font_color_ ? self_effect : "", item.context_);
+
+    // TODO: remove this
+    kTmp_save_file.print("{}", ss);
+    kTmp_save_file.flush();
+
+    return ss;
 }
 
 

@@ -35,20 +35,36 @@ typedef struct {
 
 static_assert(sizeof(live_danmaku_res_header_t) == 16);
 
-
 typedef struct live_stream_info {
+    enum protocol_enum { STREAM = 0, HLS, UNKNOWN_PROTOCOL };
+    enum codec_enum { AVC = 0, AV1, HEVC, UNKNOWN_CODEC };
+    enum format_enum { FLV = 0, TS, FMP4, UNKNOWN_FORMAT };
+
+    int protocol_;
+    int codec_;
+    int format_;
+
+    std::string address_;
+
+    live_stream_info(int protocol, int codec, int format, std::string address)
+        : protocol_(protocol), codec_(codec), format_(format), address_(address) {
+    }
+
+} live_stream_info_t;
+
+typedef struct live_stream_video_info {
     int video_height_;
     int video_width_;
     int fps_;
-} live_stream_info_t;
+} live_stream_video_info_t;
 
 typedef struct live_detail {
-    int code_;
+    int code_; // TODO: remove this
     enum live_status_enum { VALID = 1, INVALID };
     int live_status_;
     int room_id_;
     std::string room_detail_str_;
-    std::string title_;
+    uint64_t user_uid_;
     live_detail() : code_(-1), live_status_(INVALID) {
     }
 } live_detail_t;
@@ -58,6 +74,11 @@ class live_danmaku {
     live_danmaku() : base_time_(0) {
         zlib_handle_ = libdeflate_alloc_decompressor();
         zlib_buffer_.resize(10240);
+
+        parse_helper_.content_re_ = nullptr;
+        parse_helper_.danmaku_type_re_ = nullptr;
+        parse_helper_.danmaku_color_re_ = nullptr;
+        parse_helper_.danmaku_info_re_ = nullptr;
 
         ix::initNetSystem();
     }
@@ -70,9 +91,9 @@ class live_danmaku {
     }
     live_detail_t get_room_detail(int live_id);
 
-    std::vector<std::string> get_live_room_stream(int room_id, int qn);
+    std::vector<live_stream_info_t> get_live_room_stream(int room_id, int qn);
 
-    live_stream_info_t get_live_stream_info(std::string& stream_address);
+    std::string get_live_room_title(uint64_t user_uid);
 
     void run(std::string room_info);
 

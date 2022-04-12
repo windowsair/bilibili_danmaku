@@ -7,8 +7,9 @@ class live_monitor {
 
   public:
     live_monitor()
-        : danmaku_recv_count_(0), danmaku_render_count_(0),
-          ffmpeg_process_handle_(nullptr), ffmpeg_output_handle_(nullptr){};
+        : danmaku_recv_count_(0), danmaku_render_count_(0), danmaku_time_(0),
+          ass_render_time_(0), ffmpeg_time_(0), ffmpeg_process_handle_(nullptr),
+          ffmpeg_output_handle_(nullptr){};
 
     void main_loop_thead();
 

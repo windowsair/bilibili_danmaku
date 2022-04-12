@@ -27,7 +27,7 @@ void wait_forever() {
 int main() {
     std::string xml_file = "D:/out.xml";
 
-    auto config = config::get_user_config();
+    auto config = config::get_user_ass_config();
 
     ffmpeg_render s(config);
 

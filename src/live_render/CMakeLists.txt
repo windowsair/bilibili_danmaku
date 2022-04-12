@@ -24,7 +24,24 @@ set(LIVE_RENDER_SOURCES
         ../xml2ass/ass_danmaku.cpp
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
-        live_monitor.cpp live_monitor.h)
+        live_monitor.cpp live_monitor.h live_render_config.cpp ffmpeg_utils.cpp ffmpeg_utils.h)
+
+## TODO: windows only
+set(LIVE_RENDER_THIRDPARTY_SRC
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/ctrl-routine.cpp
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/ctrl-routine.h
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/remote-process.cpp
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/remote-process.h
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/sender.cpp
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/sender.h
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/signal.cpp
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/signal.h
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/stdafx.cpp
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/stdafx.h
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/targetver.h
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/windows-kill-library.cpp
+        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/windows-kill-library.h
+        )
 
 # DANMAKU_THIRDPARTY_PATH
 
@@ -86,6 +103,39 @@ if (LIVE_RENDER_BUILD_TESTING)
     add_executable(test_ffmpeg_get_info ${TEST_FFMPEG_GET_INFO_SOURCES})
 
 
+    set(TEST_FFMPEG_QUICK_START_SOURCES
+            test/test_ffmpeg_quick_start.cpp
+            )
+
+    add_executable(test_ffmpeg_quick_start ${TEST_FFMPEG_QUICK_START_SOURCES})
+
+    if (WIN32)
+        set(TEST_WINDOWS_ENCODE_SOURCES
+                test/test_windows_encode.cpp
+                ${DANMAKU_THIRDPARTY_PATH}/simdutf/simdutf.cpp
+                ${DANMAKU_THIRDPARTY_PATH}/fmt/src/format.cc
+                ${DANMAKU_THIRDPARTY_PATH}/fmt/src/os.cc
+                )
+
+        add_executable(test_windows_encode ${TEST_WINDOWS_ENCODE_SOURCES})
+        file(COPY test/encode_test.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+    endif ()
+
+    if (WIN32)
+        set(TEST_FILENAME_CHECK_SOURCE
+                test/test_filename_check.cpp
+                ${DANMAKU_THIRDPARTY_PATH}/simdutf/simdutf.cpp
+                ${DANMAKU_THIRDPARTY_PATH}/fmt/src/format.cc
+                ${DANMAKU_THIRDPARTY_PATH}/fmt/src/os.cc
+                )
+        add_executable(test_filename_check ${TEST_FILENAME_CHECK_SOURCE}
+                ${DANMAKU_THIRDPARTY_SRC}
+                ${LIVE_RENDER_THIRDPARTY_SRC})
+        target_link_libraries(test_filename_check re2::re2)
+
+    endif ()
+
 endif () # LIVE_RENDER_BUILD_TESTING
 
 
@@ -96,7 +146,6 @@ add_executable(live_render ./main.cpp ${DANMAKU_THIRDPARTY_SRC} ${LIVE_RENDER_SO
 target_link_libraries(live_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
         re2::re2
         ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library.lib
         )
 
 

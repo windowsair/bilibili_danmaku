@@ -22,8 +22,12 @@ void live_monitor::stop_ffmpeg_record() {
         using WindowsKillLibrary::SIGNAL_TYPE_CTRL_C;
         using namespace std::chrono_literals;
 
-        // sendSignal(ffmpeg_process_handle_->dwProcessId, SIGNAL_TYPE_CTRL_C);
-        std::this_thread::sleep_for(3s);
+        try {
+            sendSignal(ffmpeg_process_handle_->dwProcessId, SIGNAL_TYPE_CTRL_C);
+        } catch (const std::exception &) {
+        }
+        
+        std::this_thread::sleep_for(10s);
         // TODO: sleep and exit
 #endif
 

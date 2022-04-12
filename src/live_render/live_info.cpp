@@ -13,71 +13,6 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
 
-#if defined(_WIN32) || defined(_WIN64)
-#define POPEN  _popen
-#define PCLOSE _pclose
-const char *kOpenReadOption = "rb";
-#else
-#define POPEN  popen
-#define PCLOSE pclose
-const char *kOpenReadOption = "r";
-#endif
-
-//Metadata:
-//    Rawdata         :
-//    displayWidth    : 1920
-//    displayHeight   : 1080
-//    fps             : 30
-//    profile         :
-//    level           :
-//    encoder         : BVC-SRT LiveHime/4.14.1 (Windows)
-//    Duration: N/A, start: 11856.011000, bitrate: 4358 kb/s
-//    Stream #0:0: Audio: aac (LC), 48000 Hz, stereo, fltp, 262 kb/s
-//    Stream #0:1: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080 [SAR 1:1 DAR 16:9], 4096 kb/s, 30 fps, 30 tbr, 1k tbn, 60 tbc
-live_stream_info_t live_danmaku::get_live_stream_info(std::string &stream_address) {
-    live_stream_info_t ret{.video_height_ = -1, .video_width_ = -1, .fps_ = -1};
-
-    std::string buffer;
-    buffer.resize(10240);
-
-    // TODO: ffmpeg path
-    std::string cmd = fmt::format("ffmpeg -i {} 2>&1",
-                                  stream_address.c_str()); // stderr > stdout
-
-    FILE *ffmpeg_ = POPEN(cmd.c_str(), kOpenReadOption);
-    if (ffmpeg_ == NULL) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法打开ffmpeg\n");
-        exit(0);
-    }
-
-    auto get_item = [&](auto index, int &item) {
-        if (index != std::string::npos) {
-            auto start_index = strstr(buffer.data() + index, ":");
-            assert(start_index != nullptr);
-            sscanf(start_index, ":%d", &item);
-        }
-    };
-
-    while (!feof(ffmpeg_)) {
-        if (fgets(buffer.data(), 10240 - 1, ffmpeg_) != NULL) {
-            auto displayWidth_it = buffer.find("displayWidth");
-            auto displayHeight_it = buffer.find("displayHeight");
-            auto fps_it = buffer.find("fps");
-
-            get_item(displayWidth_it, ret.video_width_);
-            get_item(displayHeight_it, ret.video_height_);
-            get_item(fps_it, ret.fps_);
-
-            if (ret.video_width_ != -1 && ret.video_height_ != -1 && ret.fps_ != -1) {
-                break;
-            }
-        }
-    }
-
-    PCLOSE(ffmpeg_);
-
-    return ret;
-}
 
 live_detail_t live_danmaku::get_room_detail(int live_id) {
     using namespace ix;
@@ -140,6 +75,8 @@ live_detail_t live_danmaku::get_room_detail(int live_id) {
         return live_detail;
     }
 
+    // get room_id
+
     auto &data = doc["data"];
     if (!data.HasMember("room_id")) {
         error_output();
@@ -149,12 +86,19 @@ live_detail_t live_danmaku::get_room_detail(int live_id) {
     uint64_t room_id = data["room_id"].GetInt64();
     live_detail.room_id_ = room_id;
 
+    // get user uid
+
+    if (!data.HasMember("uid")) {
+        error_output();
+        return live_detail;
+    }
+    live_detail.user_uid_ = data["uid"].GetInt64();
+
 
     live_detail.live_status_ = data["live_status"].GetInt();
     if (live_detail.live_status_ != live_detail::live_status_enum::VALID) {
         return live_detail;
     }
-
 
     // get random uid
     std::random_device r;
@@ -175,11 +119,11 @@ live_detail_t live_danmaku::get_room_detail(int live_id) {
  * @param qn stream quality
  * @return
  */
-std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn) {
+std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(int room_id, int qn) {
     using namespace ix;
     using namespace rapidjson;
 
-    std::vector<std::string> ret;
+    std::vector<live_stream_info_t> ret;
 
     live_detail_t live_detail;
 
@@ -216,7 +160,6 @@ std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn)
     auto body = res->body;
     auto errorMsg = res->errorMsg;
 
-    //printf("%s", body.c_str());
 
     if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
@@ -227,7 +170,6 @@ std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn)
     auto error_output = [&]() {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                    "获取直播流信息失败：{}\n", body);
-        return ret;
     };
 
     Document doc;
@@ -268,7 +210,39 @@ std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn)
         return get_live_room_stream(room_id, max_qn);
     }
 
-    auto get_stream_address_list = [&ret](auto &item) {
+    auto get_stream_address_list = [&ret](auto &item, int protocol) {
+        int codec;
+        int format;
+
+        // codec : array
+        auto codec_str = item["format"][0]["codec"][0]["codec_name"].GetString();
+
+        if (codec_str == std::string("avc")) {
+            codec = live_stream_info_t::AVC;
+        } else if (codec_str == std::string("hevc")) {
+            codec = live_stream_info_t::HEVC;
+        } else if (codec_str == std::string("av1")) {
+            codec = live_stream_info_t::AV1;
+        } else {
+            fmt::print(fg(fmt::color::yellow) | fmt::emphasis::italic, "未知的编码：{}\n",
+                       codec_str);
+            codec = live_stream_info_t::UNKNOWN_PROTOCOL;
+        }
+
+        auto format_str = item["format"][0]["format_name"].GetString();
+        if (format_str == std::string("flv")) {
+            format = live_stream_info_t::FLV;
+        } else if (format_str == std::string("ts")) {
+            format = live_stream_info_t::TS;
+        } else if (format_str == std::string("fmp4")) {
+            format = live_stream_info_t::FMP4;
+        } else {
+            fmt::print(fg(fmt::color::yellow) | fmt::emphasis::italic,
+                       "未知的流格式：{}\n", format_str);
+            format = live_stream_info_t::UNKNOWN_FORMAT;
+        }
+
+        // process url list
 
         auto base_url = item["format"][0]["codec"][0]["base_url"].GetString();
         auto &url_list = item["format"][0]["codec"][0]["url_info"];
@@ -276,9 +250,10 @@ std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn)
             auto host = url_info["host"].GetString();
             auto extra = url_info["extra"].GetString();
 
-            ret.emplace_back(fmt::format("{}{}{}", host, base_url, extra));
-        }
+            std::string address = fmt::format("{}{}{}", host, base_url, extra);
 
+            ret.emplace_back(protocol, codec, format, address);
+        }
     };
 
     // prefer to use flv
@@ -287,7 +262,7 @@ std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn)
     for (auto &item : stream_list.GetArray()) {
         std::string format_name(item["format"][0]["format_name"].GetString());
         if (format_name == "flv") {
-            get_stream_address_list(item);
+            get_stream_address_list(item, live_stream_info_t::FLV);
         }
     }
 
@@ -295,9 +270,89 @@ std::vector<std::string> live_danmaku::get_live_room_stream(int room_id, int qn)
     for (auto &item : stream_list.GetArray()) {
         std::string format_name(item["format"][0]["format_name"].GetString());
         if (format_name == "ts") {
-            get_stream_address_list(item);
+            get_stream_address_list(item, live_stream_info_t::TS);
         }
     }
+
+    return ret;
+}
+
+std::string live_danmaku::get_live_room_title(uint64_t user_uid) {
+    using namespace ix;
+    using namespace rapidjson;
+    using namespace fmt::literals;
+
+    std::string ret;
+
+    HttpClient httpClient;
+    HttpRequestArgsPtr args = httpClient.createRequest();
+
+    // Timeout options
+    args->connectTimeout = 10;
+    args->transferTimeout = 10;
+
+    // Redirect options
+    args->followRedirects = false;
+    args->maxRedirects = 0;
+
+    // Misc
+    args->compress = false;
+    args->verbose = false;
+    args->logger = [](const std::string &msg) { std::cout << msg; };
+
+    // Sync req
+    HttpResponsePtr res;
+    std::string url("https://api.live.bilibili.com/room/v1/Room/get_status_info_by_uids");
+
+    auto req_body = fmt::format("{{\"uids\": [{user_uid}]}}", "user_uid"_a = user_uid);
+
+    WebSocketHttpHeaders headers;
+    headers["Content-Type"] = "application/json";
+    args->extraHeaders = headers;
+
+    res = httpClient.post(url, req_body, args);
+
+    auto statusCode = res->statusCode;
+    auto errorCode = res->errorCode;
+    auto responseHeaders = res->headers;
+    auto body = res->body;
+    auto errorMsg = res->errorMsg;
+
+    if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播标题失败：{}\n",
+                   errorMsg);
+        return ret;
+    }
+
+    auto error_output = [&]() {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播标题失败：{}\n",
+                   body);
+        return ret;
+    };
+
+    Document doc;
+    doc.Parse(body.c_str());
+
+
+    // doc["data"][user_uid_str]["title"]
+
+    if (!doc.HasMember("code") || !doc.HasMember("data")) {
+        error_output();
+        return ret;
+    }
+
+    if (doc["code"].GetInt() != 0) {
+        error_output();
+        return ret;
+    }
+
+    std::string uid_str = fmt::format("{}", user_uid);
+    if (!doc["data"].HasMember(uid_str.c_str())) {
+        error_output();
+        return ret;
+    }
+
+    ret = fmt::format("{}", doc["data"][uid_str.c_str()]["title"].GetString());
 
     return ret;
 }
