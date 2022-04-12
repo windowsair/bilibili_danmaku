@@ -42,11 +42,11 @@ void set_console_handle() {
 }
 
 int main(int argc, char **argv) {
+    using namespace std::chrono_literals;
+
     // TODO: extract
     SetConsoleOutputCP(65001);
     SetConsoleCP(65001);
-
-    using namespace std::chrono_literals;
 
     live_monitor global_monitor;
     kLive_monitor_handle = &global_monitor;
@@ -54,8 +54,8 @@ int main(int argc, char **argv) {
     set_console_handle();
 
     auto config = config::get_user_live_render_config();
-    //check_live_render_path(config);
-    //// FIXME:
+
+    check_live_render_path(config);
 
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> queue(100);
     live_danmaku live;
@@ -65,7 +65,6 @@ int main(int argc, char **argv) {
     // TODO: parameter
     auto room_id = 5050;
     auto room_detail = live.get_room_detail(room_id);
-
 
     if (room_detail.live_status_ != live_detail_t::VALID) {
         fmt::print(fg(fmt::color::yellow), "暂未开播，等待中...");

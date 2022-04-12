@@ -2,8 +2,8 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <filesystem>
 #include <cstdio>
+#include <filesystem>
 #include <vector>
 
 #include "ffmpeg_utils.h"
@@ -27,62 +27,15 @@ const char *kOpenOption = "w";
 const char *kOpenReadOption = "r";
 #endif
 
-/**
- * Check if the given path is correct. If the output path does not exist, an attempt will be made to create it.
- * If there are any errors, the program will terminate.
- *
- * @param config
- */
-void check_live_render_path(config::live_render_config_t &config) {
-    using namespace std::filesystem;
-
-    auto error_output = [](auto str) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "找不到{}，请检查\n",
-                   str);
-        std::abort();
-    };
-
-    // step1: check ffmpeg
-
-    path ffmpeg_path(config.ffmpeg_path_);
-    if (!exists(ffmpeg_path)) {
-        error_output("ffmpeg");
-    }
-
-#if _MSC_VER
-    directory_entry ffmpeg_entry(ffmpeg_path / "ffmpeg.exe");
-#else
-    directory_entry ffmpeg_entry(ffmpeg_path / "ffmpeg");
-#endif
-
-    if (!exists(ffmpeg_entry)) {
-        error_output("ffmpeg");
-    }
-
-    // step2: check output file location
-
-    path output_path(config.output_file_path_);
-    if (exists(output_path)) {
-        directory_entry output_entry(output_path);
-        if (!output_entry.is_directory()) {
-            error_output(fmt::format("视频输出文件夹:\"{}\"", config.output_file_path_));
-        }
-    } else {
-        // try to create new directory
-
-        std::filesystem::create_directories(output_path);
-        // the current compiler implementation is wrong, this return value cannot be used.
-
-        path output_pat_new(config.output_file_path_);
-        if (!exists(output_pat_new)) {
-            fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
-                       "无法创建视频输出文件夹:{}\n", config.output_file_path_);
-
-            std::abort();
-        }
-    }
-}
-
+// Refer :
+// UTF-8 "support" in C++20 seems to be a bad joke.
+//
+// The only UTF functionality in the Standard Library is support for strings and
+// string_views (std::u8string, std::u8string_view, std::u16string, ...). That is all. T
+// here is no Standard Library support for UTF coding in regular expressions, formatting,
+// file i/o and so on.
+//
+//
 inline std::string str2local_codepage(const std::string str) {
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -120,6 +73,68 @@ inline std::string str2local_codepage(const std::string str) {
 #else
     return str;
 #endif
+}
+
+/**
+ * Check if the given path is correct. If the output path does not exist, an attempt will be made to create it.
+ * If there are any errors, the program will terminate.
+ *
+ * @param config
+ */
+void check_live_render_path(config::live_render_config_t &config) {
+    using namespace std::filesystem;
+
+    auto error_output = [](auto str) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "找不到{}，请检查\n",
+                   str);
+        std::abort();
+    };
+
+    // step1: check ffmpeg
+    auto ffmpeg_path_str = str2local_codepage(config.ffmpeg_path_);
+    path ffmpeg_path(ffmpeg_path_str);
+    if (!exists(ffmpeg_path)) {
+        error_output("ffmpeg");
+    }
+
+#if defined(_WIN32) || defined(_WIN64)
+    ffmpeg_path_str =
+        str2local_codepage(config.ffmpeg_path_ + std::string("/ffmpeg.exe"));
+#else
+    ffmpeg_path_str = str2local_codepage(config.ffmpeg_path_ + std::string("/ffmpeg"));
+#endif
+
+    directory_entry ffmpeg_entry(ffmpeg_path_str);
+
+    if (!exists(ffmpeg_entry)) {
+        error_output("ffmpeg");
+    }
+
+    // step2: check output file location
+    auto output_path_str = str2local_codepage(config.output_file_path_);
+    path output_path(output_path_str);
+    if (exists(output_path)) {
+        directory_entry output_entry(output_path);
+        if (!output_entry.is_directory()) {
+            error_output(fmt::format("视频输出文件夹:\"{}\"", config.output_file_path_));
+        }
+    } else {
+        // try to create new directory
+
+        std::filesystem::create_directories(output_path);
+        // the current compiler implementation is wrong, this return value cannot be used.
+
+        path output_pat_new(output_path_str);
+        if (!exists(output_pat_new)) {
+            fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                       "无法创建视频输出文件夹:{}\n", config.output_file_path_);
+
+            std::abort();
+        }
+
+        fmt::print(fg(fmt::color::green_yellow), "视频输出文件夹不存在，自动创建:{}\n",
+                   config.output_file_path_);
+    }
 }
 
 inline bool is_valid_file_name(const std::string &filename) {
