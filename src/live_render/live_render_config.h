@@ -20,6 +20,12 @@ typedef struct live_render_config_ : public ass_config_t {
     std::string filename_;
     std::string stream_address_;
 
+    std::string actual_file_name_; // In some cases, the file name may not legal,
+                                   // we will store the actual file name here.
+                                   // This may be the same as the original file name,
+                                   // or it may be a timestamp format.
+                                   // The encoding of this field is always UTF8
+
     // live info
     uint64_t user_uid_;
 

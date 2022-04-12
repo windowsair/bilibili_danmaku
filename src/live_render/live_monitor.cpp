@@ -23,46 +23,59 @@ void live_monitor::stop_ffmpeg_record() {
         using namespace std::chrono_literals;
 
         try {
-            sendSignal(ffmpeg_process_handle_->dwProcessId, SIGNAL_TYPE_CTRL_C);
+            sendSignal(static_cast<DWORD>(ffmpeg_process_handle_->dwProcessId),
+                       SIGNAL_TYPE_CTRL_C);
         } catch (const std::exception &) {
-        }
-        
-        std::this_thread::sleep_for(10s);
-        // TODO: sleep and exit
-#endif
+        } // TODO: not throw
 
-        // TODO: Linux version
+        std::this_thread::sleep_for(5s);
+
+#else
+        subprocess_destroy(&subprocess);
+        std::this_thread::sleep_for(5s);
+#endif
     }
 }
-void live_monitor::ffmpeg_monitor_thread() {
-    assert(this->ffmpeg_process_handle_ != nullptr);
-    assert(this->ffmpeg_output_handle_ != nullptr);
+
+void live_monitor::live_status_monitor_thread() {
+    using namespace std::chrono_literals;
+	
+	assert(this->live_handle_ != nullptr);
 
     std::thread([&]() {
-        std::string ffmpeg_monitor_str(1024, 0);
         while (true) {
-            if (!fgets(ffmpeg_monitor_str.data(), 1023, ffmpeg_output_handle_) ||
-                ferror(ffmpeg_output_handle_) || feof(ffmpeg_output_handle_)) {
-                break;
-            }
-            fmt::print("{}\n", ffmpeg_monitor_str.data());
+            std::this_thread::sleep_for(30s);
+            auto room_detail = this->live_handle_->get_room_detail(this->room_id_);
 
-            auto it_time = ffmpeg_monitor_str.find("time=");
-            auto it_speed = ffmpeg_monitor_str.find("speed=");
-            if (it_time != std::string::npos && it_speed != std::string::npos) {
-                // time=00:00:19.32
-                int _hour, _mins, _secs, _hundredths;
-                sscanf(ffmpeg_monitor_str.data() + it_time + 5, "%d:%d:%d.%d", &_hour,
-                       &_mins, &_secs, &_hundredths);
-
-                ffmpeg_time_ = (60 * 60 * 1000) * _hour + (60 * 1000) * _mins +
-                               (1000) * _secs + (10) * _hundredths;
-
-                fmt::print(">com:{}<\n", ffmpeg_time_ - ass_render_time_);
+            if (room_detail.live_status_ != live_detail_t::VALID) {
+                std::this_thread::sleep_for(20s);
+                // retry
+                room_detail = this->live_handle_->get_room_detail(this->room_id_);
+                if (room_detail.live_status_ != live_detail_t::VALID) {
+                    break;
+                }
             }
         }
-        exit(0);
+
+        fmt::print(fg(fmt::color::yellow), "直播已结束\n");
+
+        this->is_live_valid_ = false;
+        this->stop_ffmpeg_record();
+
+        // TODO: clean up
     }).detach();
+}
+
+void live_monitor::ffmpeg_monitor_thread() {
+    using namespace std::chrono_literals;
+
+    std::thread([&]() {
+        while (this->is_live_valid_) {
+            if (this->ffmpeg_time_ > 0)
+                this->print_live_time();
+            std::this_thread::sleep_for(5s);
+        }
+    }).join();
 }
 
 void live_monitor::print_live_time() {

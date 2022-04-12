@@ -14,28 +14,37 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 
 #include <stdio.h>
+
+#if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
+#endif
 
 inline live_monitor *kLive_monitor_handle = nullptr;
 
 #if defined(_WIN32) || defined(_WIN64)
 BOOL WINAPI consoleHandler(DWORD signal) {
 
-    if (signal == CTRL_C_EVENT)
-        printf("Ctrl-C handled\n"); // do cleanup
+    if (signal == CTRL_C_EVENT) {
+        fmt::print(fg(fmt::color::green_yellow), "强制退出...");
+        if (kLive_monitor_handle) {
+            kLive_monitor_handle->stop_ffmpeg_record();
+        }
 
-    if (kLive_monitor_handle) {
-        kLive_monitor_handle->stop_ffmpeg_record();
     }
+
     return TRUE;
 }
 #endif
 
 void set_console_handle() {
 #if defined(_WIN32) || defined(_WIN64)
+    // use utf8 codepage
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     if (!SetConsoleCtrlHandler(consoleHandler, TRUE)) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
-                   "ERROR: Could not set control handler\n");
+                   "内部错误：无法设置控制台钩子\n");
         std::abort();
     }
 #endif
@@ -44,14 +53,10 @@ void set_console_handle() {
 int main(int argc, char **argv) {
     using namespace std::chrono_literals;
 
-    // TODO: extract
-    SetConsoleOutputCP(65001);
-    SetConsoleCP(65001);
+    set_console_handle();
 
     live_monitor global_monitor;
     kLive_monitor_handle = &global_monitor;
-
-    set_console_handle();
 
     auto config = config::get_user_live_render_config();
 
@@ -94,16 +99,27 @@ int main(int argc, char **argv) {
     ffmpeg_render render(config, &global_monitor);
     render.set_danmaku_queue(&queue);
 
-    // start ffmpeg render
+    // start ffmpeg render: thread 1
     render.main_thread();
 
     std::this_thread::sleep_for(1s);
 
-    // capture live danmaku
+    // capture live danmaku: thread 2
     live.run(room_detail.room_detail_str_);
 
+
+    global_monitor.set_live_handle(&live);
+    global_monitor.set_room_id(room_id);
+
+    // check live status: thread 3
+    global_monitor.live_status_monitor_thread();
+
+    // log print: thread 4(join)
+    global_monitor.ffmpeg_monitor_thread();
+
+    // To ensure the correct lifecycle, the main thread does not exit.
     while (1) {
-        ;
+        std::this_thread::sleep_for(1h);
     }
 
     return 0;

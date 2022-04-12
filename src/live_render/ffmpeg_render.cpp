@@ -1,6 +1,11 @@
 ﻿/**
  *  Process danmaku recv, ass render and ffmpeg overlay sender
  */
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+
 #include <algorithm>
 #include <string>
 #include <thread>
@@ -154,7 +159,6 @@ inline void update_libass_event(
                     item.start_time_ += offset_time;
                 }
                 render_danmaku = true;
-                // TODO: move base time?
             }
         } else {
             // The rendering can't keep up for now, so just insert danmaku directly.
@@ -202,7 +206,6 @@ inline void update_libass_event(
             fmt::print("[{}]\n", all_count);
 
             monitor->update_danmaku_time(min_start_time);
-            monitor->print_live_time();
         }
 
         queue->pop();
@@ -242,6 +245,7 @@ void ffmpeg_render::run() {
 
     init_ffmpeg_subprocess(&subprocess, config_);
 
+    this->live_monitor_handle_->set_live_render_config(config_);
     this->live_monitor_handle_->set_ffmpeg_process_handle(&subprocess);
 
     FILE *ffmpeg_ = subprocess_stdin(&subprocess);

@@ -147,7 +147,7 @@ inline bool is_valid_file_name(const std::string &filename) {
         R"(^(COM[0-9]|CON|LPT[0-9]|NUL|PRN|AUX|com[0-9]|con|lpt[0-9]|nul|prn|aux|[\s\.])((\..*)$|$))");
     assert(re_device_name.ok());
 
-    RE2 re_char(R"(\A[^\\\/:*"?<>|]{1,254}\z)");
+    RE2 re_char(R"(\A[^\\\/:*"?<>|]{1,1024}\z)");
     assert(re_char.ok());
 
     if (RE2::PartialMatch(filename, re_device_name)) {
@@ -171,12 +171,17 @@ inline bool is_valid_file_name(const std::string &filename) {
 #endif
 }
 
-inline std::string get_random_file_name(const config::live_render_config_t &config) {
+inline std::string get_random_file_name(config::live_render_config_t &config) {
     const auto p1 = std::chrono::system_clock::now();
-    return fmt::format(
-        "{}/live_uid_{}_time_{}.raw.mp4", config.output_file_path_, config.user_uid_,
+
+    std::string filename = fmt::format(
+        "live_uid_{}_time_{}.raw.mp4", config.user_uid_,
         std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
             .count());
+
+    config.actual_file_name_ = filename;
+
+    return str2local_codepage(fmt::format("{}/{}", config.output_file_path_, filename));
 }
 
 // Dealing with the such minutiae is just annoying! And now you will see a bunch of nasty code.
@@ -186,7 +191,15 @@ inline std::string get_random_file_name(const config::live_render_config_t &conf
 
 // The user had better to make sure to provide a simple path that doesn't contain some weird stuff.
 //
-inline std::string get_output_file_path(const config::live_render_config_t &config) {
+
+/**
+ *  Gets the ffmpeg output file name from the configured file name and output path,
+ *  and then set the actual file name im config parameter.
+ *
+ * @param config
+ * @return
+ */
+inline std::string get_output_file_path(config::live_render_config_t &config) {
 
     // UTF8 filename
     const std::string raw_filename = config.filename_;
@@ -201,6 +214,8 @@ inline std::string get_output_file_path(const config::live_render_config_t &conf
     if (!is_valid_file_name(live_render_output_file_name)) {
         return get_random_file_name(config);
     }
+
+    config.actual_file_name_ = live_render_output_file_name;
 
     std::string full_name =
         fmt::format("{}/{}", config.output_file_path_, live_render_output_file_name);
@@ -335,13 +350,11 @@ void init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
  * @param config
  */
 void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
-                            const config::live_render_config_t &config) {
+                            config::live_render_config_t &config) {
     using namespace fmt::literals;
 
     std::string ffmpeg_exe_path = config.ffmpeg_path_ + "/ffmpeg";
     std::string output_file_path = get_output_file_path(config);
-
-    std::cout << output_file_path << std::endl;
 
     std::string ffmpeg_video_info =
         fmt::format("{video_width}x{video_height}", "video_width"_a = config.video_width_,
