@@ -1,4 +1,8 @@
-﻿#include <cstdio>
+﻿#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
+#include <cstdio>
 #include <filesystem>
 #include <vector>
 
@@ -19,18 +23,7 @@ namespace config {
 constexpr auto user_live_render_config_path = "live_render_config.json";
 
 inline live_render_config_t get_default_live_render_config() {
-    live_render_config_t config;
-
-    config.video_width_ = 1920;
-    config.video_height_ = 1080;
-    config.font_family_ = "微软雅黑";
-    config.font_color_ = 0xFFFFFF; // white
-    config.font_size_ = 25;
-    config.font_scale_ = 1.6f;
-    config.font_bold_ = true;
-    config.danmaku_show_range_ = 0.45f;
-    config.danmaku_move_time_ = 15;
-    config.danmaku_pos_time_ = 5;
+    live_render_config_t config{get_default_ass_config()};
 
     config.ffmpeg_path_ = "tool/";
     config.output_file_path_ = "video/";

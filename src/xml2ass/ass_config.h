@@ -34,6 +34,8 @@ typedef struct ass_config_ {
 
 ass_config_t get_user_ass_config();
 
+ass_config_t get_default_ass_config();
+
 } // namespace config
 
 #endif // BILIBILI_DANMAKU_ASS_CONFIG_H

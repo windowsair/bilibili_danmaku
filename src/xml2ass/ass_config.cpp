@@ -21,7 +21,7 @@ namespace config {
 
 constexpr auto user_ass_config_path = "config.json";
 
-inline ass_config_t get_default_ass_config() {
+ass_config_t get_default_ass_config() {
     ass_config_t config = {
         .video_width_ = 1920,
         .video_height_ = 1080,

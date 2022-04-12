@@ -5,7 +5,7 @@
 
 namespace config {
 
-typedef struct live_render_config_ : public config::ass_config_t {
+typedef struct live_render_config_ : public ass_config_t {
     // ffmpeg setting
     std::string ffmpeg_path_;
     std::string output_file_path_;
@@ -23,8 +23,12 @@ typedef struct live_render_config_ : public config::ass_config_t {
     // live info
     uint64_t user_uid_;
 
-} live_render_config_t;
+    live_render_config_() {
+    }
+    live_render_config_(const ass_config_t &cfg) : ass_config_t(cfg) {
+    }
 
+} live_render_config_t;
 
 live_render_config_t get_user_live_render_config();
 
