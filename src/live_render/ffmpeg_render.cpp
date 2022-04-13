@@ -5,7 +5,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-
 #include <algorithm>
 #include <string>
 #include <thread>
@@ -258,10 +257,7 @@ void ffmpeg_render::run() {
 
     int tm = 0;
 
-    // start ffmpeg monitor thread.
-    //    this->live_monitor_handle_->set_ffmpeg_output_handle(p_stderr);
-    //    this->live_monitor_handle_->ffmpeg_monitor_thread();
-
+    // start ffmpeg monitor thread
     std::thread([&]() {
         std::string ffmpeg_monitor_str(1024, 0);
         while (1) {
@@ -312,6 +308,8 @@ void ffmpeg_render::run() {
     int wait_render_count = 0;
     int wait_render_offset_time = -1;
 
+    const int step = ((double)(1000) / (double)(config_.fps_));
+
     ASS_Image *img;
     while (stop_cond) {
         if (k_ffmpeg_output_time - tm > 3000) {
@@ -330,10 +328,10 @@ void ffmpeg_render::run() {
         if (wait_render) {
             if (wait_render_offset_time == -1) {
                 // set
-                wait_render_offset_time = handle.get_max_danmaku_end_time(
+                float sec = handle.get_max_danmaku_end_time(
                     config_.danmaku_move_time_,
-                    config_.danmaku_move_time_); // TODO: pos time handle
-                wait_render_offset_time *= 1000; // sec to ms
+                    config_.danmaku_move_time_) + 0.1f; // TODO: pos time handle
+                wait_render_offset_time = sec * 1000; // sec to ms
             } else if (tm > wait_render_offset_time) {
                 // wait done.
                 printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
@@ -347,9 +345,8 @@ void ffmpeg_render::run() {
             }
         }
 
+        // clear buffer
         memset(frame->buffer, 0, 1920 * 1080 * 4 * 5);
-
-        const int step = ((double)(1000) / (double)(60));
 
         img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
         blend(frame, img, 0);
@@ -370,13 +367,8 @@ void ffmpeg_render::run() {
         img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
         blend(frame, img, 1920 * 1080 * 4 * 4);
         tm += step;
-        // clear buffer
 
         auto sz = fwrite(frame->buffer, 5, buffer_count, ffmpeg_);
-
-        if (tm % 32000 == 0) {
-            printf("<%d>\n", tm);
-        }
 
         this->live_monitor_handle_->update_ass_render_time(tm);
     }

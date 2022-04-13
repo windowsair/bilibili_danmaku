@@ -25,7 +25,7 @@ inline live_monitor *kLive_monitor_handle = nullptr;
 BOOL WINAPI consoleHandler(DWORD signal) {
 
     if (signal == CTRL_C_EVENT) {
-        fmt::print(fg(fmt::color::green_yellow), "强制退出...");
+        fmt::print(fg(fmt::color::green_yellow), "强制退出...\n");
         if (kLive_monitor_handle) {
             kLive_monitor_handle->stop_ffmpeg_record();
         }

@@ -14,7 +14,6 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
 
-
 size_t live_danmaku::zlib_decompress(void *buffer_in, size_t buffer_in_size) {
     size_t ret;
     auto res = libdeflate_zlib_decompress(this->zlib_handle_, buffer_in, buffer_in_size,
@@ -33,57 +32,57 @@ size_t live_danmaku::zlib_decompress(void *buffer_in, size_t buffer_in_size) {
 }
 void live_danmaku::run(std::string room_info) {
 
-    init_parser();
+    std::thread([this, room_info]() {
+        init_parser();
 
-    ix::WebSocket webSocket;
+        ix::WebSocket webSocket;
 
-    std::string url("wss://broadcastlv.chat.bilibili.com/sub");
-    webSocket.setUrl(url);
+        std::string url("wss://broadcastlv.chat.bilibili.com/sub");
+        webSocket.setUrl(url);
 
-    webSocket.setPingInterval(25);
+        webSocket.setPingInterval(25);
 
-    webSocket.disablePerMessageDeflate();
+        webSocket.disablePerMessageDeflate();
 
-    auto packet_len = sizeof(live_danmaku_req_header_t) + room_info.size();
-    live_danmaku_req_header_t start_header = {
-        .packet_len = htonl(packet_len), .com_1 = htonl(7), .com_2 = htonl(1)};
+        auto packet_len = sizeof(live_danmaku_req_header_t) + room_info.size();
+        live_danmaku_req_header_t start_header = {
+            .packet_len = htonl(packet_len), .com_1 = htonl(7), .com_2 = htonl(1)};
 
-    start_header.magic[0] = 0x00;
-    start_header.magic[1] = 0x10;
-    start_header.magic[2] = 0x00;
-    start_header.magic[3] = 0x01;
+        start_header.magic[0] = 0x00;
+        start_header.magic[1] = 0x10;
+        start_header.magic[2] = 0x00;
+        start_header.magic[3] = 0x01;
 
-    std::string start_msg_buffer;
-    start_msg_buffer.resize(packet_len);
-    memcpy(start_msg_buffer.data(), &start_header, sizeof(start_header));
-    memcpy(start_msg_buffer.data() + sizeof(start_header), room_info.data(),
-           room_info.size());
+        std::string start_msg_buffer;
+        start_msg_buffer.resize(packet_len);
+        memcpy(start_msg_buffer.data(), &start_header, sizeof(start_header));
+        memcpy(start_msg_buffer.data() + sizeof(start_header), room_info.data(),
+               room_info.size());
 
-    webSocket.setOnMessageCallback([&](const ix::WebSocketMessagePtr &msg) {
-        if (msg->type == ix::WebSocketMessageType::Message) {
+        webSocket.setOnMessageCallback([&](const ix::WebSocketMessagePtr &msg) {
+            if (msg->type == ix::WebSocketMessageType::Message) {
 
-            if (msg->binary)
-                this->process_websocket_data(msg);
+                if (msg->binary)
+                    this->process_websocket_data(msg);
 
-        } else if (msg->type == ix::WebSocketMessageType::Open) {
-            webSocket.sendBinary(start_msg_buffer);
-            // TODO: output msg
-            std::cout << "Connection established" << std::endl;
-        } else if (msg->type == ix::WebSocketMessageType::Error) {
-            // Maybe SSL is not configured properly
-            std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
-            std::cout << std::endl << "stop error" << std::endl;
-            std::abort();
-        } else if (msg->type == ix::WebSocketMessageType::Close) {
-            // Maybe SSL is not configured properly
-            std::cout << std::endl << "stop close" << std::endl;
-            std::abort();
-        }
-    });
+            } else if (msg->type == ix::WebSocketMessageType::Open) {
+                webSocket.sendBinary(start_msg_buffer);
+                // TODO: output msg
+                std::cout << "Connection established" << std::endl;
+            } else if (msg->type == ix::WebSocketMessageType::Error) {
+                // Maybe SSL is not configured properly
+                std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
+                std::cout << std::endl << "stop error" << std::endl;
+                std::abort();
+            } else if (msg->type == ix::WebSocketMessageType::Close) {
+                // Maybe SSL is not configured properly
+                std::cout << std::endl << "stop close" << std::endl;
+                std::abort();
+            }
+        });
 
-    webSocket.start();
+        webSocket.start();
 
-    std::thread([&webSocket]() {
         while (1) {
             using namespace std::chrono_literals;
 
@@ -97,7 +96,7 @@ void live_danmaku::run(std::string room_info) {
                 webSocket.sendBinary(heartbeat);
             }
         }
-    }).join();
+    }).detach();
 }
 
 void live_danmaku::process_websocket_data(const ix::WebSocketMessagePtr &msg) {

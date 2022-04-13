@@ -147,7 +147,7 @@ inline bool is_valid_file_name(const std::string &filename) {
         R"(^(COM[0-9]|CON|LPT[0-9]|NUL|PRN|AUX|com[0-9]|con|lpt[0-9]|nul|prn|aux|[\s\.])((\..*)$|$))");
     assert(re_device_name.ok());
 
-    RE2 re_char(R"(\A[^\\\/:*"?<>|]{1,1024}\z)");
+    RE2 re_char(R"(\A[^\\\/:*"?<>|]{1,1000}\z)");
     assert(re_char.ok());
 
     if (RE2::PartialMatch(filename, re_device_name)) {
