@@ -10,7 +10,7 @@ PlayResY: {play_res_y}
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: {name},{font_name},{font_size},&H{font_alpha}{font_color},&H{font_alpha}FFFFFF,&H{font_alpha}000000,&H{font_alpha}000000,{font_bold},0,0,0,100,100,0,0,1,1,0,2,20,20,2,0
+Style: {name},{font_name},{font_size},&H{font_alpha}{font_color},&H{font_alpha}FFFFFF,&H{font_alpha}000000,&H{font_alpha}000000,{font_bold},0,0,0,100,100,0,0,1,{font_outline},{font_shadow},2,20,20,2,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text

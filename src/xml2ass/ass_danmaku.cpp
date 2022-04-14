@@ -128,6 +128,9 @@ get_ass_header_impl(const config::ass_config_t &config,
     std::string ass_font_color = rgb2bgr(config.font_color_);
     std::string ass_font_alpha =
         fmt::format("{:X}", static_cast<uint8_t>(255 * (1.0f - config.font_alpha_)));
+    std::string ass_font_outline = fmt::format("{:.1f}", config.font_outline_);
+    std::string ass_font_shadow = fmt::format("{:.1f}", config.font_shadow_);
+
     int ass_font_size = config.font_size_ * config.font_scale_;
 
     return fmt::format(
@@ -136,7 +139,8 @@ get_ass_header_impl(const config::ass_config_t &config,
         "play_res_x"_a = config.video_width_, "play_res_y"_a = config.video_height_,
         "name"_a = danmaku_name, "font_name"_a = config.font_family_,
         "font_size"_a = ass_font_size, "font_alpha"_a = ass_font_alpha,
-        "font_color"_a = ass_font_color, "font_bold"_a = config.font_bold_ ? -1 : 0);
+        "font_color"_a = ass_font_color, "font_bold"_a = config.font_bold_ ? -1 : 0,
+        "font_outline"_a = ass_font_outline, "font_shadow"_a = ass_font_shadow);
 }
 
 inline std::string get_ass_event_impl(const config::ass_config_t &config,

@@ -18,6 +18,12 @@ R"--({
 	"font_bold": true,
 	"#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
+    "font_outline": 1.0,
+    "#font_outline": "字体描边（边框）值",
+
+    "font_shadow": 0.0,
+    "#font_shadow": "字体阴影值",
+
 	"danmaku_show_range": 0.45,
 	"#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
 
@@ -54,6 +60,14 @@ R"--({
         "font_bold": {
             "type": "boolean"
         },
+        "font_outline": {
+            "type": "number",
+            "minimum": 0
+        },
+        "font_shadow": {
+            "type": "number",
+            "minimum": 0
+        },
         "danmaku_show_range": {
             "type": "number",
             "minimum": 0,
@@ -73,6 +87,8 @@ R"--({
         "font_scale",
         "font_alpha",
         "font_bold",
+        "font_outline",
+        "font_shadow",
         "danmaku_show_range",
         "danmaku_move_time",
         "danmaku_pos_time"

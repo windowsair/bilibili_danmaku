@@ -109,6 +109,8 @@ live_render_config_t get_user_live_render_config() {
     config.font_scale_ = doc["font_scale"].GetFloat();
     config.font_alpha_ = doc["font_alpha"].GetFloat();
     config.font_bold_ = doc["font_bold"].GetBool();
+    config.font_outline_ = doc["font_outline"].GetFloat();
+    config.font_shadow_ = doc["font_shadow"].GetFloat();
     config.danmaku_show_range_ = doc["danmaku_show_range"].GetFloat();
     config.danmaku_move_time_ = doc["danmaku_move_time"].GetInt();
     config.danmaku_pos_time_ = doc["danmaku_pos_time"].GetInt();

@@ -48,13 +48,19 @@
     "#font_family": "采用的字体集",
 
     "font_scale": 1.6,
-    "#font_scale": "字体缩放倍数，为1.0时保持原始大小",
+    "#font_scale": "字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
 
     "font_alpha": 0.75,
     "#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
 
     "font_bold": true,
     "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
+
+    "font_outline": 1.0,
+    "#font_outline": "字体描边（边框）值",
+
+    "font_shadow": 0.0,
+    "#font_shadow": "字体阴影值",
 
     "danmaku_show_range": 0.45,
     "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
@@ -63,7 +69,7 @@
     "#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
 
     "danmaku_pos_time": 5,
-    "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)",
+    "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
 
     "video_width": 1920,
     "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
@@ -130,6 +136,14 @@ constexpr auto config_live_render_template_schema =
         "font_bold": {
             "type": "boolean"
         },
+        "font_outline": {
+            "type": "number",
+            "minimum": 0
+        },
+        "font_shadow": {
+            "type": "number",
+            "minimum": 0
+        },
         "post_convert": {
             "type": "boolean"
         },
@@ -139,10 +153,12 @@ constexpr auto config_live_render_template_schema =
             "maximum": 1
         },
         "danmaku_move_time": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 1
         },
         "danmaku_pos_time": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 0
         }
     },
     "required": [
@@ -158,6 +174,8 @@ constexpr auto config_live_render_template_schema =
         "font_scale",
         "font_alpha",
         "font_bold",
+        "font_outline",
+        "font_shadow",
         "danmaku_show_range",
         "danmaku_move_time",
         "danmaku_pos_time"

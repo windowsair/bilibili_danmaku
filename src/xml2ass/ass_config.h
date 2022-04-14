@@ -19,6 +19,9 @@ typedef struct ass_config_ {
     float font_scale_;
     float font_alpha_;
     bool font_bold_;
+    float font_outline_;
+    float font_shadow_;
+
 
     // danmaku config
     float danmaku_show_range_;
