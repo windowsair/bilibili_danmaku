@@ -259,14 +259,21 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
     }
 
     for (auto &item : raw_danmaku) {
-        RE2::PartialMatch(item, *(parse_helper_.content_re_), &content);
-        RE2::PartialMatch(item, *(parse_helper_.danmaku_type_re_), &danmaku_origin_type);
         RE2::PartialMatch(item, *(parse_helper_.danmaku_info_re_), &danmaku_player_type,
                           &timestamp);
+
+        // ignore pos type danmaku
+        if (danmaku_player_type != static_cast<int>(danmaku::danmaku_type::MOVE) &&
+            !is_pos_danmaku_process_) {
+            continue;
+        }
+
+        RE2::PartialMatch(item, *(parse_helper_.content_re_), &content);
+        RE2::PartialMatch(item, *(parse_helper_.danmaku_type_re_), &danmaku_origin_type);
+
         RE2::PartialMatch(item, *(parse_helper_.danmaku_color_re_), &color);
 
         start_time = (float)(timestamp - base_time_) / (float)1000.0f;
-
 
         constexpr int font_size = 25;
         danmaku_list.emplace_back(content, start_time, danmaku_player_type, font_size,
@@ -280,4 +287,3 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
 
     danmaku_queue_->enqueue(danmaku_list);
 }
-

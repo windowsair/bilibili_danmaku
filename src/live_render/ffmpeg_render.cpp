@@ -191,8 +191,32 @@ inline void update_libass_event(
 
             std::vector<danmaku::ass_dialogue_t> ass_dialogue_list;
 
-            // TODO: pos type?
-            handle.process_danmaku_dialogue_move(danmaku_list, config, ass_dialogue_list);
+            if (config.danmaku_pos_time_ > 0) {
+                std::vector<std::reference_wrapper<danmaku::danmaku_item_t>>
+                    pos_danmaku_ref_list;
+                std::vector<std::reference_wrapper<danmaku::danmaku_item_t>>
+                    move_danmaku_ref_list;
+
+                for (auto &item : danmaku_list) {
+                    if (item.danmaku_type_ ==
+                        static_cast<int>(danmaku::danmaku_type::MOVE)) {
+                        move_danmaku_ref_list.push_back(std::ref(item));
+                    } else {
+                        pos_danmaku_ref_list.push_back(std::ref(item));
+                    }
+                }
+
+                handle.process_danmaku_dialogue_move(move_danmaku_ref_list, config,
+                                                     ass_dialogue_list);
+                handle.process_danmaku_dialogue_pos(pos_danmaku_ref_list, config,
+                                                    ass_dialogue_list);
+            } else {
+
+                // The sender promises not to add pos type danmaku. So we can handle it directly.
+                handle.process_danmaku_dialogue_move(danmaku_list, config,
+                                                     ass_dialogue_list);
+            }
+
             for (auto &item : ass_dialogue_list) {
                 // convert to event_str
                 std::string event_str = ass::get_ass_event(config, item);
@@ -327,9 +351,9 @@ void ffmpeg_render::run() {
         if (wait_render) {
             if (wait_render_offset_time == -1) {
                 // set
-                float sec = handle.get_max_danmaku_end_time(
-                    config_.danmaku_move_time_,
-                    config_.danmaku_move_time_) + 0.1f; // TODO: pos time handle
+                float sec = handle.get_max_danmaku_end_time(config_.danmaku_move_time_,
+                                                            config_.danmaku_pos_time_) +
+                            0.1f;                     // TODO: pos time handle
                 wait_render_offset_time = sec * 1000; // sec to ms
             } else if (tm > wait_render_offset_time) {
                 // wait done.

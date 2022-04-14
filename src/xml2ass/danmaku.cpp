@@ -76,7 +76,7 @@ float DanmakuHandle::get_max_danmaku_end_time(int move_time, int pos_time) {
 
     auto get_max_time = [](const std::vector<ass_dialogue_t> &ass_list) {
         float max_time = -1.0f;
-        
+
         if (ass_list.empty()) {
             return max_time;
         }
@@ -114,7 +114,7 @@ int DanmakuHandle::process_danmaku_list(
     }
 
     for (auto &item : danmaku_all_list) {
-        if (item.danmaku_type_ == static_cast<int>(danmu_type::MOVE)) {
+        if (item.danmaku_type_ == static_cast<int>(danmaku_type::MOVE)) {
             danmaku_move_list.emplace_back(item);
         } else {
             danmaku_pos_list.emplace_back(item);
@@ -225,15 +225,16 @@ inline void insert_dialogue(std::vector<ass_dialogue_t> &screen_dialogue, int in
     ass_result_list.push_back(ass);
 }
 
+template <class T>
 int DanmakuHandle::process_danmaku_dialogue_pos(
-    std::vector<danmaku_item_t> &danmaku_list, const config::ass_config_t &config,
+    T &danmaku_list, const config::ass_config_t &config,
     std::vector<ass_dialogue_t> &ass_result_list) {
 
     if (danmaku_list.empty()) {
         return 0;
     }
 
-    if (danmaku_list[0].danmaku_type_ == static_cast<int>(danmu_type::MOVE)) {
+    if (danmaku_list[0].get().danmaku_type_ == static_cast<int>(danmaku_type::MOVE)) {
         return -1;
     }
 
@@ -243,9 +244,10 @@ int DanmakuHandle::process_danmaku_dialogue_pos(
 
     // find a valid location to insert danmaku
     for (auto &item : danmaku_list) {
-        auto &screen_dialogue = item.danmaku_type_ == static_cast<int>(danmu_type::TOP)
-                                    ? top_screen_dialogue_
-                                    : bottom_screen_dialogue_;
+        auto &screen_dialogue =
+            item.get().danmaku_type_ == static_cast<int>(danmaku_type::TOP)
+                ? top_screen_dialogue_
+                : bottom_screen_dialogue_;
 
         for (int i = 0; i < danmaku_line_count_; i++) {
             auto &cur_danmaku_on_screen = screen_dialogue[i];
@@ -257,7 +259,7 @@ int DanmakuHandle::process_danmaku_dialogue_pos(
                 float cur_danmaku_exit_time =
                     cur_danmaku_on_screen.start_time_ + config.danmaku_pos_time_;
                 // staggered timing to ensure no overlay
-                if (item.start_time_ > cur_danmaku_exit_time) {
+                if (item.get().start_time_ > cur_danmaku_exit_time) {
                     insert_dialogue(screen_dialogue, i, item, ass_result_list);
                     break;
                 }
@@ -268,15 +270,16 @@ int DanmakuHandle::process_danmaku_dialogue_pos(
     return 0;
 }
 
+template <class T>
 int DanmakuHandle::process_danmaku_dialogue_move(
-    std::vector<danmaku_item_t> &danmaku_list, const config::ass_config_t &config,
+    T &danmaku_list, const config::ass_config_t &config,
     std::vector<ass_dialogue_t> &ass_result_list) {
 
     if (danmaku_list.empty()) {
         return 0;
     }
 
-    if (danmaku_list[0].danmaku_type_ != static_cast<int>(danmu_type::MOVE)) {
+    if (danmaku_list[0].get().danmaku_type_ != static_cast<int>(danmaku_type::MOVE)) {
         return -1;
     }
 
@@ -286,7 +289,7 @@ int DanmakuHandle::process_danmaku_dialogue_move(
 
     // find a valid location to insert danmaku
     for (auto &item : danmaku_list) {
-        int font_size = item.font_size_ * config.font_scale_;
+        int font_size = item.get().font_size_ * config.font_scale_;
 
         // check if there is currently a suitable position on the screen
         for (int i = 0; i < danmaku_line_count_; i++) {
@@ -346,18 +349,18 @@ int DanmakuHandle::process_danmaku_dialogue_move(
                 float cur_danmaku_exit_time = cur_start_time + config.danmaku_move_time_;
                 //
 
-                int new_danmaku_length = font_size * item.length_;
+                int new_danmaku_length = font_size * item.get().length_;
 
                 // Exactly the time fully visible (last time)
                 float new_danmaku_enter_time_left =
                     (float)(config.video_width_ * config.danmaku_move_time_) /
                     (float)(config.video_width_ + new_danmaku_length);
-                new_danmaku_enter_time_left += item.start_time_;
+                new_danmaku_enter_time_left += item.get().start_time_;
 
                 // Must be inserted after the previous item is fully visible
                 // As an additional condition, we expect that the new danmaku
                 // cannot catch up with the previous danmaku.
-                if (item.start_time_ > cur_danmaku_full_enter_time_first &&
+                if (item.get().start_time_ > cur_danmaku_full_enter_time_first &&
                     new_danmaku_enter_time_left > cur_danmaku_exit_time) {
                     // insert danmaku!
                     insert_dialogue(move_screen_dialogue_, i, item, ass_result_list);
@@ -369,6 +372,18 @@ int DanmakuHandle::process_danmaku_dialogue_move(
 
     return 0;
 }
+
+// explicitly generate ref version
+
+template int DanmakuHandle::process_danmaku_dialogue_pos<
+    std::vector<std::reference_wrapper<danmaku_item_t>>>(
+    std::vector<std::reference_wrapper<danmaku_item_t>> &, const config::ass_config_t &,
+    std::vector<ass_dialogue_t> &);
+
+template int DanmakuHandle::process_danmaku_dialogue_move<
+    std::vector<std::reference_wrapper<danmaku_item_t>>>(
+    std::vector<std::reference_wrapper<danmaku_item_t>> &, const config::ass_config_t &,
+    std::vector<ass_dialogue_t> &);
 
 // do not share config parameter cuz we will change it.
 int DanmakuHandle::danmaku_main_process(std::string xml_file,

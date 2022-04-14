@@ -462,6 +462,12 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
             ffmpeg_segment_time.c_str(),
         });
     }
+    else {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+            "-f",
+            "mp4",
+        });
+    }
 
     ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-movflags",

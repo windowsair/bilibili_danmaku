@@ -20,7 +20,7 @@ inline size_t get_utf8_len(const std::string &s) {
     return simdutf::count_utf8(s.c_str(), s.size());
 }
 
-enum class danmu_type {
+enum class danmaku_type {
     MOVE = 1,
     BOTTOM = 4,
     TOP = 5,
@@ -46,7 +46,6 @@ typedef struct danmaku_item_ {
     int font_size_;
     int font_color_;
 
-
     //uint64_t create_time_;
     //int pool_;
     //int uid_;
@@ -67,7 +66,6 @@ typedef struct danmaku_item_ {
     void update_context() {
         context_ = raw_string_.c_str();
     }
-
 
     inline void fast_sscanf(const char *token) {
         // sscanf version: sscanf("%f,%d,%d,%d") for:
@@ -96,6 +94,11 @@ typedef struct danmaku_item_ {
         //                           start_time_, danmaku_type_, font_size_, font_color_,
         //                           create_time_, pool_, uid_, history_id_);
     };
+
+    // compatible with std::reference_wrapper
+    const danmaku_item_ get() {
+        return *this;
+    }
 } danmaku_item_t;
 
 typedef struct ass_dialogue_ {
@@ -124,11 +127,15 @@ class DanmakuHandle {
     int process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
                              std::vector<danmaku_item_t> &danmaku_move_list,
                              std::vector<danmaku_item_t> &danmaku_pos_list);
-    int process_danmaku_dialogue_pos(std::vector<danmaku_item_t> &danmaku_list,
-                                     const config::ass_config_t &config,
+
+    // version 1 -> std::vector<danmaku_item_t>
+    // version 2 -> std::vector< std::reference_wrapper<danmaku_item_t> >
+    template <class T>
+    int process_danmaku_dialogue_pos(T &danmaku_list, const config::ass_config_t &config,
                                      std::vector<ass_dialogue_t> &ass_result_list);
-    int process_danmaku_dialogue_move(std::vector<danmaku_item_t> &danmaku_list,
-                                      const config::ass_config_t &config,
+
+    template <class T>
+    int process_danmaku_dialogue_move(T &danmaku_list, const config::ass_config_t &config,
                                       std::vector<ass_dialogue_t> &ass_result_list);
     int danmaku_main_process(std::string xml_file, config::ass_config_t config);
 

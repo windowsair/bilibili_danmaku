@@ -160,7 +160,7 @@ inline std::string get_ass_event_impl(const config::ass_config_t &config,
     std::string ss =  fmt::format(
         ass_dialogue_format, danmaku_layer, time2ass(item.start_time_),
         time2ass(item.start_time_ + config.danmaku_move_time_), danmaku_name,
-        item.danmaku_type_ == static_cast<int>(danmaku::danmu_type::MOVE) ? "move"
+        item.danmaku_type_ == static_cast<int>(danmaku::danmaku_type::MOVE) ? "move"
                                                                           : "pos",
         (float)start_x, (float)start_y, (float)end_x, (float)end_y,
         item.font_color_ != config.font_color_ ? self_effect : "", item.context_);

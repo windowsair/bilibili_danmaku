@@ -70,6 +70,9 @@ int main(int argc, char **argv) {
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> queue(100);
     live_danmaku live;
     live.set_danmaku_queue(&queue);
+    if (config.danmaku_pos_time_ > 0) {
+        live.enable_pos_danmaku_process();
+    }
 
     // step1: get live info: room_id, user uid
     auto room_id = std::stoull(argv[1]);
