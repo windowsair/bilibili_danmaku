@@ -15,6 +15,11 @@ typedef struct live_render_config_ : public ass_config_t {
     int fps_;
     std::string video_bitrate_;
     std::string audio_bitrate_;
+    std::string decoder_;
+    std::string encoder_;
+    std::vector<std::string> extra_encoder_info_;
+    uint64_t segment_time_;
+
 
     // stream setting
     std::string filename_;

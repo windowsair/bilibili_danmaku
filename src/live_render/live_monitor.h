@@ -25,7 +25,7 @@ class live_monitor {
         live_handle_ = handle;
     }
 
-    void set_room_id(int id) {
+    void set_room_id(uint64_t id) {
         room_id_ = id;
     }
 
@@ -72,7 +72,7 @@ class live_monitor {
     config::live_render_config_t config_;
 
     live_danmaku *live_handle_;
-    int room_id_;
+    uint64_t room_id_;
     bool is_live_valid_;
 };
 

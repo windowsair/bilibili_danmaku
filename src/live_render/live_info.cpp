@@ -13,8 +13,7 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
 
-
-live_detail_t live_danmaku::get_room_detail(int live_id) {
+live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     using namespace ix;
     using namespace rapidjson;
 
@@ -94,7 +93,6 @@ live_detail_t live_danmaku::get_room_detail(int live_id) {
     }
     live_detail.user_uid_ = data["uid"].GetInt64();
 
-
     live_detail.live_status_ = data["live_status"].GetInt();
     if (live_detail.live_status_ != live_detail::live_status_enum::VALID) {
         return live_detail;
@@ -119,7 +117,8 @@ live_detail_t live_danmaku::get_room_detail(int live_id) {
  * @param qn stream quality
  * @return
  */
-std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(int room_id, int qn) {
+std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(uint64_t room_id,
+                                                                   int qn) {
     using namespace ix;
     using namespace rapidjson;
 
@@ -159,7 +158,6 @@ std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(int room_id, 
     auto responseHeaders = res->headers;
     auto body = res->body;
     auto errorMsg = res->errorMsg;
-
 
     if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
@@ -318,6 +316,7 @@ std::string live_danmaku::get_live_room_title(uint64_t user_uid) {
     auto body = res->body;
     auto errorMsg = res->errorMsg;
 
+
     if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播标题失败：{}\n",
                    errorMsg);
@@ -355,4 +354,75 @@ std::string live_danmaku::get_live_room_title(uint64_t user_uid) {
     ret = fmt::format("{}", doc["data"][uid_str.c_str()]["title"].GetString());
 
     return ret;
+}
+
+std::string live_danmaku::get_username(uint64_t user_uid) {
+    using namespace ix;
+    using namespace rapidjson;
+
+    std::string ret;
+
+    HttpClient httpClient;
+    HttpRequestArgsPtr args = httpClient.createRequest();
+
+    // Timeout options
+    args->connectTimeout = 10;
+    args->transferTimeout = 10;
+
+    // Redirect options
+    args->followRedirects = false;
+    args->maxRedirects = 0;
+
+    // Misc
+    args->compress = false;
+    args->verbose = false;
+    args->logger = [](const std::string &msg) { std::cout << msg; };
+
+    // Sync req
+    HttpResponsePtr res;
+    std::string url = fmt::format(
+        "https://api.bilibili.com/x/space/acc/info?mid={}&jsonp=jsonp", user_uid);
+
+    res = httpClient.get(url, args);
+
+    auto statusCode = res->statusCode;
+    auto errorCode = res->errorCode;
+    auto responseHeaders = res->headers;
+    auto body = res->body;
+    auto errorMsg = res->errorMsg;
+
+    if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取用户名失败：{}\n",
+                   errorMsg);
+        std::abort();
+    }
+
+    auto error_output = [&]() {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取用户名失败：{}\n",
+                   body);
+    };
+
+    Document doc;
+    doc.Parse(body.c_str());
+
+    if (!doc.HasMember("code") || !doc.HasMember("data")) {
+        error_output();
+        return ret;
+    }
+
+
+    if (doc["code"].GetInt() != 0) {
+        error_output();
+        return ret;
+    }
+
+    // get username
+
+    auto &data = doc["data"];
+    if (!data.HasMember("name")) {
+        error_output();
+        return ret;
+    }
+
+    return data["name"].GetString();
 }

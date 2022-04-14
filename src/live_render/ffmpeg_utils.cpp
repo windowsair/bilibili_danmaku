@@ -173,11 +173,19 @@ inline bool is_valid_file_name(const std::string &filename) {
 
 inline std::string get_random_file_name(config::live_render_config_t &config) {
     const auto p1 = std::chrono::system_clock::now();
+    std::string filename;
 
-    std::string filename = fmt::format(
-        "live_uid_{}_time_{}.raw.mp4", config.user_uid_,
-        std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
-            .count());
+    if (config.segment_time_ > 0) {
+        filename = fmt::format(
+            "live_uid_{}_time_{}_part%03d_raw.mp4", config.user_uid_,
+            std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
+                .count());
+    } else {
+        filename = fmt::format(
+            "live_uid_{}_time_{}_raw.mp4", config.user_uid_,
+            std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
+                .count());
+    }
 
     config.actual_file_name_ = filename;
 
@@ -206,10 +214,19 @@ inline std::string get_output_file_path(config::live_render_config_t &config) {
 
     // add the unix timestamp and check whether it is an appropriate file name
     const auto p1 = std::chrono::system_clock::now();
-    const std::string live_render_output_file_name = fmt::format(
-        "{}_{}.raw.mp4", raw_filename,
-        std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
-            .count());
+    std::string live_render_output_file_name;
+
+    if (config.segment_time_ > 0) {
+        live_render_output_file_name = fmt::format(
+            "{}_{}_part%03d_raw.mp4", raw_filename,
+            std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
+                .count());
+    } else {
+        live_render_output_file_name = fmt::format(
+            "{}_{}_raw.mp4", raw_filename,
+            std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
+                .count());
+    }
 
     if (!is_valid_file_name(live_render_output_file_name)) {
         return get_random_file_name(config);
@@ -361,6 +378,8 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
                     "video_height"_a = config.video_height_);
     std::string ffmpeg_fps_info = fmt::format("{}", config.fps_);
 
+    std::string ffmpeg_segment_time = fmt::format("{}", config.segment_time_);
+
     // cmd line
 
     // TODO: reconnect?
@@ -379,90 +398,101 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
         "0",
         "-analyzeduration",
         "60",
-        "-hwaccel",
-        "nvdec",
-//        "-hwaccel_device",
-//        "0",
-        "-i",
-        config.stream_address_.c_str(),
-        "-f",
-        "rawvideo",
-        "-s",
-        ffmpeg_video_info.c_str(),
-        "-pix_fmt",
-        "rgba",
-        "-r",
-        ffmpeg_fps_info.c_str(),
-        "-i",
-        "-",
-        "-filter_complex",
-        "[0:v][1:v]overlay=0:0[v]",
-        "-map",
-        "[v]",
-        "-map",
-        "0:a",
-        "-c:v:0",
-        "h264_nvenc",
-        "-b:v:0",
-        config.video_bitrate_.c_str(),
-        "-b:a:0",
-        config.audio_bitrate_.c_str(),
-        "-movflags",
-        "frag_keyframe+empty_moov", // This potentially increase disk IO usage.
-                                    // However, the integrity of the video can be guaranteed in case of errors.
-        "-f",
-        "mp4",
-        output_file_path.c_str(),
-        nullptr};
+    };
 
-#if 0
-    ffmpeg_cmd_line.insert(
-        ffmpeg_cmd_line.end(),
-        {
-            NULL,
-            NULL,
+
+    // add hardware decoder
+    if (config.decoder_ != "none") {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+                "-hwaccel",
+                config.decoder_.c_str(),
+                //"-hwaccel_device",
+                //"0",
+            });
+    }
+
+    ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+            "-i",
+            config.stream_address_.c_str(),
+            "-f",
+            "rawvideo",
+            "-s",
+            ffmpeg_video_info.c_str(),
+            "-pix_fmt",
+            "rgba",
+            "-r",
+            ffmpeg_fps_info.c_str(),
+            "-i",
+            "-",
+            "-filter_complex",
             "[0:v][1:v]overlay=0:0[v]",
             "-map",
             "[v]",
             "-map",
             "0:a",
             "-c:v:0",
-            "h264_nvenc",
+            config.encoder_.c_str(),
+    });
+
+    // clang-format on
+
+    // add extra encoder info
+    if (!config.extra_encoder_info_.empty()) {
+        for (auto &item : config.extra_encoder_info_) {
+            ffmpeg_cmd_line.push_back(item.c_str());
+        }
+    }
+
+    // clang-format off
+
+    // set bitrate
+    ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-b:v:0",
             config.video_bitrate_.c_str(),
             "-b:a:0",
             config.audio_bitrate_.c_str(),
+    });
+
+    // set segment time
+    if (config.segment_time_ > 0) {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+            "-f",
+            "segment",
+            "-segment_time",
+            ffmpeg_segment_time.c_str(),
+        });
+    }
+
+    ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-movflags",
             "frag_keyframe+empty_moov", // This potentially increase disk IO usage.
                                         // However, the integrity of the video can be guaranteed in case of errors.
-            "-f",
-            "mp4",
             output_file_path.c_str(),
-        });
-#endif
+            nullptr,
+    });
 
     ffmpeg_cmd_line.push_back(nullptr);
 
     // clang-format on
 
     auto print_ffmpeg_cmd = [&]() {
-        fmt::print("原始ffmpeg命令:");
+        fmt::print("\n原始ffmpeg命令:\n");
         for (auto &item : ffmpeg_cmd_line) {
             if (item) {
-                fmt::print("{} ", item);
+                printf("%s ", item);
             }
         }
         fmt::print("\n");
     };
 
     // create ffmpeg subprocess
+    print_ffmpeg_cmd();
 
     int ret = subprocess_create(ffmpeg_cmd_line.data(),
                                 subprocess_option_inherit_environment, subprocess);
     if (ret != 0) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                    "内部错误：无法执行ffmpeg\n");
-        print_ffmpeg_cmd();
         std::abort();
     }
 }

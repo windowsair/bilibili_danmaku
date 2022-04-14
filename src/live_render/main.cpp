@@ -29,7 +29,6 @@ BOOL WINAPI consoleHandler(DWORD signal) {
         if (kLive_monitor_handle) {
             kLive_monitor_handle->stop_ffmpeg_record();
         }
-
     }
 
     return TRUE;
@@ -59,18 +58,29 @@ int main(int argc, char **argv) {
     kLive_monitor_handle = &global_monitor;
 
     auto config = config::get_user_live_render_config();
-
     check_live_render_path(config);
+
+    if (argc < 2) {
+        fmt::print(fg(fmt::color::yellow) | fmt::emphasis::italic,
+                   "用法: live_render <room_id>\n"
+                   "例如录制房间号为672353429的直播: live_render 672353429\n");
+        return -1;
+    }
 
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> queue(100);
     live_danmaku live;
     live.set_danmaku_queue(&queue);
 
-    // step1: get live info
-    // TODO: parameter
-    auto room_id = 5050;
+    // step1: get live info: room_id, user uid
+    auto room_id = std::stoull(argv[1]);
     auto room_detail = live.get_room_detail(room_id);
+    config.user_uid_ = room_detail.user_uid_;
 
+    // step2: get username
+    auto username = live.get_username(room_detail.user_uid_);
+    fmt::print(fg(fmt::color::green_yellow), "用户名:{}\n", username);
+
+    // step3: wait live start
     if (room_detail.live_status_ != live_detail_t::VALID) {
         fmt::print(fg(fmt::color::yellow), "暂未开播，等待中...");
 
@@ -85,13 +95,12 @@ int main(int argc, char **argv) {
         std::abort();
     }
 
-    config.user_uid_ = room_detail.user_uid_;
-
+    // step4: get live title as output file name
     auto live_title = live.get_live_room_title(room_detail.user_uid_);
     config.filename_ = live_title;
 
+    // step5: get stream meta info and update config.
     auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000);
-    // get stream meta info and update config.
     init_stream_video_info(stream_list, config);
 
     //
@@ -106,7 +115,6 @@ int main(int argc, char **argv) {
 
     // capture live danmaku: thread 2
     live.run(room_detail.room_detail_str_);
-
 
     global_monitor.set_live_handle(&live);
     global_monitor.set_room_id(room_id);

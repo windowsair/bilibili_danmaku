@@ -89,11 +89,13 @@ class live_danmaku {
         delete parse_helper_.danmaku_color_re_;
         delete parse_helper_.danmaku_info_re_;
     }
-    live_detail_t get_room_detail(int live_id);
+    live_detail_t get_room_detail(uint64_t live_id);
 
-    std::vector<live_stream_info_t> get_live_room_stream(int room_id, int qn);
+    std::vector<live_stream_info_t> get_live_room_stream(uint64_t room_id, int qn);
 
     std::string get_live_room_title(uint64_t user_uid);
+
+    std::string get_username(uint64_t user_uid);
 
     void run(std::string room_info);
 

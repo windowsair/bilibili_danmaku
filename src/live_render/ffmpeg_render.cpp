@@ -233,7 +233,6 @@ void ffmpeg_render::run() {
     std::vector<danmaku::ass_dialogue_t> ass_dialogue_list;
 
     std::string ass_header_str = ass::get_ass_header(config_, ass_dialogue_list);
-    printf("%s", ass_header_str.c_str());
 
     ASS_Track *ass_track =
         ass_read_memory(ass_library, const_cast<char *>(ass_header_str.c_str()),

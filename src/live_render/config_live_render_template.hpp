@@ -7,11 +7,39 @@
     "output_path": "video/",
     "#output_path": "视频存放路径，例如存放在video文件夹下",
 
-    "video_bitrate": "5650k",
+    "video_bitrate": "15M",
     "#video_bitrate": "视频流比特率，按照ffmpeg接受的格式输入",
 
-    "audio_bitrate": "320k",
+    "audio_bitrate": "320K",
     "#audio_bitrate": "音频流比特率，按照ffmpeg接受的格式输入",
+
+    "decoder": "nvdec",
+    "#decoder": [
+        " 视频的硬件解码器类型，可能的值有",
+        " none (不使用硬件解码器) ,nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows), ",
+        " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
+    ],
+
+    "encoder": "hevc_nvenc",
+    "#encoder": [
+        " 视频的软/硬件编码器类型，可能的值有",
+        " hevc_nvenc (nvidia gpu h265), h264_nvenc (nvidia gpu h264)",
+        " h264_amf (amd gpu h264), hevc_amf (amd gpu h265), libx264 (cpu h264 软件编码), libx265 (cpu h265 软件编码)",
+        " h264_qsv (intel gpu h264), hevc_qsv (intel gpu h265) 等。",
+        " 或者您可以选择一个ffmpeg接受的编码器"
+    ],
+
+    "extra_encoder_info": [ ""
+    ],
+    "#extra_encoder_info": [
+        "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
+        ["-preset", "15"],
+        "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
+    ],
+
+    "segment_time": 0,
+    "#segment_time" : "视频切片长度（以秒计），0表示不切片",
+
 
     "post_convert": true,
     "#post_convert": "是否在录制结束后自动将格式转换为faststart形式（faststart可以加快视频加载的时间)",
@@ -65,6 +93,22 @@ constexpr auto config_live_render_template_schema =
         "audio_bitrate": {
             "type": "string"
         },
+        "decoder": {
+            "type": "string"
+        },
+        "encoder": {
+            "type": "string"
+        },
+        "extra_encoder_info": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "segment_time": {
+            "type": "number",
+            "minimum": 0
+        },
         "video_width": {
             "type": "integer"
         },
@@ -106,6 +150,9 @@ constexpr auto config_live_render_template_schema =
         "output_path",
         "video_bitrate",
         "audio_bitrate",
+        "decoder",
+        "encoder",
+        "extra_encoder_info",
         "post_convert",
         "font_family",
         "font_scale",

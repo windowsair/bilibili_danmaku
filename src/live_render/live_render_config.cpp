@@ -30,8 +30,8 @@ inline live_render_config_t get_default_live_render_config() {
     config.post_convert = false;
 
     config.fps_ = 60;
-    config.video_bitrate_ = "5650k";
-    config.audio_bitrate_ = "320k";
+    config.video_bitrate_ = "15M";
+    config.audio_bitrate_ = "320K";
 
     return config;
 }
@@ -78,9 +78,9 @@ live_render_config_t get_user_live_render_config() {
 
     if (!doc.Accept(validator)) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
-                   "配置文件无效。将尝试使用默认配置\n");
+                   "配置文件无效。请检查\n");
         fclose(fp);
-        return get_default_live_render_config();
+        exit(0);
     }
 
     // Accept!
@@ -90,6 +90,18 @@ live_render_config_t get_user_live_render_config() {
     config.output_file_path_ = doc["output_path"].GetString();
     config.video_bitrate_ = doc["video_bitrate"].GetString();
     config.audio_bitrate_ = doc["audio_bitrate"].GetString();
+    config.encoder_ = doc["encoder"].GetString();
+    config.decoder_ = doc["decoder"].GetString();
+
+    for (auto& item: doc["extra_encoder_info"].GetArray()) {
+        config.extra_encoder_info_.push_back(item.GetString());
+    }
+    if (config.extra_encoder_info_.size() == 1 &&
+        config.extra_encoder_info_[0].size() == 0) {
+        config.extra_encoder_info_.clear();
+    }
+
+    config.segment_time_ = doc["segment_time"].GetInt64();
 
     config.font_family_ = doc["font_family"].GetString();
     config.font_color_ = 0xFFFFFF; // white
@@ -100,6 +112,7 @@ live_render_config_t get_user_live_render_config() {
     config.danmaku_show_range_ = doc["danmaku_show_range"].GetFloat();
     config.danmaku_move_time_ = doc["danmaku_move_time"].GetInt();
     config.danmaku_pos_time_ = doc["danmaku_pos_time"].GetInt();
+
 
 
     if (doc.HasMember("video_width")) {
