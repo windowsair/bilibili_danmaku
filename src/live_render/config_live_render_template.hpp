@@ -11,7 +11,7 @@
     "#video_bitrate": "视频流比特率，按照ffmpeg接受的格式输入",
 
     "audio_bitrate": "320K",
-    "#audio_bitrate": "音频流比特率，按照ffmpeg接受的格式输入",
+    "#audio_bitrate": "音频流比特率，按照ffmpeg接受的格式输入。如果需要输出原始音频流，请设置为copy",
 
     "decoder": "nvdec",
     "#decoder": [

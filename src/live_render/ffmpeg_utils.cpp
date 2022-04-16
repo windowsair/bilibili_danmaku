@@ -380,6 +380,8 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
 
     std::string ffmpeg_segment_time = fmt::format("{}", config.segment_time_);
     std::string ffmpeg_thread_queue_size = fmt::format("{}", config.thread_queue_size_);
+
+    bool ffmpeg_copy_audio = std::string("copy") == config.audio_bitrate_;
     // cmd line
 
     // TODO: reconnect?
@@ -432,6 +434,17 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
             "[v]",
             "-map",
             "0:a",
+    });
+
+    if (ffmpeg_copy_audio) {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+                "-c:a",
+                "copy",
+        });
+    }
+
+    // set video encoder
+    ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-c:v:0",
             config.encoder_.c_str(),
     });
@@ -446,14 +459,19 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     }
 
     // clang-format off
-
+    
     // set bitrate
     ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-b:v:0",
             config.video_bitrate_.c_str(),
-            "-b:a:0",
-            config.audio_bitrate_.c_str(),
     });
+
+    if (!ffmpeg_copy_audio) {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+                "-b:a:0",
+                config.audio_bitrate_.c_str(),
+        });
+    }
 
     // set segment time
     if (config.segment_time_ > 0) {
