@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(bilibili_danmaku)
 
-set(DANMAKU_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/thirdparty/)
+set(DANMAKU_THIRDPARTY_PATH ${CMAKE_SOURCE_DIR}/thirdparty)
 
 set(DANMAKU_THIRDPARTY_SRC
         ${CMAKE_SOURCE_DIR}/thirdparty/pugixml/pugixml.cpp
