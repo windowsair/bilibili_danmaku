@@ -23,6 +23,8 @@
 **警告： 该项目暂未准备好用于生产。API、文档、用法的更改恕不另行通知。**
 
 </div>
+
+
 ----
 
 
@@ -206,7 +208,13 @@ Linux下的编译操作类似。
 ## 预构建二进制文件下载
 
 
-目前已有amd64架构的Windows预编译二进制文件。
+目前已有amd64架构的Windows预编译二进制文件。这些预构建二进制文件的最新构建版本可以在这里下载到： [预编译文件](https://github.com/windowsair/bilibili_danmaku/actions/workflows/build-binary.yml)
+
+
+有关如何下载，请参考：[github action帮助](https://docs.github.com/cn/actions/managing-workflow-runs/downloading-workflow-artifacts)
+
+
+或者您也可以下载Release页面中的预构建版本： [Release 预编译文件](https://github.com/windowsair/bilibili_danmaku/releases/)
 
 如果您对构建有任何疑惑或建议，欢迎提出issue和pr。
 
@@ -322,6 +330,8 @@ $ make
 
 有关如何下载，请参考：[github action帮助](https://docs.github.com/cn/actions/managing-workflow-runs/downloading-workflow-artifacts)
 
+
+或者您也可以下载Release页面中的预构建版本： [Release 预编译文件](https://github.com/windowsair/bilibili_danmaku/releases/)
 
 # 第三方项目
 
