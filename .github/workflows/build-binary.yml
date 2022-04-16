@@ -58,7 +58,7 @@ jobs:
     - name: Generate config
       working-directory: ${{github.workspace}}/build/bin
       shell: bash
-      run: xml2ass || live_render || echo ok
+      run: ./xml2ass || ./live_render || echo ok
 
     - name: Upload Binary
 #      if: matrix.os != 'windows-latest'
