@@ -26,15 +26,15 @@ class ffmpeg_render {
 
         // If the user only needs "move" type danmaku,
         // then we can safely reduce the height of the screen.
-        if (config.danmaku_pos_time_ == 0) {
+        if (config_.danmaku_pos_time_ == 0) {
             float height =
-                static_cast<float>(config.video_height_) * config.danmaku_show_range_;
-            height += static_cast<float>(config.font_size_) *
-                      config.font_scale_; // add some margin
+                static_cast<float>(config_.video_height_) * config_.danmaku_show_range_;
+            height += static_cast<float>(config_.font_size_) *
+                      config_.font_scale_; // add some margin
             ass_img_.height = static_cast<int>(height);
-            config.video_height_ = static_cast<int>(height);
+            config_.video_height_ = static_cast<int>(height);
         } else {
-            ass_img_.height = config.video_height_;
+            ass_img_.height = config_.video_height_;
         }
         // Note that we use config video parameter to create ffmpeg subprocess.
 
