@@ -19,6 +19,7 @@ typedef struct live_render_config_ : public ass_config_t {
     std::string encoder_;
     std::vector<std::string> extra_encoder_info_;
     uint64_t segment_time_;
+    int thread_queue_size_;
 
 
     // stream setting

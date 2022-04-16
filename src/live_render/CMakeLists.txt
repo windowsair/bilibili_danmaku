@@ -80,21 +80,21 @@ if (LIVE_RENDER_BUILD_TESTING)
     endif ()
 
 
-    if (WIN32)
-        set(TEST_LIBASS_RENDER_SOURCES
-                test/test_libass_render.cpp
-                )
-        add_executable(test_libass_render
-                ${TEST_LIBASS_RENDER_SOURCES}
-                ${DANMAKU_THIRDPARTY_SRC}
-                ${LIVE_RENDER_SOURCES}
-                ${LIVE_RENDER_THIRDPARTY_SRC})
-        target_link_libraries(test_libass_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
-                re2::re2
-                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
-                )
-        copy_lib()
-    endif ()
+#    if (WIN32)
+#        set(TEST_LIBASS_RENDER_SOURCES
+#                test/test_libass_render.cpp
+#                )
+#        add_executable(test_libass_render
+#                ${TEST_LIBASS_RENDER_SOURCES}
+#                ${DANMAKU_THIRDPARTY_SRC}
+#                ${LIVE_RENDER_SOURCES}
+#                ${LIVE_RENDER_THIRDPARTY_SRC})
+#        target_link_libraries(test_libass_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
+#                re2::re2
+#                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
+#                )
+#        copy_lib()
+#    endif ()
 
 
     set(TEST_FFMPEG_GET_INFO_SOURCES
@@ -162,11 +162,13 @@ install(TARGETS live_render
 if (WIN32)
     install(FILES ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-1_1-x64.dll
             ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-1_1-x64.dll
+            ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
             CONFIGURATIONS Debug
             DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
     install(FILES ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-1_1-x64.dll
             ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-1_1-x64.dll
+            ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
             CONFIGURATIONS Release
             DESTINATION ${CMAKE_BINARY_DIR}/bin)
 endif ()

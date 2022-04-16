@@ -379,7 +379,7 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     std::string ffmpeg_fps_info = fmt::format("{}", config.fps_);
 
     std::string ffmpeg_segment_time = fmt::format("{}", config.segment_time_);
-
+    std::string ffmpeg_thread_queue_size = fmt::format("{}", config.thread_queue_size_);
     // cmd line
 
     // TODO: reconnect?
@@ -412,6 +412,8 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     }
 
     ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+            "-thread_queue_size",
+            ffmpeg_thread_queue_size.c_str(),
             "-i",
             config.stream_address_.c_str(),
             "-f",

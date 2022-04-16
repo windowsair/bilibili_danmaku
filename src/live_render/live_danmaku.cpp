@@ -283,7 +283,7 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
     assert(danmaku_queue_ != nullptr);
 
     count += danmaku_list.size();
-    printf("%d\n", count);
+    fmt::print("总弹幕数:{}\n", count);
 
     danmaku_queue_->enqueue(danmaku_list);
 }

@@ -28,6 +28,7 @@ inline live_render_config_t get_default_live_render_config() {
     config.ffmpeg_path_ = "tool/";
     config.output_file_path_ = "video/";
     config.post_convert = false;
+    config.thread_queue_size_ = 20000;
 
     config.fps_ = 60;
     config.video_bitrate_ = "15M";
@@ -102,6 +103,7 @@ live_render_config_t get_user_live_render_config() {
     }
 
     config.segment_time_ = doc["segment_time"].GetInt64();
+    config.thread_queue_size_ = doc["thread_queue_size"].GetInt();
 
     config.font_family_ = doc["font_family"].GetString();
     config.font_color_ = 0xFFFFFF; // white

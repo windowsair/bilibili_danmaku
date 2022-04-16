@@ -1,10 +1,13 @@
-# Bilibili 弹幕工具集
 
-**警告： 该项目暂未准备好用于生产。API、文档、用法的更改恕不另行通知。**
+<p align="center">
+    <img src="assets/logo.png">
+</p>
 
-## XML转ASS工具
+<h1 align="center">Bilibili 弹幕工具集</h1>
 
-[![Build status][github-action-build-image]][github-action-build-url]    [![license][license-image]][license-url]
+<div align="center">
+
+[![Build status][github-action-build-image]][github-action-build-url]    [![license][license-image]][license-url] [![love][love-image]][love-url]
 
 [github-action-build-image]: https://github.com/windowsair/bilibili_danmuku/actions/workflows/build-binary.yml/badge.svg
 [github-action-build-url]: https://github.com/windowsair/bilibili_danmuku/actions/workflows/build-binary.yml
@@ -12,6 +15,218 @@
 
 [license-image]: https://img.shields.io/badge/license-GPLv3-green.svg
 [license-url]: https://github.com/windowsair/corsacOTA/LICENSE
+
+[love-image]: https://img.shields.io/badge/made%20with-%e2%9d%a4-ff69b4.svg
+[love-url]: https://github.com/windowsair/bilibili_danmuku
+
+
+**警告： 该项目暂未准备好用于生产。API、文档、用法的更改恕不另行通知。**
+
+</div>
+----
+
+
+# live_render, 直播弹幕渲染工具
+
+live_render是一个bilibili直播录制工具，能够在录制直播视频的同时渲染弹幕，在直播结束时直接输出压制好弹幕的视频。
+
+
+## 给我几个用和不用的理由？
+
+在这个小节，我们将向您简要介绍该项目的优势与劣势。
+
+优势
+
+- 📦 开箱即用。只需要ffmpeg即可开始录制。
+- 🚀 无需等待。当录播结束时即可直接使用压制好的文件。
+- 🎨 支持更多的字体效果。您可以自定义字符集、透明度、描边、阴影、加粗等字体效果，此外支持更多的Unicode字符（取决于您机器内的字符集）。
+- ⚙️ 支持自定义编解码器。此外，您可以传递更多的编码器参数，能够获得与录制完毕再压制弹幕类似的压制效果。
+
+劣势
+
+- ⚠️ 对异常处理不够健壮。这里有一小部分是ffmpeg目前存在的问题，但主要是项目目前存在的问题。暂时无法处理断流等问题。
+- ⚠️ 弹幕的同步处理机制暂不完善。
+- ⚠️ 实时渲染对机器处理能力有一定要求。
+
+
+## 演示
+
+1. 压力测试
+
+![benckmark_screenshot_1.png](assets/benckmark_screenshot_1.png)
+
+> 测试机器环境： Windows i7-9750H + GTX1650（笔记本平台） 15分钟测试，渲染全屏固定弹幕和滚动弹幕。平均速率约为0.93X。
+
+
+2. 45%分屏弹幕测试
+
+![](assets/normal_screenshot_1.png)
+
+![](assets/normal_screenshot_2.png)
+
+> 两小时的正常录播测试。 总弹幕154201条，装填弹幕88159条。
+
+
+
+更多效果演示链接： https://www.bilibili.com/video/BV1a94y1d72A
+
+> 由于b站二压等因素的存在，您看到的效果比实际效果稍差。
+
+## 先决条件
+
+- `ffmpeg` 您需要将ffmpeg放置于指定的目录中
+
+
+## 用法
+
+基本使用
+```bash
+./live_render <room_id>
+
+# 例如录制房间号为672353429的直播:
+$ ./live_render 672353429
+```
+
+## 详细配置说明
+
+首次运行时，程序会自动在当前工作目录下创建`live_render_config.json`文件，您可以修改该文件的配置。
+
+```json
+{
+    "ffmpeg_path": "tool/",
+    "#ffmpeg_path": "ffmpeg存放目录，例如存放在tool文件夹下",
+
+    "output_path": "video/",
+    "#output_path": "视频存放路径，例如存放在video文件夹下",
+
+    "video_bitrate": "15M",
+    "#video_bitrate": "视频流比特率，按照ffmpeg接受的格式输入",
+
+    "audio_bitrate": "320K",
+    "#audio_bitrate": "音频流比特率，按照ffmpeg接受的格式输入",
+
+    "decoder": "nvdec",
+    "#decoder": [
+        " 视频的硬件解码器类型，可能的值有",
+        " none (不使用硬件解码器) ,nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows), ",
+        " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
+    ],
+
+    "encoder": "hevc_nvenc",
+    "#encoder": [
+        " 视频的软/硬件编码器类型，可能的值有",
+        " hevc_nvenc (nvidia gpu h265), h264_nvenc (nvidia gpu h264)",
+        " h264_amf (amd gpu h264), hevc_amf (amd gpu h265), libx264 (cpu h264 软件编码), libx265 (cpu h265 软件编码)",
+        " h264_qsv (intel gpu h264), hevc_qsv (intel gpu h265) 等。",
+        " 或者您可以选择一个ffmpeg接受的编码器"
+    ],
+
+    "extra_encoder_info": [ ""
+    ],
+    "#extra_encoder_info": [
+        "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
+        ["-preset", "15"],
+        "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
+    ],
+
+    "segment_time": 0,
+    "#segment_time" : "视频切片长度（以秒计），0表示不切片",
+
+
+    "post_convert": true,
+    "#post_convert": "是否在录制结束后自动将格式转换为faststart形式（faststart可以加快视频加载的时间)",
+
+    "font_family": "微软雅黑",
+    "#font_family": "采用的字体集",
+
+    "font_scale": 1.6,
+    "#font_scale": "字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
+
+    "font_alpha": 0.75,
+    "#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
+
+    "font_bold": true,
+    "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
+
+    "font_outline": 1.0,
+    "#font_outline": "字体描边（边框）值",
+
+    "font_shadow": 0.0,
+    "#font_shadow": "字体阴影值",
+
+    "danmaku_show_range": 0.45,
+    "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+
+    "danmaku_move_time": 15,
+    "#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
+
+    "danmaku_pos_time": 5,
+    "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
+
+    "video_width": 1920,
+    "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
+
+    "video_height": 1080,
+    "#video_height": "强制设置视频高度，一般情况下此项将被忽略",
+
+    "fps": 60,
+    "#fps": "强制设置视频帧率，一般情况下此项将被忽略"
+
+}
+```
+
+## 构建与编译
+
+您可以自行编译项目，或者直接使用预先构建好的二进制文件。
+
+在Windows下，您可以直接采用支持cmake的Visual Studio进行编译。
+
+或者，您可以手动在带有msvc环境的命令提示符中操作:
+
+```bash
+
+$ mkdir build && cd build
+$ cmake ..
+$ cmake --build . --config Release
+```
+
+Linux下的编译操作类似。
+
+> 由于macOS对ffmpeg codec的支持较差，暂时没有添加macos支持的计划，但是您仍然可以尝试编译，并使用macOS的专有媒体工具箱插件完成编解码操作。
+
+
+## 预构建二进制文件下载
+
+
+目前已有amd64架构的Windows预编译二进制文件。
+
+如果您对构建有任何疑惑或建议，欢迎提出issue和pr。
+
+
+## FAQ 经常会问的问题
+
+1. Q: 为什么输出的视频文件打开很慢/无法拖动进度条/帧率明显不对？
+
+
+    A: 这是因为设置了`empty_moov`。经过ffmpeg简单转换为faststart即可。
+
+    ```bash
+    ffmpeg -i input.raw.mp4 -c copy -movflags faststart output.mp4
+    ```
+
+2. Q: 正常的渲染速度是什么样的？
+
+    A: 一般情况下，平均渲染速度应该保持在0.95X以上。
+
+
+3. Q: 如何选择合适的`thread_queue_size`值？
+
+    A: 过小的值会造成渲染队列的阻塞。当ffmpeg输出形如`thread queue block`的提示时，您需要考虑增大`thread_queue_size`。但是较大的值会增加内存占用。特别地，某些ffmpeg构建版本会预分配大量内存。建议您谨慎修改此项。
+
+
+----
+
+# xml2ass, XML转ASS工具
 
 
 将录制好的原始XML格式弹幕转换为ASS样式。
@@ -27,7 +242,7 @@
 ./xml2ass <xml_file1> <xml_file2> ...
 
 # 可以这样做--->
-$ ./xml2ass 1.xml 2.xml 3.xml 
+$ ./xml2ass 1.xml 2.xml 3.xml
 ```
 
 或者输入一个目录，将转换该目录下同级的所有xml
@@ -42,7 +257,7 @@ $ ./xml2ass ./xml_path
 $ ./xml2ass ./xml_path ./1.xml
 ```
 
-### 自定义配置
+## 自定义配置
 
 在首次运行时，会自动生成默认的配置文件`config.json`
 您可以按照文件中的提示修改配置
@@ -57,13 +272,13 @@ $ ./xml2ass ./xml_path ./1.xml
 
 	"font_family": "微软雅黑",
 	"#font_family": "采用的字体集",
-  
+
 	"font_scale": 1.6,
 	"#font_scale": "字体缩放倍数，为1.0时保持原始大小",
 
 	"font_alpha": 0.75,
 	"#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
-  
+
 	"font_bold": true,
 	"#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
@@ -106,20 +321,34 @@ $ make
 
 某些项目可能有改动，改动后的项目遵循其原有的许可证。
 
-- `pugixml` MIT License
+我们注重开源合规性。这些项目均与GPLv3兼容。
+
 - `fmtlib` MIT License
-- `rapidjson` MIT License
-- `simdutf` MIT License
-- `re2` BSD 3-Clause License
+- `fontconfig` MIT License
+- `freetype` FreeType License
+- `fribidi` LGPLv2.1 License
+- `harfbuzz` "Old MIT" license
+- `iconv` GPLv3 License
 - `IXWebSocket` BSD 3-Clause License
-- `openssl` Apache License 2.0
-- `readwritequeue` BSD License
 - `libass` ISC License
 - `libdeflate` MIT License
+- `libxml2` MIT License
+- `liblzma` LGPLv2.1 License
+- `openssl` Apache License 2.0
+- `pugixml` MIT License
+- `rapidjson` MIT License
+- `readwritequeue` BSD 2-Clause License
+- `re2` BSD 3-Clause License
+- `simdutf` MIT License
 - `subprocess.h` Unlicense License
 - `windows-kill-library` MIT License
+- `zlib` Zlib License
 
-# Credit
+
+# Credit & Reference
 
 - [海面烧烧炮](https://space.bilibili.com/2437955) 感谢他提供的想法，没有他就没有本项目。
 
+- [DanmakuRender](https://github.com/SmallPeaches/DanmakuRender) 基于PIL实现的录播弹幕实时渲染项目
+
+- [弹幕盒子](https://github.com/danmubox/danmubox-develop) 在线的弹幕格式转换工具

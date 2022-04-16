@@ -226,7 +226,7 @@ inline void update_libass_event(
             }
 
             all_count += ass_dialogue_list.size();
-            fmt::print("[{}]\n", all_count);
+            fmt::print("已经装填弹幕[{}]\n", all_count);
 
             monitor->update_danmaku_time(min_start_time);
         }
@@ -301,7 +301,7 @@ void ffmpeg_render::run() {
                 k_ffmpeg_output_time = (60 * 60 * 1000) * _hour + (60 * 1000) * _mins +
                                        (1000) * _secs + (10) * _hundredths;
 
-                printf(">com:%d<\n", k_ffmpeg_output_time - tm);
+                //printf(">com:%d<\n", k_ffmpeg_output_time - tm);
 
                 this->live_monitor_handle_->update_ffmpeg_time(k_ffmpeg_output_time);
             }
@@ -344,7 +344,7 @@ void ffmpeg_render::run() {
         }
 
         if (wait_render_count > 5 && !wait_render) { // 5times render-> 5 //before:10
-            printf("{dis:%d}\n", k_ffmpeg_output_time - tm);
+            //printf("{dis:%d}\n", k_ffmpeg_output_time - tm);
             wait_render = true;
         }
 
@@ -357,11 +357,11 @@ void ffmpeg_render::run() {
                 wait_render_offset_time = sec * 1000; // sec to ms
             } else if (tm > wait_render_offset_time) {
                 // wait done.
-                printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
-                       k_ffmpeg_output_time);
-                printf("{before} %d\n", k_ffmpeg_output_time - tm);
+                //printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
+                //       k_ffmpeg_output_time);
+                //printf("{before} %d\n", k_ffmpeg_output_time - tm);
                 tm = k_ffmpeg_output_time + 1000; // FIXME: real time ffmpeg!
-                printf("{after} %d\n", k_ffmpeg_output_time - tm);
+                //printf("{after} %d\n", k_ffmpeg_output_time - tm);
                 wait_render = false;
                 wait_render_count = 0;
                 wait_render_offset_time = -1;

@@ -40,6 +40,9 @@
     "segment_time": 0,
     "#segment_time" : "视频切片长度（以秒计），0表示不切片",
 
+    "thread_queue_size": 20000,
+    "#thread_queue_size": "拉流线程队列大小",
+
 
     "post_convert": true,
     "#post_convert": "是否在录制结束后自动将格式转换为faststart形式（faststart可以加快视频加载的时间)",
@@ -111,6 +114,10 @@ constexpr auto config_live_render_template_schema =
                 "type": "string"
             }
         },
+        "thread_queue_size": {
+            "type": "number",
+            "minimum": 1
+        },
         "segment_time": {
             "type": "number",
             "minimum": 0
@@ -169,6 +176,7 @@ constexpr auto config_live_render_template_schema =
         "decoder",
         "encoder",
         "extra_encoder_info",
+        "thread_queue_size",
         "post_convert",
         "font_family",
         "font_scale",
