@@ -2,7 +2,7 @@ name: Build Binary
 
 on:
   push:
-    branches: [ master, dev ]
+    branches: [ master, dev, ci_test ]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc..)

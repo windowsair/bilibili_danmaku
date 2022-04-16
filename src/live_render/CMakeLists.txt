@@ -171,4 +171,6 @@ if (WIN32)
             ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
             CONFIGURATIONS Release
             DESTINATION ${CMAKE_BINARY_DIR}/bin)
+
+
 endif ()

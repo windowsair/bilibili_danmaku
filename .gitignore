@@ -14,7 +14,6 @@ config.json
 x64/
 [Ww][Ii][Nn]32/
 bld/
-[Bb]in/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
