@@ -16,7 +16,7 @@
     "decoder": "nvdec",
     "#decoder": [
         " 视频的硬件解码器类型，可能的值有",
-        " none (不使用硬件解码器) ,nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows), ",
+        " none (不使用硬件解码器) , nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows) ",
         " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
     ],
 

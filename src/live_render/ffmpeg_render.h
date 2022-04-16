@@ -33,6 +33,9 @@ class ffmpeg_render {
                       config_.font_scale_; // add some margin
             ass_img_.height = static_cast<int>(height);
             config_.video_height_ = static_cast<int>(height);
+
+            // The height has been modified, so all of them can be displayed now
+            config_.danmaku_show_range_ = 1.0f;
         } else {
             ass_img_.height = config_.video_height_;
         }

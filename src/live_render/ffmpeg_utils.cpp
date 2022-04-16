@@ -16,6 +16,7 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include "windows.h"
 
+// TODO: remove this?
 #define POPEN  _popen
 #define PCLOSE _pclose
 const char *kOpenOption = "wb";
@@ -252,6 +253,21 @@ inline std::string get_output_file_path(config::live_render_config_t &config) {
 #endif
 }
 
+inline std::string get_ffmpeg_file_path(const config::live_render_config_t &config) {
+    std::string full_name = fmt::format("{}/ffmpeg", config.ffmpeg_path_);
+
+#if defined(_WIN32) || defined(_WIN64)
+
+    // covert to local codepage
+    std::string cov_name = str2local_codepage(full_name);
+    assert(!cov_name.empty());
+    return cov_name;
+
+#else
+    return full_name;
+#endif
+}
+
 /**
  *
  * @param stream_address
@@ -264,10 +280,26 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
     std::string buffer;
     buffer.resize(10240);
 
-    auto cmd = fmt::format("{}/ffmpeg -i \"{}\" 2>&1", config.ffmpeg_path_,
-                           stream_address); // stderr > stdout
+    std::string ffmpeg_exe_path = get_ffmpeg_file_path(config);
 
-    FILE *fp = POPEN(cmd.c_str(), kOpenReadOption);
+    std::vector<const char *> ffmpeg_cmd_line{
+        ffmpeg_exe_path.c_str(),
+        "-i",
+        stream_address.c_str(),
+        nullptr,
+    };
+
+    subprocess_s subprocess;
+    int ret = subprocess_create(ffmpeg_cmd_line.data(),
+                                subprocess_option_inherit_environment, &subprocess);
+
+    if (ret != 0) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "内部错误：无法执行ffmpeg\n");
+        std::abort();
+    }
+
+    FILE *fp = subprocess_stderr(&subprocess);
     if (fp == NULL) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                    "内部错误：无法打开ffmpeg\n");
@@ -300,7 +332,7 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
         }
     }
 
-    PCLOSE(fp);
+    subprocess_destroy(&subprocess);
 
     if (displayWidth == -1 && displayHeight == -1 && fps == -1) {
         return false;
@@ -370,7 +402,7 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
                             config::live_render_config_t &config) {
     using namespace fmt::literals;
 
-    std::string ffmpeg_exe_path = config.ffmpeg_path_ + "/ffmpeg";
+    std::string ffmpeg_exe_path = get_ffmpeg_file_path(config);
     std::string output_file_path = get_output_file_path(config);
 
     std::string ffmpeg_video_info =
