@@ -68,7 +68,6 @@ inline void blend(image_t *frame, ASS_Image *img, uint64_t offset) {
         ++cnt;
         img = img->next;
     }
-    //printf("%d images blended\n", cnt);
 }
 
 void libass_msg_callback(int level, const char *fmt, va_list va, void *data) {
@@ -79,15 +78,23 @@ void libass_msg_callback(int level, const char *fmt, va_list va, void *data) {
     printf("\n");
 }
 
+void libass_no_msg_callback(int level, const char *fmt, va_list va, void *data) {
+}
+
 inline void libass_init(ASS_Library **ass_library, ASS_Renderer **ass_renderer,
-                        int frame_w, int frame_h) {
+                        int frame_w, int frame_h, bool enable_message_output) {
     *ass_library = ass_library_init();
     if (!(*ass_library)) {
         printf("ass_library_init failed!\n");
         std::abort();
     }
 
-    ass_set_message_cb(*ass_library, libass_msg_callback, NULL);
+    if (enable_message_output) {
+        ass_set_message_cb(*ass_library, libass_msg_callback, NULL);
+    } else {
+        ass_set_message_cb(*ass_library, libass_no_msg_callback, NULL);
+    }
+
     ass_set_extract_fonts(*ass_library, 1);
 
     *ass_renderer = ass_renderer_init(*ass_library);
@@ -226,8 +233,8 @@ inline void update_libass_event(
             }
 
             all_count += ass_dialogue_list.size();
-            fmt::print("已经装填弹幕[{}]\n", all_count);
 
+            monitor->print_danmaku_inserted(all_count);
             monitor->update_danmaku_time(min_start_time);
         }
 
@@ -252,7 +259,11 @@ void ffmpeg_render::run() {
     ASS_Library *ass_library = nullptr;
     ASS_Renderer *ass_renderer = nullptr;
 
-    libass_init(&ass_library, &ass_renderer, config_.video_width_, config_.video_height_);
+    bool enable_libass_output =
+        !(config_.verbose_ | static_cast<int>(config::systemVerboseMaskEnum::NO_FFMPEG));
+
+    libass_init(&ass_library, &ass_renderer, config_.video_width_, config_.video_height_,
+                enable_libass_output);
 
     std::vector<danmaku::ass_dialogue_t> ass_dialogue_list;
 
@@ -282,13 +293,26 @@ void ffmpeg_render::run() {
 
     // start ffmpeg monitor thread
     std::thread([&]() {
+        bool do_not_print_ffmpeg_info =
+            config_.verbose_ | static_cast<int>(config::systemVerboseMaskEnum::NO_FFMPEG);
+
+        const auto p1 = std::chrono::system_clock::now();
+        std::string log_file_name = fmt::format(
+            "live_render_{}.log",
+            std::chrono::duration_cast<std::chrono::milliseconds>(p1.time_since_epoch())
+                .count());
+
+        auto log_fp = fopen(log_file_name.c_str(), "wb+");
+        if (log_fp == nullptr) {
+            fmt::print(fg(fmt::color::deep_sky_blue), "无法创建log文件\n");
+        }
+
         std::string ffmpeg_monitor_str(1024, 0);
-        while (1) {
+        while (true) {
             if (!fgets(ffmpeg_monitor_str.data(), 1023, p_stderr) || ferror(p_stderr) ||
                 feof(p_stderr)) {
                 break;
             }
-            printf("%s\n", ffmpeg_monitor_str.data());
 
             auto it_time = ffmpeg_monitor_str.find("time=");
             auto it_speed = ffmpeg_monitor_str.find("speed=");
@@ -305,8 +329,23 @@ void ffmpeg_render::run() {
 
                 this->live_monitor_handle_->update_ffmpeg_time(k_ffmpeg_output_time);
             }
+
+            if (!do_not_print_ffmpeg_info) {
+                printf("%s\n", ffmpeg_monitor_str.data());
+            }
+
+            if (log_fp) {
+                fwrite(ffmpeg_monitor_str.c_str(), strlen(ffmpeg_monitor_str.c_str()), 1,
+                       log_fp);
+                fflush(log_fp);
+            }
         }
         // TODO: post task handle
+
+        if (log_fp) {
+            fflush(log_fp);
+            fclose(log_fp);
+        }
 
         exit(0);
     }).detach();
@@ -323,6 +362,8 @@ void ffmpeg_render::run() {
 
     // overlay fully transparent img on first frame
     auto sz = fwrite(frame->buffer, 1, buffer_count, ffmpeg_);
+
+    fmt::print(fg(fmt::color::green_yellow), "\n录制中...\n");
 
     // TODO: stop cond
     volatile bool stop_cond = true;
@@ -357,6 +398,8 @@ void ffmpeg_render::run() {
                 wait_render_offset_time = sec * 1000.0f; // sec to ms
             } else if (tm > wait_render_offset_time) {
                 // wait done.
+                fmt::print(fg(fmt::color::deep_sky_blue), "\n弹幕渲染较慢，调整中...\n");
+
                 //printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
                 //       k_ffmpeg_output_time);
                 //printf("{before} %d\n", k_ffmpeg_output_time - tm);

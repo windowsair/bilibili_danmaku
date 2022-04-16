@@ -74,6 +74,12 @@
     "danmaku_pos_time": 5,
     "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
 
+    "verbose": 0,
+    "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
+       "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
+       "6屏蔽所有统计信息和弹幕信息输出", "7屏蔽所有ffmpeg、弹幕信息和一般统计信息输出"
+    ],
+
     "video_width": 1920,
     "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
 
@@ -166,6 +172,9 @@ constexpr auto config_live_render_template_schema =
         "danmaku_pos_time": {
             "type": "integer",
             "minimum": 0
+        },
+        "verbose": {
+            "type": "integer"
         }
     },
     "required": [
@@ -186,7 +195,8 @@ constexpr auto config_live_render_template_schema =
         "font_shadow",
         "danmaku_show_range",
         "danmaku_move_time",
-        "danmaku_pos_time"
+        "danmaku_pos_time",
+        "verbose"
     ]
 }
 )--"; // \n here

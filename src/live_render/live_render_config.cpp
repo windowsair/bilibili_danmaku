@@ -117,7 +117,7 @@ live_render_config_t get_user_live_render_config() {
     config.danmaku_move_time_ = doc["danmaku_move_time"].GetInt();
     config.danmaku_pos_time_ = doc["danmaku_pos_time"].GetInt();
 
-
+    config.verbose_ = doc["verbose"].GetInt();
 
     if (doc.HasMember("video_width")) {
         config.video_width_ = doc["video_width"].GetInt();

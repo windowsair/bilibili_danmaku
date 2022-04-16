@@ -71,7 +71,8 @@ typedef struct live_detail {
 
 class live_danmaku {
   public:
-    live_danmaku() : base_time_(0), is_pos_danmaku_process_(false) {
+    live_danmaku() : base_time_(0), is_pos_danmaku_process_(false),
+          do_not_print_danmaku_info_(false) {
         zlib_handle_ = libdeflate_alloc_decompressor();
         zlib_buffer_.resize(10240);
 
@@ -112,6 +113,14 @@ class live_danmaku {
         is_pos_danmaku_process_ = false;
     }
 
+    void enable_danmaku_stat_info() {
+        do_not_print_danmaku_info_ = false;
+    }
+
+    void disable_danmaku_stat_info() {
+        do_not_print_danmaku_info_ = true;
+    }
+
   private:
     void init_parser();
 
@@ -146,6 +155,7 @@ class live_danmaku {
     uint64_t base_time_;
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *danmaku_queue_;
     bool is_pos_danmaku_process_;
+    bool do_not_print_danmaku_info_;
 };
 
 #endif //BILIBILI_DANMAKU_LIVE_DANMAKU_H

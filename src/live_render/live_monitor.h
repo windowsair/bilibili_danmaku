@@ -51,6 +51,8 @@ class live_monitor {
         ffmpeg_time_ = time;
     }
 
+    void print_danmaku_inserted(int danmaku_count) const;
+
     void print_live_time();
 
     void stop_ffmpeg_record();

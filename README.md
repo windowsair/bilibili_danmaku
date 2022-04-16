@@ -118,7 +118,7 @@ $ ./live_render 672353429
     "decoder": "nvdec",
     "#decoder": [
         " 视频的硬件解码器类型，可能的值有",
-        " none (不使用硬件解码器) ,nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows), ",
+        " none (不使用硬件解码器) , nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows) ",
         " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
     ],
 
@@ -141,6 +141,9 @@ $ ./live_render 672353429
 
     "segment_time": 0,
     "#segment_time" : "视频切片长度（以秒计），0表示不切片",
+
+    "thread_queue_size": 20000,
+    "#thread_queue_size": "拉流线程队列大小",
 
 
     "post_convert": true,
@@ -172,6 +175,12 @@ $ ./live_render 672353429
 
     "danmaku_pos_time": 5,
     "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
+
+    "verbose": 0,
+    "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
+       "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
+       "6屏蔽所有统计信息和弹幕信息输出", "7屏蔽所有ffmpeg、弹幕信息和一般统计信息输出"
+    ],
 
     "video_width": 1920,
     "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",

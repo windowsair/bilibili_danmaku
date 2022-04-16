@@ -39,8 +39,8 @@ void live_monitor::stop_ffmpeg_record() {
 
 void live_monitor::live_status_monitor_thread() {
     using namespace std::chrono_literals;
-	
-	assert(this->live_handle_ != nullptr);
+
+    assert(this->live_handle_ != nullptr);
 
     std::thread([&]() {
         while (true) {
@@ -69,6 +69,11 @@ void live_monitor::live_status_monitor_thread() {
 void live_monitor::ffmpeg_monitor_thread() {
     using namespace std::chrono_literals;
 
+    if (this->config_.verbose_ |
+        static_cast<int>(config::systemVerboseMaskEnum::NO_STAT_INFO)) {
+        return;
+    }
+
     std::thread([&]() {
         while (this->is_live_valid_) {
             if (this->ffmpeg_time_ > 0)
@@ -81,4 +86,11 @@ void live_monitor::ffmpeg_monitor_thread() {
 void live_monitor::print_live_time() {
     fmt::print("danmaku:{}, render:{}, ffmpeg:{}\n", danmaku_time_, ass_render_time_,
                ffmpeg_time_);
+}
+
+void live_monitor::print_danmaku_inserted(int danmaku_count) const {
+    if (!(config_.verbose_ |
+          static_cast<int>(config::systemVerboseMaskEnum::NO_DANMAKU))) {
+        fmt::print("已经装填弹幕[{}]\n", danmaku_count);
+    }
 }
