@@ -15,7 +15,7 @@ const int danmaku_layer = 0;
 const char *danmaku_name = "Danmu";
 
 // TODO: thread safe init
-auto kTmp_save_file = fmt::output_file("danmaku_save.txt");
+//auto kTmp_save_file = fmt::output_file("danmaku_save.txt");
 
 std::string rgb2bgr(int rgb) {
     // 0xRRGGBB
@@ -170,8 +170,8 @@ inline std::string get_ass_event_impl(const config::ass_config_t &config,
         item.font_color_ != config.font_color_ ? self_effect : "", item.context_);
 
     // TODO: remove this
-    kTmp_save_file.print("{}", ss);
-    kTmp_save_file.flush();
+//    kTmp_save_file.print("{}", ss);
+//    kTmp_save_file.flush();
 
     return ss;
 }

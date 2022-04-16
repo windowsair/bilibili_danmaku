@@ -9,13 +9,13 @@ add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
 add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
 function(copy_lib)
-    if (WIN32)
-        file(COPY
-                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-1_1-x64.dll
-                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-1_1-x64.dll
-                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
-                DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-    endif ()
+#    if (WIN32)
+#        file(COPY
+#                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-1_1-x64.dll
+#                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-1_1-x64.dll
+#                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
+#                DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+#    endif ()
 endfunction(copy_lib)
 
 set(LIVE_RENDER_SOURCES
