@@ -353,8 +353,8 @@ void ffmpeg_render::run() {
                 // set
                 float sec = handle.get_max_danmaku_end_time(config_.danmaku_move_time_,
                                                             config_.danmaku_pos_time_) +
-                            0.1f;                     // TODO: pos time handle
-                wait_render_offset_time = sec * 1000; // sec to ms
+                            0.1f;
+                wait_render_offset_time = sec * 1000.0f; // sec to ms
             } else if (tm > wait_render_offset_time) {
                 // wait done.
                 //printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
@@ -369,26 +369,26 @@ void ffmpeg_render::run() {
         }
 
         // clear buffer
-        memset(frame->buffer, 0, 1920 * 1080 * 4 * 5);
+        memset(frame->buffer, 0, buffer_count * 5);
 
         img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
         blend(frame, img, 0);
         tm += step;
 
         img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
-        blend(frame, img, 1920 * 1080 * 4);
+        blend(frame, img, buffer_count * 1);
         tm += step;
 
         img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
-        blend(frame, img, 1920 * 1080 * 4 * 2);
+        blend(frame, img, buffer_count * 2);
         tm += step;
 
         img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
-        blend(frame, img, 1920 * 1080 * 4 * 3);
+        blend(frame, img, buffer_count * 3);
         tm += step;
 
         img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
-        blend(frame, img, 1920 * 1080 * 4 * 4);
+        blend(frame, img, buffer_count * 4);
         tm += step;
 
         auto sz = fwrite(frame->buffer, 5, buffer_count, ffmpeg_);

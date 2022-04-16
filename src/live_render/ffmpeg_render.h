@@ -5,8 +5,8 @@
 #include <utility>
 
 #include "danmaku.h"
-#include "live_render_config.h"
 #include "live_monitor.h"
+#include "live_render_config.h"
 
 #include "thirdparty/readerwriterqueue/readerwriterqueue.h"
 
@@ -23,7 +23,21 @@ class ffmpeg_render {
         : config_(config), live_monitor_handle_(handle) {
         ass_img_.stride = config.video_width_ * 4;
         ass_img_.width = config.video_width_;
-        ass_img_.height = config.video_height_;
+
+        // If the user only needs "move" type danmaku,
+        // then we can safely reduce the height of the screen.
+        if (config.danmaku_pos_time_ == 0) {
+            float height =
+                static_cast<float>(config.video_height_) * config.danmaku_show_range_;
+            height += static_cast<float>(config.font_size_) *
+                      config.font_scale_; // add some margin
+            ass_img_.height = static_cast<int>(height);
+            config.video_height_ = static_cast<int>(height);
+        } else {
+            ass_img_.height = config.video_height_;
+        }
+        // Note that we use config video parameter to create ffmpeg subprocess.
+
         ass_img_.buffer = static_cast<unsigned char *>(
             malloc(ass_img_.height * ass_img_.width * 4 * 5));
         danmaku_queue_ = nullptr;
@@ -37,7 +51,6 @@ class ffmpeg_render {
         moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *p) {
         danmaku_queue_ = p;
     }
-
 
     void set_live_monitor_handle(live_monitor *handle) {
         live_monitor_handle_ = handle;
