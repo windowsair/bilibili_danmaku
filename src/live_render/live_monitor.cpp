@@ -69,7 +69,7 @@ void live_monitor::live_status_monitor_thread() {
 void live_monitor::ffmpeg_monitor_thread() {
     using namespace std::chrono_literals;
 
-    if (this->config_.verbose_ |
+    if (this->config_.verbose_ &
         static_cast<int>(config::systemVerboseMaskEnum::NO_STAT_INFO)) {
         return;
     }
@@ -89,7 +89,7 @@ void live_monitor::print_live_time() {
 }
 
 void live_monitor::print_danmaku_inserted(int danmaku_count) const {
-    if (!(config_.verbose_ |
+    if (!(config_.verbose_ &
           static_cast<int>(config::systemVerboseMaskEnum::NO_DANMAKU))) {
         fmt::print("已经装填弹幕[{}]\n", danmaku_count);
     }

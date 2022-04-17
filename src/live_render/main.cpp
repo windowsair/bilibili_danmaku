@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     if (config.danmaku_pos_time_ > 0) {
         live.enable_pos_danmaku_process();
     }
-    if (config.verbose_ | config::systemVerboseMaskEnum::NO_DANMAKU) {
+    if (config.verbose_ & static_cast<int>(config::systemVerboseMaskEnum::NO_DANMAKU)) {
         live.disable_danmaku_stat_info();
     }
 

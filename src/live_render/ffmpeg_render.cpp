@@ -21,8 +21,8 @@
 
 #include "thirdparty/subprocess/subprocess.h"
 
-int all_count = 0;
-int k_ffmpeg_output_time = 0; // time in ms
+inline int kDanmaku_inserted_count = 0;
+int kFfmpeg_output_time = 0; // time in ms
 
 extern "C" {
 int ass_process_events_line(ASS_Track *track, char *str);
@@ -137,7 +137,6 @@ inline void update_libass_event(
     while (auto p = queue->peek()) {
         std::vector<danmaku::danmaku_item_t> &danmaku_list = *p;
         assert(!danmaku_list.empty());
-
         static int delay_count = 0;
 
         // get minimum start time
@@ -232,9 +231,9 @@ inline void update_libass_event(
                 ass_process_events_line(ass_track, event_str.data());
             }
 
-            all_count += ass_dialogue_list.size();
+            kDanmaku_inserted_count += ass_dialogue_list.size();
 
-            monitor->print_danmaku_inserted(all_count);
+            monitor->print_danmaku_inserted(kDanmaku_inserted_count);
             monitor->update_danmaku_time(min_start_time);
         }
 
@@ -260,7 +259,7 @@ void ffmpeg_render::run() {
     ASS_Renderer *ass_renderer = nullptr;
 
     bool enable_libass_output =
-        !(config_.verbose_ | static_cast<int>(config::systemVerboseMaskEnum::NO_FFMPEG));
+        !(config_.verbose_ & static_cast<int>(config::systemVerboseMaskEnum::NO_FFMPEG));
 
     libass_init(&ass_library, &ass_renderer, config_.video_width_, config_.video_height_,
                 enable_libass_output);
@@ -294,7 +293,7 @@ void ffmpeg_render::run() {
     // start ffmpeg monitor thread
     std::thread([&]() {
         bool do_not_print_ffmpeg_info =
-            config_.verbose_ | static_cast<int>(config::systemVerboseMaskEnum::NO_FFMPEG);
+            config_.verbose_ & static_cast<int>(config::systemVerboseMaskEnum::NO_FFMPEG);
 
         const auto p1 = std::chrono::system_clock::now();
         std::string log_file_name = fmt::format(
@@ -322,12 +321,12 @@ void ffmpeg_render::run() {
                 sscanf(ffmpeg_monitor_str.data() + it_time + 5, "%d:%d:%d.%d", &_hour,
                        &_mins, &_secs, &_hundredths);
 
-                k_ffmpeg_output_time = (60 * 60 * 1000) * _hour + (60 * 1000) * _mins +
+                kFfmpeg_output_time = (60 * 60 * 1000) * _hour + (60 * 1000) * _mins +
                                        (1000) * _secs + (10) * _hundredths;
 
-                //printf(">com:%d<\n", k_ffmpeg_output_time - tm);
+                //printf(">com:%d<\n", kFfmpeg_output_time - tm);
 
-                this->live_monitor_handle_->update_ffmpeg_time(k_ffmpeg_output_time);
+                this->live_monitor_handle_->update_ffmpeg_time(kFfmpeg_output_time);
             }
 
             if (!do_not_print_ffmpeg_info) {
@@ -376,16 +375,18 @@ void ffmpeg_render::run() {
 
     ASS_Image *img;
     while (stop_cond) {
-        if (k_ffmpeg_output_time - tm > 3000) {
-            wait_render_count++;
-        } else {
+        if (kFfmpeg_output_time - tm > 5000) {
+            wait_render_count += 2;
+        } else if (kFfmpeg_output_time - tm > 3000) {
+            wait_render_count += 1;
+        } else if (!wait_render) {
             update_libass_event(ass_track, handle, this->config_, tm,
                                 this->danmaku_queue_, this->live_monitor_handle_);
             wait_render_count = (std::max)(0, wait_render_count - 1);
         }
 
-        if (wait_render_count > 5 && !wait_render) { // 5times render-> 5 //before:10
-            //printf("{dis:%d}\n", k_ffmpeg_output_time - tm);
+        // TODO: More precise quantification. And allow customization of this value
+        if (wait_render_count > ((config_.fps_  / 5) * 6) && !wait_render) { // wait 6s
             wait_render = true;
         }
 
@@ -396,15 +397,26 @@ void ffmpeg_render::run() {
                                                             config_.danmaku_pos_time_) +
                             0.1f;
                 wait_render_offset_time = sec * 1000.0f; // sec to ms
+
+                //fmt::print(fg(fmt::color::deep_sky_blue),
+                //           "\ntoo slow, now tm{}, ffmpeg{}, wait{}\n", tm,
+                //           kFfmpeg_output_time, wait_render_offset_time);
             } else if (tm > wait_render_offset_time) {
                 // wait done.
                 fmt::print(fg(fmt::color::deep_sky_blue), "\n弹幕渲染较慢，调整中...\n");
 
                 //printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
-                //       k_ffmpeg_output_time);
-                //printf("{before} %d\n", k_ffmpeg_output_time - tm);
-                tm = k_ffmpeg_output_time + 1000; // FIXME: real time ffmpeg!
-                //printf("{after} %d\n", k_ffmpeg_output_time - tm);
+                //       kFfmpeg_output_time);
+                //printf("{before} %d\n", kFfmpeg_output_time - tm);
+                
+
+                if (kFfmpeg_output_time > wait_render_offset_time) {
+                    tm = kFfmpeg_output_time + 1000; // FIXME: real time ffmpeg!
+                } else {
+                    tm = wait_render_offset_time + 3000;
+                }
+
+                //printf("{after} %d\n", kFfmpeg_output_time - tm);
                 wait_render = false;
                 wait_render_count = 0;
                 wait_render_offset_time = -1;
