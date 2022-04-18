@@ -117,33 +117,36 @@ $ ./live_render 672353429
 
     "decoder": "nvdec",
     "#decoder": [
-        " 视频的硬件解码器类型，可能的值有",
-        " none (不使用硬件解码器) , nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows) ",
-        " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
+       " 视频的硬件解码器类型，可能的值有",
+       " none (不使用硬件解码器) , nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于  windows) ",
+       " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
     ],
 
     "encoder": "hevc_nvenc",
     "#encoder": [
-        " 视频的软/硬件编码器类型，可能的值有",
-        " hevc_nvenc (nvidia gpu h265), h264_nvenc (nvidia gpu h264)",
-        " h264_amf (amd gpu h264), hevc_amf (amd gpu h265), libx264 (cpu h264 软件编码), libx265 (cpu h265 软件编码)",
-        " h264_qsv (intel gpu h264), hevc_qsv (intel gpu h265) 等。",
-        " 或者您可以选择一个ffmpeg接受的编码器"
+       " 视频的软/硬件编码器类型，可能的值有",
+       " hevc_nvenc (nvidia gpu h265), h264_nvenc (nvidia gpu h264)",
+       " h264_amf (amd gpu h264), hevc_amf (amd gpu h265), libx264 (cpu h264 软件编码), libx265 (cpu h265 软件编码)",
+       " h264_qsv (intel gpu h264), hevc_qsv (intel gpu h265) 等。",
+       " 或者您可以选择一个ffmpeg接受的编码器"
     ],
 
     "extra_encoder_info": [ ""
     ],
     "#extra_encoder_info": [
-        "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
-        ["-preset", "15"],
-        "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
+       "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
+       ["-preset", "15"],
+       "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
     ],
 
     "segment_time": 0,
     "#segment_time" : "视频切片长度（以秒计），0表示不切片",
 
-    "thread_queue_size": 20000,
-    "#thread_queue_size": "拉流线程队列大小",
+    "ffmpeg_thread_queue_size": 20000,
+    "#ffmpeg_thread_queue_size": "拉流线程队列大小，一般不调节此项。详见FAQ",
+
+    "render_thread_queue_size": 64,
+    "#render_thread_queue_size": "渲染线程队列大小，详见FAQ",
 
 
     "post_convert": true,
@@ -241,13 +244,17 @@ Linux下的编译操作类似。
 
 2. Q: 正常的渲染速度是什么样的？
 
-    A: 一般情况下，平均渲染速度应该保持在0.95X以上。
+    A: 一般情况下，平均渲染速度应该保持在0.95X以上。在刚开始录制时，您可能会观察到速度的跳变，这是正常现象。
 
 
-3. Q: 如何选择合适的`thread_queue_size`值？
+3. Q: 如何选择合适的`render_thread_queue_size`值？
 
-    A: 过小的值会造成渲染队列的阻塞。当ffmpeg输出形如`thread queue block`的提示时，您需要考虑增大`thread_queue_size`。但是较大的值会增加内存占用。特别地，某些ffmpeg构建版本会预分配大量内存。建议您谨慎修改此项。
+    A: 过小的值会造成渲染队列的阻塞。当ffmpeg输出形如`rawvideo thread queue block`的提示时，您需要考虑增大`render_thread_queue_size`。但是较大的值会增加RAM占用。作为例子，128的值越占用720MB RAM；
 
+
+4. Q: 如何选择合适的`ffmpeg_thread_queue_size`值？
+
+   A: 一般情况下。您不需要修改此项的值。当ffmpeg输出形如`flv thread queue block`的提示时，您需要考虑增大`ffmpeg_thread_queue_size`。
 
 ----
 

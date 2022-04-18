@@ -40,8 +40,11 @@
     "segment_time": 0,
     "#segment_time" : "视频切片长度（以秒计），0表示不切片",
 
-    "thread_queue_size": 20000,
-    "#thread_queue_size": "拉流线程队列大小",
+    "ffmpeg_thread_queue_size": 20000,
+    "#ffmpeg_thread_queue_size": "拉流线程队列大小，一般不调节此项。详见FAQ",
+
+    "render_thread_queue_size": 64,
+    "#render_thread_queue_size": "渲染线程队列大小，详见FAQ",
 
 
     "post_convert": true,
@@ -120,7 +123,11 @@ constexpr auto config_live_render_template_schema =
                 "type": "string"
             }
         },
-        "thread_queue_size": {
+        "ffmpeg_thread_queue_size": {
+            "type": "number",
+            "minimum": 1
+        },
+        "render_thread_queue_size": {
             "type": "number",
             "minimum": 1
         },
@@ -185,7 +192,8 @@ constexpr auto config_live_render_template_schema =
         "decoder",
         "encoder",
         "extra_encoder_info",
-        "thread_queue_size",
+        "ffmpeg_thread_queue_size",
+        "render_thread_queue_size",
         "post_convert",
         "font_family",
         "font_scale",

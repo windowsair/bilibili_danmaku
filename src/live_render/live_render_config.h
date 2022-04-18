@@ -27,7 +27,8 @@ typedef struct live_render_config_ : public ass_config_t {
     uint64_t segment_time_;
 
     // ffmpeg setting
-    int thread_queue_size_;
+    int ffmpeg_thread_queue_size_;
+    int render_thread_queue_size_;
 
     // system setting
     int verbose_;

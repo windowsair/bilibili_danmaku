@@ -411,7 +411,8 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     std::string ffmpeg_fps_info = fmt::format("{}", config.fps_);
 
     std::string ffmpeg_segment_time = fmt::format("{}", config.segment_time_);
-    std::string ffmpeg_thread_queue_size = fmt::format("{}", config.thread_queue_size_);
+    std::string ffmpeg_thread_queue_size = fmt::format("{}", config.ffmpeg_thread_queue_size_);
+    std::string render_thread_queue_size = fmt::format("{}", config.render_thread_queue_size_);
 
     bool ffmpeg_copy_audio = std::string("copy") == config.audio_bitrate_;
     // cmd line
@@ -450,6 +451,8 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
             ffmpeg_thread_queue_size.c_str(),
             "-i",
             config.stream_address_.c_str(),
+            "-thread_queue_size",
+            render_thread_queue_size.c_str(),
             "-f",
             "rawvideo",
             "-s",

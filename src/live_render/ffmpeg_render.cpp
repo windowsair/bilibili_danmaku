@@ -22,7 +22,7 @@
 #include "thirdparty/subprocess/subprocess.h"
 
 inline int kDanmaku_inserted_count = 0;
-int kFfmpeg_output_time = 0; // time in ms
+inline volatile int kFfmpeg_output_time = 0; // time in ms
 
 extern "C" {
 int ass_process_events_line(ASS_Track *track, char *str);
@@ -124,7 +124,7 @@ inline void wait_queue_ready(
 
 inline void update_libass_event(
     ASS_Track *ass_track, danmaku::DanmakuHandle &handle, config::ass_config_t &config,
-    int base_time,
+    int base_time, bool is_base_time_lag,
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *queue,
     live_monitor *monitor) {
 
@@ -140,7 +140,7 @@ inline void update_libass_event(
         static int delay_count = 0;
 
         // get minimum start time
-        float _min_start_time =
+        float min_element_time =
             (std::min_element(
                  danmaku_list.begin(), danmaku_list.end(),
                  [](const danmaku::danmaku_item_t &a, const danmaku::danmaku_item_t &b) {
@@ -148,13 +148,16 @@ inline void update_libass_event(
                  }))
                 ->start_time_;
 
-        int min_start_time = _min_start_time * 1000;
+        int min_start_time = min_element_time * 1000;
 
         bool render_danmaku = false;
         if (min_start_time < base_time) {
-            if (base_time - min_start_time < 3000 || // distance 1s
-                // force the timeline to be calibrated just at the beginning
-                (base_time - min_start_time < 30 * 1000 && base_time < 60 * 2 * 1000)) {
+            // TODO: When lag occurs, we should use the newest danmaku.
+            if ((is_base_time_lag && base_time - min_start_time < 6 * 1000) ||
+                (!is_base_time_lag && base_time - min_start_time < 30 * 1000)
+                // allow rendering of danmaku that appear earlier
+                // (!REMOVED!)force the timeline to be calibrated just at the beginning (base_time - min_start_time < 30 * 1000 && base_time < 60 * 2 * 1000)
+            ) {
                 // The danmaku appear behind the current rendering time.
                 // If the time difference is relatively short, then we pull the base time
                 // of these danmaku after the current base time and render them.
@@ -168,26 +171,6 @@ inline void update_libass_event(
         } else {
             // The rendering can't keep up for now, so just insert danmaku directly.
             render_danmaku = true;
-
-            //if (min_start_time - base_time > 3000) {
-            //    delay_count++;
-            //    render_danmaku = false;
-            //    printf("{drop:%d}\n", min_start_time - base_time);
-
-            //    queue->pop();
-            //    while (auto _ = queue->peek()) {
-            //        queue->pop(); // drop all data
-            //    }
-
-            //    return;
-
-            //} else if (delay_count > 0) {
-            //    delay_count--;
-            //}
-
-            //if (delay_count % 100 == 0) {
-            //    printf("{dis:%d}\n", min_start_time - base_time);
-            //}
         }
 
         if (render_danmaku) {
@@ -322,9 +305,7 @@ void ffmpeg_render::run() {
                        &_mins, &_secs, &_hundredths);
 
                 kFfmpeg_output_time = (60 * 60 * 1000) * _hour + (60 * 1000) * _mins +
-                                       (1000) * _secs + (10) * _hundredths;
-
-                //printf(">com:%d<\n", kFfmpeg_output_time - tm);
+                                      (1000) * _secs + (10) * _hundredths;
 
                 this->live_monitor_handle_->update_ffmpeg_time(kFfmpeg_output_time);
             }
@@ -375,18 +356,24 @@ void ffmpeg_render::run() {
 
     ASS_Image *img;
     while (stop_cond) {
+        using namespace std::chrono_literals;
+
+        if (tm - kFfmpeg_output_time > 3000) {
+            // render too fast. just slow down.
+            std::this_thread::sleep_for(100ms);
+        }
+
         if (kFfmpeg_output_time - tm > 5000) {
             wait_render_count += 2;
         } else if (kFfmpeg_output_time - tm > 3000) {
             wait_render_count += 1;
         } else if (!wait_render) {
-            update_libass_event(ass_track, handle, this->config_, tm,
+            update_libass_event(ass_track, handle, this->config_, tm, false,
                                 this->danmaku_queue_, this->live_monitor_handle_);
             wait_render_count = (std::max)(0, wait_render_count - 1);
         }
 
-        // TODO: More precise quantification. And allow customization of this value
-        if (wait_render_count > ((config_.fps_  / 5) * 6) && !wait_render) { // wait 6s
+        if (wait_render_count > ((config_.fps_ / 5) * 6) && !wait_render) { // wait 6s
             wait_render = true;
         }
 
@@ -405,18 +392,16 @@ void ffmpeg_render::run() {
                 // wait done.
                 fmt::print(fg(fmt::color::deep_sky_blue), "\n弹幕渲染较慢，调整中...\n");
 
-                //printf("wait time: %d, now render time:%d\n", wait_render_offset_time,
-                //       kFfmpeg_output_time);
-                //printf("{before} %d\n", kFfmpeg_output_time - tm);
-                
-
                 if (kFfmpeg_output_time > wait_render_offset_time) {
                     tm = kFfmpeg_output_time + 1000; // FIXME: real time ffmpeg!
                 } else {
                     tm = wait_render_offset_time + 3000;
                 }
 
-                //printf("{after} %d\n", kFfmpeg_output_time - tm);
+                // lagging. update danmaku now
+                update_libass_event(ass_track, handle, this->config_, tm, true,
+                                    this->danmaku_queue_, this->live_monitor_handle_);
+
                 wait_render = false;
                 wait_render_count = 0;
                 wait_render_offset_time = -1;
