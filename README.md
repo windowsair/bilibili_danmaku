@@ -179,6 +179,11 @@ $ ./live_render 672353429
     "danmaku_pos_time": 5,
     "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
 
+   "vertical_danmaku_strategy": 0,
+   "#vertical_danmaku_strategy": [ "竖版弹幕处理策略", "0不处理",
+      "1直接丢弃所有竖版弹幕", "2将竖版弹幕转为横版弹幕"
+   ],
+
     "verbose": 0,
     "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
        "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
@@ -249,7 +254,7 @@ Linux下的编译操作类似。
 
 3. Q: 如何选择合适的`render_thread_queue_size`值？
 
-    A: 过小的值会造成渲染队列的阻塞。当ffmpeg输出形如`rawvideo thread queue block`的提示时，您需要考虑增大`render_thread_queue_size`。但是较大的值会增加RAM占用。作为例子，128的值越占用720MB RAM；
+    A: 过小的值会造成渲染队列的阻塞。当ffmpeg输出形如`rawvideo thread queue block`的提示时，您需要考虑增大`render_thread_queue_size`。但是较大的值会增加RAM占用。作为例子，128的值约占用720MB RAM；
 
 
 4. Q: 如何选择合适的`ffmpeg_thread_queue_size`值？

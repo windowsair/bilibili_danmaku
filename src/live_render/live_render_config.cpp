@@ -31,7 +31,6 @@ inline live_render_config_t get_default_live_render_config() {
     config.ffmpeg_thread_queue_size_ = 20000;
     config.render_thread_queue_size_ = 64;
 
-
     config.fps_ = 60;
     config.video_bitrate_ = "15M";
     config.audio_bitrate_ = "320K";
@@ -52,9 +51,11 @@ live_render_config_t get_user_live_render_config() {
     std::filesystem::path file_path(user_live_render_config_path);
 
     if (!std::filesystem::exists(file_path)) {
-        // not exist, then generate
         generate_default_live_render_config();
-        return get_default_live_render_config();
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "配置文件不存在，自动创建。\n");
+        exit(0);
+        //return get_default_live_render_config();
     }
 
     // get user config
@@ -80,8 +81,7 @@ live_render_config_t get_user_live_render_config() {
     SchemaValidator validator(schema_doc);
 
     if (!doc.Accept(validator)) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
-                   "配置文件无效。请检查\n");
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "配置文件无效。请检查\n");
         fclose(fp);
         exit(0);
     }
@@ -89,14 +89,14 @@ live_render_config_t get_user_live_render_config() {
     // Accept!
     live_render_config_t config;
 
-    config.ffmpeg_path_  = doc["ffmpeg_path"].GetString();
+    config.ffmpeg_path_ = doc["ffmpeg_path"].GetString();
     config.output_file_path_ = doc["output_path"].GetString();
     config.video_bitrate_ = doc["video_bitrate"].GetString();
     config.audio_bitrate_ = doc["audio_bitrate"].GetString();
     config.encoder_ = doc["encoder"].GetString();
     config.decoder_ = doc["decoder"].GetString();
 
-    for (auto& item: doc["extra_encoder_info"].GetArray()) {
+    for (auto &item : doc["extra_encoder_info"].GetArray()) {
         config.extra_encoder_info_.push_back(item.GetString());
     }
     if (config.extra_encoder_info_.size() == 1 &&
@@ -121,6 +121,7 @@ live_render_config_t get_user_live_render_config() {
     config.danmaku_pos_time_ = doc["danmaku_pos_time"].GetInt();
 
     config.verbose_ = doc["verbose"].GetInt();
+    config.vertical_danmaku_strategy_ = doc["vertical_danmaku_strategy"].GetInt();
 
     if (doc.HasMember("video_width")) {
         config.video_width_ = doc["video_width"].GetInt();

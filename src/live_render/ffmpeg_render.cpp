@@ -62,10 +62,8 @@ inline void blend_single(image_t *frame, ASS_Image *img, uint64_t offset) {
 }
 
 inline void blend(image_t *frame, ASS_Image *img, uint64_t offset) {
-    int cnt = 0;
     while (img) {
         blend_single(frame, img, offset);
-        ++cnt;
         img = img->next;
     }
 }

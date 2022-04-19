@@ -71,13 +71,12 @@ void live_danmaku::run(std::string room_info) {
                 std::cout << "Connection established" << std::endl;
             } else if (msg->type == ix::WebSocketMessageType::Error) {
                 // Maybe SSL is not configured properly
-                std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
-                std::cout << std::endl << "stop error" << std::endl;
-                std::abort();
+                fmt::print(fg(fmt::color::crimson), "与弹幕服务器通讯失败：{}\n",
+                           msg->errorInfo.reason);
             } else if (msg->type == ix::WebSocketMessageType::Close) {
                 // Maybe SSL is not configured properly
-                std::cout << std::endl << "stop close" << std::endl;
-                std::abort();
+                fmt::print(fg(fmt::color::crimson), "与弹幕服务器断开\n");
+                // TODO: retry
             }
         });
 
@@ -228,9 +227,12 @@ void live_danmaku::init_parser() {
     const auto danmaku_color_re_str = R"(\\"color\\":(\d*))";
     parse_helper_.danmaku_color_re_ = new RE2(danmaku_color_re_str);
     assert(parse_helper_.danmaku_color_re_->ok());
-}
 
-int count = 0;
+    // vertical type danmaku include sub str   \\r
+    const auto danmaku_vertical_cr_re_str = R"(\\\\r)";
+    parse_helper_.danmaku_vertical_cr_re_ = new RE2(danmaku_vertical_cr_re_str);
+    assert(parse_helper_.danmaku_vertical_cr_re_->ok());
+}
 
 // FIXME: trim raw content
 // FIXME: vertical type danmaku with \\r, delete it!
@@ -275,6 +277,11 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
 
         start_time = (float)(timestamp - base_time_) / (float)1000.0f;
 
+        if (!danmaku_item_pre_process(color, danmaku_origin_type, danmaku_player_type,
+                                      timestamp, start_time, content)) {
+            continue; // this item should be dropped
+        }
+
         constexpr int font_size = 25;
         danmaku_list.emplace_back(content, start_time, danmaku_player_type, font_size,
                                   color);
@@ -282,14 +289,39 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
 
     assert(danmaku_queue_ != nullptr);
 
-    count += danmaku_list.size();
+    danmaku_recv_count_ += danmaku_list.size();
 
     if (!do_not_print_danmaku_info_) {
-        fmt::print("总弹幕数:{}\n", count);
+        fmt::print("总弹幕数:{}\n", danmaku_recv_count_);
     }
 
     if (!danmaku_list.empty()) {
         danmaku_queue_->enqueue(danmaku_list);
     }
-    
+}
+
+bool live_danmaku::danmaku_item_pre_process(int &color, int &danmaku_origin_type,
+                                            int &danmaku_player_type, uint64_t &timestamp,
+                                            float &start_time, std::string &content) {
+    // 1. process vertical danmaku
+    bool ret = true;
+
+    switch (this->vertical_danmaku_process_strategy_) {
+    case config::verticalProcessEnum::DEFAULT:
+        break;
+    case config::verticalProcessEnum::DROP:
+        if (RE2::PartialMatch(content, *(parse_helper_.danmaku_vertical_cr_re_))) {
+            ret &= false;
+        }
+        break;
+    case config::verticalProcessEnum::CONVERT:
+        RE2::GlobalReplace(&content, *(parse_helper_.danmaku_vertical_cr_re_), "");
+        break;
+    default:
+        break;
+    }
+
+    // add more custom rules here...
+
+    return ret;
 }

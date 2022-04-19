@@ -1,6 +1,5 @@
 ﻿constexpr auto config_live_render_template_json =
-    R"--(
-{
+    R"--({
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg存放目录，例如存放在tool文件夹下",
 
@@ -76,6 +75,11 @@
 
     "danmaku_pos_time": 5,
     "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
+
+    "vertical_danmaku_strategy": 0,
+    "#vertical_danmaku_strategy": [ "竖版弹幕处理策略", "0不处理",
+        "1直接丢弃所有竖版弹幕", "2将竖版弹幕转为横版弹幕"
+    ],
 
     "verbose": 0,
     "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
@@ -180,6 +184,10 @@ constexpr auto config_live_render_template_schema =
             "type": "integer",
             "minimum": 0
         },
+        "vertical_danmaku_strategy": {
+            "type": "integer",
+            "enum": [0, 1, 2]
+        },
         "verbose": {
             "type": "integer"
         }
@@ -204,6 +212,7 @@ constexpr auto config_live_render_template_schema =
         "danmaku_show_range",
         "danmaku_move_time",
         "danmaku_pos_time",
+        "vertical_danmaku_strategy",
         "verbose"
     ]
 }

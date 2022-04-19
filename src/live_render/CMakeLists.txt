@@ -136,6 +136,19 @@ if (LIVE_RENDER_BUILD_TESTING)
 
     endif ()
 
+
+    #### cr replace test
+    set(TEST_CR_REPLACE_SOURCES
+            test/test_cr_char_replace.cpp
+
+            )
+    add_executable(test_cr_char_replace ${TEST_CR_REPLACE_SOURCES}
+            ${DANMAKU_THIRDPARTY_SRC}
+            ${LIVE_RENDER_THIRDPARTY_SRC})
+    target_link_libraries(test_cr_char_replace re2::re2)
+    copy_lib()
+
+
 endif () # LIVE_RENDER_BUILD_TESTING
 
 

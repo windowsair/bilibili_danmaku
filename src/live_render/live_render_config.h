@@ -11,6 +11,12 @@ enum systemVerboseMaskEnum {
     NO_STAT_INFO = 4,
 };
 
+enum verticalProcessEnum {
+    DEFAULT = 0,
+    DROP = 1,
+    CONVERT = 2,
+};
+
 typedef struct live_render_config_ : public ass_config_t {
     // ffmpeg setting
     std::string ffmpeg_path_;
@@ -32,6 +38,7 @@ typedef struct live_render_config_ : public ass_config_t {
 
     // system setting
     int verbose_;
+    int vertical_danmaku_strategy_;
 
     // stream setting
     std::string filename_;

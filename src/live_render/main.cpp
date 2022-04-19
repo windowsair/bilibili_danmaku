@@ -70,6 +70,7 @@ int main(int argc, char **argv) {
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> queue(100);
     live_danmaku live;
     live.set_danmaku_queue(&queue);
+    live.set_vertical_danmaku_process_strategy(config.vertical_danmaku_strategy_);
     if (config.danmaku_pos_time_ > 0) {
         live.enable_pos_danmaku_process();
     }
