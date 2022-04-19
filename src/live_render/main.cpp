@@ -89,7 +89,7 @@ int main(int argc, char **argv) {
 
     // step3: wait live start
     if (room_detail.live_status_ != live_detail_t::VALID) {
-        fmt::print(fg(fmt::color::yellow), "暂未开播，等待中...");
+        fmt::print(fg(fmt::color::yellow), "暂未开播，等待中...\n");
 
         while (room_detail.live_status_ != live_detail_t::VALID) {
             std::this_thread::sleep_for(30s);

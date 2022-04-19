@@ -5,8 +5,10 @@ set(CMAKE_CXX_STANDARD 20)
 
 
 # force MSVC to use utf8
-add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
-add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+if (WIN32)
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/utf-8>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
+endif ()
 
 function(copy_lib)
     if (WIN32)
@@ -27,22 +29,25 @@ set(LIVE_RENDER_SOURCES
         live_monitor.cpp live_monitor.h live_render_config.cpp ffmpeg_utils.cpp ffmpeg_utils.h)
 
 ## TODO: windows only
-set(LIVE_RENDER_THIRDPARTY_SRC
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/ctrl-routine.cpp
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/ctrl-routine.h
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/remote-process.cpp
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/remote-process.h
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/sender.cpp
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/sender.h
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/signal.cpp
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/signal.h
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/stdafx.cpp
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/stdafx.h
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/targetver.h
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/windows-kill-library.cpp
-        ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/windows-kill-library.h
-        )
-
+if (WIN32)
+    set(LIVE_RENDER_THIRDPARTY_SRC
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/ctrl-routine.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/ctrl-routine.h
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/remote-process.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/remote-process.h
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/sender.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/sender.h
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/signal.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/signal.h
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/stdafx.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/stdafx.h
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/targetver.h
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/windows-kill-library.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/windows-kill-library/windows-kill-library/windows-kill-library.h
+            )
+else ()
+    set(LIVE_RENDER_THIRDPARTY_SRC)
+endif ()
 # DANMAKU_THIRDPARTY_PATH
 
 option(LIVE_RENDER_BUILD_TESTING "live render build test" ON)
@@ -69,39 +74,38 @@ if (LIVE_RENDER_BUILD_TESTING)
 
 
     #### libass test
-    if (WIN32)
-        set(TEST_LIBASS_SOURCES
-                test/test_libass_internal.cpp
 
-                )
-        add_executable(test_libass ${TEST_LIBASS_SOURCES})
-        target_link_libraries(test_libass -lpthread ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib)
-        copy_lib()
-    endif ()
+    set(TEST_LIBASS_SOURCES
+            test/test_libass_internal.cpp
 
-
-#    if (WIN32)
-#        set(TEST_LIBASS_RENDER_SOURCES
-#                test/test_libass_render.cpp
-#                )
-#        add_executable(test_libass_render
-#                ${TEST_LIBASS_RENDER_SOURCES}
-#                ${DANMAKU_THIRDPARTY_SRC}
-#                ${LIVE_RENDER_SOURCES}
-#                ${LIVE_RENDER_THIRDPARTY_SRC})
-#        target_link_libraries(test_libass_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
-#                re2::re2
-#                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
-#                )
-#        copy_lib()
-#    endif ()
-
-
-    set(TEST_FFMPEG_GET_INFO_SOURCES
-            test/test_ffmpeg_get_info.cpp
             )
-    add_executable(test_ffmpeg_get_info ${TEST_FFMPEG_GET_INFO_SOURCES})
+    add_executable(test_libass ${TEST_LIBASS_SOURCES})
+    target_link_libraries(test_libass -lpthread ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib)
+    copy_lib()
 
+
+    #    if (WIN32)
+    #        set(TEST_LIBASS_RENDER_SOURCES
+    #                test/test_libass_render.cpp
+    #                )
+    #        add_executable(test_libass_render
+    #                ${TEST_LIBASS_RENDER_SOURCES}
+    #                ${DANMAKU_THIRDPARTY_SRC}
+    #                ${LIVE_RENDER_SOURCES}
+    #                ${LIVE_RENDER_THIRDPARTY_SRC})
+    #        target_link_libraries(test_libass_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
+    #                re2::re2
+    #                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
+    #                )
+    #        copy_lib()
+    #    endif ()
+
+    if (WIN32)
+        set(TEST_FFMPEG_GET_INFO_SOURCES
+                test/test_ffmpeg_get_info.cpp
+                )
+        add_executable(test_ffmpeg_get_info ${TEST_FFMPEG_GET_INFO_SOURCES})
+    endif ()
 
     set(TEST_FFMPEG_QUICK_START_SOURCES
             test/test_ffmpeg_quick_start.cpp
@@ -156,11 +160,24 @@ include_directories(../xml2ass)
 
 add_executable(live_render ./main.cpp ${DANMAKU_THIRDPARTY_SRC} ${LIVE_RENDER_SOURCES} ${LIVE_RENDER_THIRDPARTY_SRC})
 
-target_link_libraries(live_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
-        re2::re2
-        ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
-        )
+if (WIN32)
+    target_link_libraries(live_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
+            re2::re2
+            ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
+            )
+else ()
+    # Linux version
+    find_package(PkgConfig REQUIRED)
+    set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${DANMAKU_THIRDPARTY_PATH}/libass/linux/")
+    pkg_check_modules(LIBASS_DEP_PKG REQUIRED fontconfig harfbuzz fribidi freetype2)
 
+
+    target_link_libraries(live_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
+            re2::re2
+            -L${DANMAKU_THIRDPARTY_PATH}/libass/linux/lib -lass
+            ${LIBASS_DEP_PKG_LDFLAGS}
+            )
+endif ()
 
 ## install
 

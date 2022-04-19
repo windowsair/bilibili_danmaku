@@ -15,12 +15,14 @@
 #endif
 
 void live_monitor::stop_ffmpeg_record() {
+    using namespace std::chrono_literals;
+
     if (ffmpeg_process_handle_) {
 #if defined(_WIN32) || defined(_WIN64)
         using WindowsKillLibrary::sendSignal;
         using WindowsKillLibrary::SIGNAL_TYPE_CTRL_BREAK;
         using WindowsKillLibrary::SIGNAL_TYPE_CTRL_C;
-        using namespace std::chrono_literals;
+
 
         try {
             sendSignal(static_cast<DWORD>(ffmpeg_process_handle_->dwProcessId),
@@ -31,7 +33,7 @@ void live_monitor::stop_ffmpeg_record() {
         std::this_thread::sleep_for(5s);
 
 #else
-        subprocess_destroy(&subprocess);
+        subprocess_destroy(ffmpeg_process_handle_);
         std::this_thread::sleep_for(5s);
 #endif
     }

@@ -164,7 +164,7 @@ inline bool is_valid_file_name(const std::string &filename) {
     RE2 re_posix(R"(\A[^/]*\z)");
     assert(re_posix.ok());
 
-    if (RE2::PartialMatch(filename, re_device_name)) {
+    if (RE2::PartialMatch(filename, re_posix)) {
         return true;
     }
 

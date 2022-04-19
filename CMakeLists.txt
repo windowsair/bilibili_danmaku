@@ -58,6 +58,6 @@ add_subdirectory(${DANMAKU_THIRDPARTY_PATH}/re2)
 add_subdirectory(src/xml2ass)
 
 # TODO:
-if (WIN32)
+if (NOT APPLE)
     add_subdirectory(src/live_render)
 endif ()
