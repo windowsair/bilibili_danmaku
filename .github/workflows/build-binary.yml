@@ -36,7 +36,7 @@ jobs:
     - name: Install dependency(Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       shell: bash
-      run: apt update && apt install --no-install-recommends libssl-dev libfontconfig-dev libfreetype-dev libfribidi-dev libharfbuzz-dev
+      run: sudo apt update && sudo apt install --no-install-recommends libssl-dev libfontconfig-dev libfreetype-dev libfribidi-dev libharfbuzz-dev
 
 
     - name: Configure CMake
