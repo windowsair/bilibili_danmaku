@@ -78,6 +78,15 @@ live_render是一个bilibili直播录制工具，能够在录制直播视频的�
 
 - `ffmpeg` 您需要将ffmpeg放置于指定的目录中
 
+对于Ubuntu用户，还需要安装依赖：
+
+```bash
+$ apt update
+$ apt install --no-install-recommends libssl-dev libfontconfig-dev libfreetype-dev libfribidi-dev libharfbuzz-dev
+```
+
+> 至少使用Ubuntu20.04及以上版本。其他发行版用户请安装类似的包。
+
 
 ## 用法
 
@@ -104,7 +113,7 @@ $ ./live_render 672353429
 ```json
 {
     "ffmpeg_path": "tool/",
-    "#ffmpeg_path": "ffmpeg存放目录，例如存放在tool文件夹下",
+    "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
 
     "output_path": "video/",
     "#output_path": "视频存放路径，例如存放在video文件夹下",
@@ -202,6 +211,20 @@ $ ./live_render 672353429
 }
 ```
 
+## 预构建二进制文件下载
+
+
+目前已有amd64架构的Windows预编译二进制文件。这些预构建二进制文件的最新构建版本可以在这里下载到： [预编译文件](https://github.com/windowsair/bilibili_danmaku/actions/workflows/build-binary.yml)
+
+
+有关如何下载，请参考：[github action帮助](https://docs.github.com/cn/actions/managing-workflow-runs/downloading-workflow-artifacts)
+
+
+或者您也可以下载Release页面中的预构建版本： [Release 预编译文件](https://github.com/windowsair/bilibili_danmaku/releases/)
+
+如果您对构建有任何疑惑或建议，欢迎提出issue和pr。
+
+
 ## 构建与编译
 
 您可以自行编译项目，或者直接使用预先构建好的二进制文件。
@@ -215,25 +238,27 @@ $ ./live_render 672353429
 $ mkdir build && cd build
 $ cmake ..
 $ cmake --build . --config Release
+$ cmake --install . --config Release
 ```
 
-Linux下的编译操作类似。
+Linux下的编译操作类似，以Ubuntu为例：
+
+```bash
+$ apt update
+$ apt install --no-install-recommends cmake libssl-dev libfontconfig-dev libfreetype-dev libfribidi-dev libharfbuzz-dev
+
+$ mkdir build && cd build
+$ cmake ..
+$ cmake --build . --config Release
+$ cmake --install . --config Release
+```
+
+
+最后，编译完毕的文件在`bin`目录下。
+
 
 > 由于macOS对ffmpeg codec的支持较差，暂时没有添加macos支持的计划，但是您仍然可以尝试编译，并使用macOS的专有媒体工具箱插件完成编解码操作。
 
-
-## 预构建二进制文件下载
-
-
-目前已有amd64架构的Windows预编译二进制文件。这些预构建二进制文件的最新构建版本可以在这里下载到： [预编译文件](https://github.com/windowsair/bilibili_danmaku/actions/workflows/build-binary.yml)
-
-
-有关如何下载，请参考：[github action帮助](https://docs.github.com/cn/actions/managing-workflow-runs/downloading-workflow-artifacts)
-
-
-或者您也可以下载Release页面中的预构建版本： [Release 预编译文件](https://github.com/windowsair/bilibili_danmaku/releases/)
-
-如果您对构建有任何疑惑或建议，欢迎提出issue和pr。
 
 
 ## FAQ 经常会问的问题
@@ -336,6 +361,7 @@ $ ./xml2ass ./xml_path ./1.xml
 您可以自行编译项目，或者直接使用预先构建好的二进制文件。
 
 编译需要用到cmake依赖，以Linux为例，典型的构建流程如下：
+
 ```bash
 $ mkdir build && cd build
 $ cmake ..
