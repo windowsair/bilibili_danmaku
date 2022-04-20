@@ -1,0 +1,130 @@
+name: coverity scan
+
+on:
+  push:
+    branches: [ master, dev, ci_scan ]
+
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc..)
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    # The CMake configure and build commands are platform agnostic and should work equally
+    # well on Windows or Mac.  You can convert this to a matrix build if you need
+    # cross-platform coverage.
+    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      # Some projects don't allow in-source building, so create a separate build directory
+      # We'll use this as our working directory for all subsequent commands
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Install dependency(Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      shell: bash
+      run: sudo apt update && sudo apt install --no-install-recommends libssl-dev libfontconfig-dev libfreetype-dev libfribidi-dev libharfbuzz-dev
+
+
+    - name: Configure CMake
+      # Use a bash shell so we can use the same syntax for environment variable
+      # access regardless of the host operating system
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      # Note the current convention is to use the -S and -B options here to specify source
+      # and build directories, but this is only available with CMake 3.13 and higher.
+      # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DLIVE_RENDER_BUILD_TESTING=OFF
+
+
+    - uses: vapier/coverity-scan-action@v1
+      with:
+        # Project name in Coverity Scan.
+        #
+        # This should be as it appears on the Coverity Scan website.
+        # Find it in your dashboard:
+        # https://scan.coverity.com/dashboard
+        #
+        # For example, a GitHub project will look like "gentoo/pax-utils".
+        #
+        # NB: This value is case-sensitive and must match what your GitHub project
+        # is registered as exactly!
+        #
+        # Default: ${{ github.repository }}
+        project: ${{ github.repository }}
+
+        # Secret project token for accessing this project in Coverity Scan.
+        #
+        # Find this in the project's "Project Settings" tab under "Project token" on
+        # the Coverity Scan website.
+        #
+        # This value should not be specified in the yaml file directly.  Instead it
+        # should be set in your repositories secrets.  "COVERITY_SCAN_TOKEN" is a
+        # common name here.
+        # https://docs.github.com/en/actions/security-guides/encrypted-secrets
+        #
+        # You still have to write ${{ secrets.COVERITY_SCAN_TOKEN }} explicitly as
+        # GitHub Actions are not allowed to access secrets directly.
+        #
+        # REQUIRED.
+        token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+
+        # Where Coverity Scan should send notifications.
+        #
+        # The Coverity Scan tool requires this be set.
+        #
+        # If you don't want to write this in your config files, you can also use a
+        # repository secret.  "COVERITY_SCAN_EMAIL" is a common name.  See the
+        # previous "token" section for more information.
+        #
+        # REQUIRED.
+        email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+
+        # Which Coverity Scan language pack to download.
+        #
+        # May be "cxx", "java", "csharp", "javascript", or "other".
+        #
+        # See the Coverity Scan download page for possible values:
+        # https://scan.coverity.com/download
+        # The tab strip along the top lists the languages.
+        #
+        # NB: 'cxx' is used for both C & C++ code.
+        #
+        # Default: 'cxx'
+        build_language: 'cxx'
+
+        # Which Coverity Scan platform pack to download.
+        #
+        # See the Coverity Scan download page for possible values:
+        # https://scan.coverity.com/download
+        # The tab strip along the right side lists the platforms.
+        #
+        # Default: 'linux64'
+        build_platform: 'linux64'
+
+        # Command to pass to cov-build.
+        #
+        # Default: 'make'
+        command: 'make'
+
+        # Specify the working-directory of where to run commands.
+        # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#defaultsrun
+        #
+        # This directory will not be created automatically, it must exist already.
+        #
+        # Default: ${{ github.workspace }}
+        working-directory: ${{github.workspace}}/build
+
+        # (Informational) The source version being built.
+        #
+        # Default: ${{ github.sha }}
+        version: ''
+
+        # (Informational) A description for this particular build.
+        #
+        # Default: coverity-scan-action ${{ github.repository }} / ${{ github.ref }}
+        description: ''
