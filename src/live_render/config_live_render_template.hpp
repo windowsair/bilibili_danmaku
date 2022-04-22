@@ -55,7 +55,7 @@
     "font_scale": 1.6,
     "#font_scale": "字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
 
-    "font_alpha": 0.75,
+    "font_alpha": 0.7,
     "#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
 
     "font_bold": true,
@@ -67,16 +67,22 @@
     "font_shadow": 0.0,
     "#font_shadow": "字体阴影值",
 
-    "danmaku_show_range": 0.45,
+    "danmaku_show_range": 0.5,
     "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
 
     "danmaku_move_time": 15,
     "#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
 
-    "danmaku_pos_time": 5,
+    "danmaku_pos_time": 0,
     "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
 
-    "vertical_danmaku_strategy": 0,
+    "danmaku_lead_time_compensation": -6000,
+    "#danmaku_pos_time": [ "弹幕超前补偿时间(以毫秒计)", "注意将您的本机时间与北京时间同步",
+        "该值必须小于等于0", "当该值的绝对值越大时，弹幕越后出现",
+        "例如-7000的弹幕将比-6000的弹幕更晚出现"
+    ],
+
+    "vertical_danmaku_strategy": 2,
     "#vertical_danmaku_strategy": [ "竖版弹幕处理策略", "0不处理",
         "1直接丢弃所有竖版弹幕", "2将竖版弹幕转为横版弹幕"
     ],
@@ -184,6 +190,10 @@ constexpr auto config_live_render_template_schema =
             "type": "integer",
             "minimum": 0
         },
+        "danmaku_lead_time_compensation": {
+            "type": "integer",
+            "maximum": 0
+        },
         "vertical_danmaku_strategy": {
             "type": "integer",
             "enum": [0, 1, 2]
@@ -212,6 +222,7 @@ constexpr auto config_live_render_template_schema =
         "danmaku_show_range",
         "danmaku_move_time",
         "danmaku_pos_time",
+        "danmaku_lead_time_compensation",
         "vertical_danmaku_strategy",
         "verbose"
     ]

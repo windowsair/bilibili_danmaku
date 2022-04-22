@@ -94,9 +94,9 @@ live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     live_detail.user_uid_ = data["uid"].GetInt64();
 
     live_detail.live_status_ = data["live_status"].GetInt();
-    if (live_detail.live_status_ != live_detail::live_status_enum::VALID) {
-        return live_detail;
-    }
+//    if (live_detail.live_status_ != live_detail::live_status_enum::VALID) {
+//        return live_detail;
+//    }
 
     // get random uid
     std::random_device r;

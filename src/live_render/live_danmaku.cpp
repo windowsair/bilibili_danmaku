@@ -67,8 +67,7 @@ void live_danmaku::run(std::string room_info) {
 
             } else if (msg->type == ix::WebSocketMessageType::Open) {
                 webSocket.sendBinary(start_msg_buffer);
-                // TODO: output msg
-                std::cout << "Connection established" << std::endl;
+                fmt::print(fg(fmt::color::green_yellow), "与弹幕服务器建立连接\n");
             } else if (msg->type == ix::WebSocketMessageType::Error) {
                 // Maybe SSL is not configured properly
                 fmt::print(fg(fmt::color::crimson), "与弹幕服务器通讯失败：{}\n",
@@ -105,17 +104,34 @@ void live_danmaku::process_websocket_data(const ix::WebSocketMessagePtr &msg) {
 
     auto add_danmaku_res = [&](char *content, size_t data_len) {
         // hard code. Let's quickly determine the type of content
-        const char *cmd = "DANMU";
-        constexpr auto cmd_len = 5;
+        if (this->is_live_start_) [[likely]] {
 
-        bool is_danmaku_type = (content + std::min<int>(20, data_len)) !=
-                               std::search(content, content + std::min<int>(20, data_len),
-                                           cmd, cmd + cmd_len);
+            const char *cmd = "DANMU";
+            constexpr auto cmd_len = 5;
 
-        if (is_danmaku_type) {
-            std::string item(content, data_len);
-            item.push_back('\0'); //TODO:
-            res_list.emplace_back(item);
+            bool is_danmaku_type =
+                (content + std::min<int>(20, data_len)) !=
+                std::search(content, content + std::min<int>(20, data_len), cmd,
+                            cmd + cmd_len);
+
+            if (is_danmaku_type) {
+                std::string item(content, data_len);
+                item.push_back('\0'); //TODO:
+                res_list.emplace_back(item);
+            }
+        } else {
+            const char *live_cmd = R"("cmd":"LIVE")";
+            constexpr auto live_cmd_len = 12;
+
+            bool is_live_start_type =
+                (content + std::min<int>(20, data_len)) !=
+                std::search(content, content + std::min<int>(20, data_len), live_cmd,
+                            live_cmd + live_cmd_len);
+
+            if (is_live_start_type) {
+                this->is_live_start_ = true;
+                this->live_start_cv_.notify_all();
+            }
         }
     };
 
@@ -219,9 +235,9 @@ void live_danmaku::init_parser() {
     parse_helper_.danmaku_type_re_ = new RE2(danmaku_type_re_str);
     assert(parse_helper_.danmaku_type_re_->ok());
 
-    const auto damaku_info_re_str = R"("info":[[][[].*?,(\d),.*?,.*?,(\d*))";
+    const auto danmaku_info_re_str = R"("info":[[][[].*?,(\d),.*?,.*?,(\d*))";
     // [_, danmaku_player_type, font_size, _, timestamp]
-    parse_helper_.danmaku_info_re_ = new RE2(damaku_info_re_str);
+    parse_helper_.danmaku_info_re_ = new RE2(danmaku_info_re_str);
     assert(parse_helper_.danmaku_info_re_->ok());
 
     const auto danmaku_color_re_str = R"(\\"color\\":(\d*))";
@@ -247,17 +263,21 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
     std::vector<danmaku::danmaku_item_t> danmaku_list;
 
     if (base_time_ == 0) {
+        // Use the manual time as the base time.
+        return;
+
+
         // find start base time
-        uint64_t min_timestamp = UINT64_MAX;
-
-        for (auto &item : raw_danmaku) {
-            RE2::PartialMatch(item, *(parse_helper_.danmaku_info_re_),
-                              &danmaku_player_type, &timestamp);
-
-            min_timestamp = std::min<uint64_t>(min_timestamp, timestamp);
-        }
-
-        base_time_ = min_timestamp - 10; // 10ms offset
+//        uint64_t min_timestamp = UINT64_MAX;
+//
+//        for (auto &item : raw_danmaku) {
+//            RE2::PartialMatch(item, *(parse_helper_.danmaku_info_re_),
+//                              &danmaku_player_type, &timestamp);
+//
+//            min_timestamp = std::min<uint64_t>(min_timestamp, timestamp);
+//        }
+//
+//        base_time_ = min_timestamp - 10; // 10ms offset
     }
 
     for (auto &item : raw_danmaku) {
@@ -322,6 +342,11 @@ bool live_danmaku::danmaku_item_pre_process(int &color, int &danmaku_origin_type
     }
 
     // add more custom rules here...
+
+    // drop history danmaku
+    if (timestamp < this->base_time_) {
+        ret &= false;
+    }
 
     return ret;
 }

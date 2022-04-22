@@ -36,6 +36,8 @@ typedef struct live_render_config_ : public ass_config_t {
     int ffmpeg_thread_queue_size_;
     int render_thread_queue_size_;
 
+    int danmaku_lead_time_compensation_;
+
     // system setting
     int verbose_;
     int vertical_danmaku_strategy_;

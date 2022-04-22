@@ -108,6 +108,9 @@ live_render_config_t get_user_live_render_config() {
     config.ffmpeg_thread_queue_size_ = doc["ffmpeg_thread_queue_size"].GetInt();
     config.render_thread_queue_size_ = doc["render_thread_queue_size"].GetInt();
 
+    config.danmaku_lead_time_compensation_ =
+        doc["danmaku_lead_time_compensation"].GetInt();
+
     config.font_family_ = doc["font_family"].GetString();
     config.font_color_ = 0xFFFFFF; // white
     config.font_size_ = 25;

@@ -11,9 +11,9 @@ class live_monitor {
   public:
     live_monitor()
         : danmaku_recv_count_(0), danmaku_render_count_(0), danmaku_time_(0),
-          ass_render_time_(0), ffmpeg_time_(0), ffmpeg_process_handle_(nullptr),
-          ffmpeg_output_handle_(nullptr), live_handle_(nullptr), room_id_(0),
-          is_live_valid_(true){};
+          ass_render_time_(0), ffmpeg_time_(0), real_world_time_(0),
+          ffmpeg_process_handle_(nullptr), ffmpeg_output_handle_(nullptr),
+          live_handle_(nullptr), room_id_(0), is_live_valid_(true){};
 
     void main_loop_thead();
 
@@ -51,6 +51,10 @@ class live_monitor {
         ffmpeg_time_ = time;
     }
 
+    void update_real_world_time(int time) {
+        real_world_time_ = time;
+    }
+
     void print_danmaku_inserted(int danmaku_count) const;
 
     void print_live_time();
@@ -66,6 +70,7 @@ class live_monitor {
     int danmaku_time_;
     int ass_render_time_;
     int ffmpeg_time_;
+    int real_world_time_;
 
   private:
     FILE *ffmpeg_output_handle_;

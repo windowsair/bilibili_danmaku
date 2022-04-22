@@ -87,19 +87,28 @@ int main(int argc, char **argv) {
     auto username = live.get_username(room_detail.user_uid_);
     fmt::print(fg(fmt::color::green_yellow), "用户名:{}\n", username);
 
+    if (room_detail.room_detail_str_.empty()) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间详细信息失败");
+        std::abort();
+    }
+
+    // capture live danmaku: thread 1
+    live.run(room_detail.room_detail_str_);
+
     // step3: wait live start
     if (room_detail.live_status_ != live_detail_t::VALID) {
         fmt::print(fg(fmt::color::yellow), "暂未开播，等待中...\n");
 
-        while (room_detail.live_status_ != live_detail_t::VALID) {
-            std::this_thread::sleep_for(30s);
-            room_detail = live.get_room_detail(room_id);
+        while (!live.is_live_start()) {
+            std::unique_lock lk(live.live_start_mutex_);
+            live.live_start_cv_.wait(lk, [] { return 1; });
         }
-    }
 
-    if (room_detail.room_detail_str_.empty()) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间信息失败");
-        std::abort();
+        // TODO: remain this method
+        //        while (room_detail.live_status_ != live_detail_t::VALID) {
+        //            std::this_thread::sleep_for(30s);
+        //            room_detail = live.get_room_detail(room_id);
+        //        }
     }
 
     // step4: get live title as output file name
@@ -107,21 +116,30 @@ int main(int argc, char **argv) {
     config.filename_ = live_title;
 
     // step5: get stream meta info and update config.
-    auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000);
-    init_stream_video_info(stream_list, config);
+    int retry_count = 20;
+    bool is_stream_get_ok = false;
+    do {
+        auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000);
+        is_stream_get_ok = init_stream_video_info(stream_list, config);
+    } while (!is_stream_get_ok && retry_count-- > 0);
+
+    if (!is_stream_get_ok) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播流地址失败");
+        std::abort();
+    }
 
     //
     //
-    ffmpeg_render render(config, &global_monitor);
+    ffmpeg_render render(config, &global_monitor, &live);
     render.set_danmaku_queue(&queue);
 
-    // start ffmpeg render: thread 1
+    // start ffmpeg render: thread 2
     render.main_thread();
 
-    std::this_thread::sleep_for(1s);
+    live.set_live_start_status(true); // indicate that live has been started
+    //live.update_base_time(get_now_timestamp());
 
-    // capture live danmaku: thread 2
-    live.run(room_detail.room_detail_str_);
+    std::this_thread::sleep_for(1s);
 
     global_monitor.set_live_handle(&live);
     global_monitor.set_room_id(room_id);

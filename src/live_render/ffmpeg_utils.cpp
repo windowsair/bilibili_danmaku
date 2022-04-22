@@ -355,14 +355,15 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
     return true;
 }
 
-void init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
+bool init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
                             config::live_render_config_t &config) {
 
     std::vector<live_stream_info_t> h264_stream_list;
 
     if (stream_list.empty()) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法获取直播地址\n");
-        std::abort(); // retry?
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "无法获取直播流地址，重试\n");
+        return false;
     }
 
     for (auto &item : stream_list) {
@@ -374,8 +375,8 @@ void init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
     }
 
     if (stream_list.empty()) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法获取FLV流\n");
-        std::abort(); // TODO: retry?
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法获取FLV流，重试\n");
+        return false;
     }
 
     bool flag = false;
@@ -386,9 +387,11 @@ void init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
     }
 
     if (!flag) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法与直播流建立连接\n");
-        std::abort(); // TODO: retry
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "无法与直播流建立连接，重试\n");
     }
+
+    return flag;
 }
 
 /**
@@ -459,12 +462,14 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
             ffmpeg_video_info.c_str(),
             "-pix_fmt",
             "rgba",
-            "-r",
+			"-r",
+            //"-framerate",
             ffmpeg_fps_info.c_str(),
             "-i",
             "-",
             "-filter_complex",
-            "[0:v][1:v]overlay=0:0[v]",
+			"[0:v][1:v]overlay=0:0[v]",
+            //"[0:v][1:v]overlay=eof_action=endall[v]",
             "-map",
             "[v]",
             "-map",

@@ -23,7 +23,6 @@ void live_monitor::stop_ffmpeg_record() {
         using WindowsKillLibrary::SIGNAL_TYPE_CTRL_BREAK;
         using WindowsKillLibrary::SIGNAL_TYPE_CTRL_C;
 
-
         try {
             sendSignal(static_cast<DWORD>(ffmpeg_process_handle_->dwProcessId),
                        SIGNAL_TYPE_CTRL_C);
@@ -86,8 +85,8 @@ void live_monitor::ffmpeg_monitor_thread() {
 }
 
 void live_monitor::print_live_time() {
-    fmt::print("danmaku:{}, render:{}, ffmpeg:{}\n", danmaku_time_, ass_render_time_,
-               ffmpeg_time_);
+    fmt::print("real:{}, danmaku:{}, render:{}, ffmpeg:{}\n", real_world_time_,
+               danmaku_time_, ass_render_time_, ffmpeg_time_);
 }
 
 void live_monitor::print_danmaku_inserted(int danmaku_count) const {

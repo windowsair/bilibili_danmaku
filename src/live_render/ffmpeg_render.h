@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "danmaku.h"
+#include "live_danmaku.h"
 #include "live_monitor.h"
 #include "live_render_config.h"
 
@@ -19,8 +20,11 @@ class ffmpeg_render {
 
   public:
     // TODO: do not use config width and height
-    ffmpeg_render(config::live_render_config_t &config, live_monitor *handle = nullptr)
-        : config_(config), live_monitor_handle_(handle) {
+    ffmpeg_render(config::live_render_config_t &config,
+                  live_monitor *live_monitor_handle = nullptr,
+                  live_danmaku *live_danmaku_handle = nullptr)
+        : config_(config), live_monitor_handle_(live_monitor_handle),
+          live_danmaku_handle_(live_danmaku_handle) {
         ass_img_.stride = config.video_width_ * 4;
         ass_img_.width = config.video_width_;
 
@@ -63,6 +67,7 @@ class ffmpeg_render {
     void run();
 
   private:
+    live_danmaku *live_danmaku_handle_;
     live_monitor *live_monitor_handle_;
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *danmaku_queue_;
     image_t ass_img_;

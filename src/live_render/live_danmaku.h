@@ -1,6 +1,8 @@
 ﻿#ifndef BILIBILI_DANMAKU_LIVE_DANMAKU_H
 #define BILIBILI_DANMAKU_LIVE_DANMAKU_H
 
+#include <condition_variable>
+#include <mutex>
 #include <vector>
 
 #include "danmaku.h"
@@ -74,7 +76,7 @@ class live_danmaku {
   public:
     live_danmaku()
         : base_time_(0), danmaku_recv_count_(0), is_pos_danmaku_process_(false),
-          do_not_print_danmaku_info_(false) {
+          do_not_print_danmaku_info_(false), is_live_start_(false) {
         zlib_handle_ = libdeflate_alloc_decompressor();
         zlib_buffer_.resize(10240);
 
@@ -94,6 +96,12 @@ class live_danmaku {
         delete parse_helper_.danmaku_info_re_;
         delete parse_helper_.danmaku_vertical_cr_re_;
     }
+
+  public:
+    std::mutex live_start_mutex_;
+    std::condition_variable live_start_cv_;
+
+  public:
     live_detail_t get_room_detail(uint64_t live_id);
 
     std::vector<live_stream_info_t> get_live_room_stream(uint64_t room_id, int qn);
@@ -103,6 +111,18 @@ class live_danmaku {
     std::string get_username(uint64_t user_uid);
 
     void run(std::string room_info);
+
+    bool is_live_start() const {
+        return is_live_start_;
+    }
+
+    void set_live_start_status(bool is_live_start) {
+        is_live_start_ = is_live_start;
+    }
+
+    void update_base_time(uint64_t base_time_in_ms) {
+        base_time_ = base_time_in_ms;
+    }
 
     void set_danmaku_queue(
         moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *p) {
@@ -183,6 +203,9 @@ class live_danmaku {
     int vertical_danmaku_process_strategy_; // config::verticalProcessEnum
     bool is_pos_danmaku_process_;
     bool do_not_print_danmaku_info_;
+
+    // live status
+    bool is_live_start_;
 };
 
 #endif //BILIBILI_DANMAKU_LIVE_DANMAKU_H
