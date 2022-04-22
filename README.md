@@ -7,7 +7,7 @@
 
 <div align="center">
 
-[![Build status][github-action-build-image]][github-action-build-url] [![coverity status][coverity-image]][coverity-image] [![license][license-image]][license-url] [![love][love-image]][love-url]
+[![Build status][github-action-build-image]][github-action-build-url] [![coverity status][coverity-image]][coverity-url] [![license][license-image]][license-url] [![love][love-image]][love-url]
 
 [github-action-build-image]: https://github.com/windowsair/bilibili_danmuku/actions/workflows/build-binary.yml/badge.svg
 [github-action-build-url]: https://github.com/windowsair/bilibili_danmuku/actions/workflows/build-binary.yml
