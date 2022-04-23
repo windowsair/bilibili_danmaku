@@ -15,23 +15,41 @@
 
 #include <stdio.h>
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
-#endif
+bool kIs_ffmpeg_started = false;
 
 inline live_monitor *kLive_monitor_handle = nullptr;
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else // posix system
+#include <signal.h>
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 BOOL WINAPI consoleHandler(DWORD signal) {
 
     if (signal == CTRL_C_EVENT) {
         fmt::print(fg(fmt::color::green_yellow), "强制退出...\n");
+        if (!kIs_ffmpeg_started) {
+            exit(0);
+        }
         if (kLive_monitor_handle) {
             kLive_monitor_handle->stop_ffmpeg_record();
         }
     }
 
     return TRUE;
+}
+#else // posix
+void consoleHandler(int signum) {
+    if (signum == SIGINT) {
+        if (!kIs_ffmpeg_started) {
+            exit(0);
+        }
+        if (kLive_monitor_handle) {
+            kLive_monitor_handle->stop_ffmpeg_record();
+        }
+    }
 }
 #endif
 
@@ -46,6 +64,16 @@ void set_console_handle() {
                    "内部错误：无法设置控制台钩子\n");
         std::abort();
     }
+#else
+    // posix
+    struct sigaction sig_int_handler;
+
+    sig_int_handler.sa_handler = consoleHandler;
+    sigemptyset(&sig_int_handler.sa_mask);
+    sig_int_handler.sa_flags = 0;
+
+    sigaction(SIGINT, &sig_int_handler, NULL);
+
 #endif
 }
 
@@ -116,17 +144,14 @@ int main(int argc, char **argv) {
     config.filename_ = live_title;
 
     // step5: get stream meta info and update config.
-    int retry_count = 20;
     bool is_stream_get_ok = false;
     do {
         auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000);
         is_stream_get_ok = init_stream_video_info(stream_list, config);
-    } while (!is_stream_get_ok && retry_count-- > 0);
-
-    if (!is_stream_get_ok) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播流地址失败");
-        std::abort();
-    }
+        if (!is_stream_get_ok) {
+            std::this_thread::sleep_for(100ms);
+        }
+    } while (!is_stream_get_ok);
 
     //
     //

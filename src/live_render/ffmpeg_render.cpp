@@ -21,6 +21,8 @@
 
 #include "thirdparty/subprocess/subprocess.h"
 
+extern bool kIs_ffmpeg_started;
+
 inline int kDanmaku_inserted_count = 0;
 inline volatile int kFfmpeg_output_time = 0; // time in ms
 inline volatile uint64_t kReal_world_time_base = 0;
@@ -128,6 +130,8 @@ inline void wait_ffmpeg_ready(bool &is_ffmpeg_ready) {
     while (!is_ffmpeg_ready) {
         std::this_thread::sleep_for(10ms);
     }
+
+    kIs_ffmpeg_started = true;
 }
 
 inline void update_libass_event(
