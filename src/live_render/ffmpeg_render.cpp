@@ -59,6 +59,20 @@ inline void blend_single(image_t *frame, ASS_Image *img, uint64_t offset) {
             dst[x * 4 + 1] = (k * g + (255 * 255 - k) * dst[x * 4 + 1]) / (255 * 255);
             dst[x * 4 + 2] = (k * b + (255 * 255 - k) * dst[x * 4 + 2]) / (255 * 255);
             dst[x * 4 + 3] = (k * 255 + (255 * 255 - k) * dst[x * 4 + 3]) / (255 * 255);
+
+            // FIXME: Unfortunately, we observed the problem of danmaku blackness in overlay on ffmpeg.
+            // WARNING: To all those coming later, the following implementation is misleading
+            // and it is not recommended that you refer to the code here if you are implementing something similar.
+
+            // Here, we will adjust the "brightness" of the pixels.
+            if (dst[x * 4] > 0 || dst[x * 4 + 1] > 0 || dst[x * 4 + 2] > 0) {
+                // We operate directly in RGB color space, and 1.15 is an empirical(magic) value that applies to bilibili danmaku.
+                // This approach is less computationally intensive, but practically unreasonable.  An intuitive approach is to
+                // convert RGB data to HSV color space, adjust the "value", and then convert back to RGB color space.
+                dst[x * 4] = (std::min)(dst[x * 4] * 1.15f, 255.01f);
+                dst[x * 4 + 1] = (std::min)(dst[x * 4 + 1] * 1.15f, 255.01f);
+                dst[x * 4 + 2] = (std::min)(dst[x * 4 + 2] * 1.15f, 255.01f);
+            }
         }
         src += img->stride;
         dst += frame->stride;

@@ -422,8 +422,16 @@ $ make
 
 # Credit & Reference
 
-- [海面烧烧炮](https://space.bilibili.com/2437955) 感谢他提供的想法，没有他就没有本项目。
+- [@海面烧烧炮](https://space.bilibili.com/2437955) 感谢他提供的想法，没有他就没有本项目。
+
+- [@1414213562373](https://space.bilibili.com/2971865) 感谢他对项目优化的指导
+- [@嘉然小姐的奶粉罐](https://space.bilibili.com/5273959) 感谢他对项目优化的指导
+
+----
 
 - [DanmakuRender](https://github.com/SmallPeaches/DanmakuRender) 基于PIL实现的录播弹幕实时渲染项目
 
 - [弹幕盒子](https://github.com/danmubox/danmubox-develop) 在线的弹幕格式转换工具
+
+
+感谢所有支持本项目的小伙伴们！
