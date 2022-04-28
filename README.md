@@ -116,6 +116,8 @@ $ ./live_render 672353429
 
 ```json
 {
+   "version": "0.0.10",
+
    "ffmpeg_path": "tool/",
    "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
 
@@ -168,16 +170,22 @@ $ ./live_render 672353429
    "font_family": "微软雅黑",
    "#font_family": "采用的字体集",
 
-   "font_scale": 1.6,
+   "font_scale": 1.8,
    "#font_scale": "字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
 
    "font_alpha": 0.7,
-   "#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
+   "#font_alpha": "字体不透明度,取值为0~1.0,为0时完全透明",
+
+   "font_alpha_fix": false,
+   "#font_alpha_fix": [ "为false时，采用默认的alpha混合策略（速度优先）。弹幕可能变暗，尤其是当不透明度小于0.6时",
+      "为true时，采用符合自觉的alpha混合策略（质量优先），但是会降低渲染速度",
+      "根据对渲染效果和渲染速度的要求选择合适的项目。"
+   ],
 
    "font_bold": true,
    "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
-   "font_outline": 1.0,
+   "font_outline": 0.6,
    "#font_outline": "字体描边（边框）值",
 
    "font_shadow": 0.0,
@@ -186,7 +194,7 @@ $ ./live_render 672353429
    "danmaku_show_range": 0.5,
    "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
 
-   "danmaku_move_time": 15,
+   "danmaku_move_time": 12,
    "#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
 
    "danmaku_pos_time": 0,

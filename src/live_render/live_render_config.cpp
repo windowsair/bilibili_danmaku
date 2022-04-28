@@ -35,6 +35,8 @@ inline live_render_config_t get_default_live_render_config() {
     config.video_bitrate_ = "15M";
     config.audio_bitrate_ = "320K";
 
+    config.font_alpha_fix_  = false;
+
     return config;
 }
 
@@ -107,6 +109,8 @@ live_render_config_t get_user_live_render_config() {
     config.segment_time_ = doc["segment_time"].GetInt64();
     config.ffmpeg_thread_queue_size_ = doc["ffmpeg_thread_queue_size"].GetInt();
     config.render_thread_queue_size_ = doc["render_thread_queue_size"].GetInt();
+
+    config.font_alpha_fix_ = doc["font_alpha_fix"].GetBool();
 
     config.danmaku_lead_time_compensation_ =
         doc["danmaku_lead_time_compensation"].GetInt();

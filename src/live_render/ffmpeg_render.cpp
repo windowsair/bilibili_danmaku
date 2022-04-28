@@ -353,6 +353,7 @@ void ffmpeg_render::run() {
     danmaku::DanmakuHandle handle;
     handle.init_danmaku_screen_dialogue(this->config_);
 
+    memset(frame->buffer, 0, buffer_count); // clear buffer
     // overlay fully transparent img on first second to indicate that this pipe has been started.
     for (int i = 0; i < this->config_.fps_; i++) {
         auto sz = fwrite(frame->buffer, 1, buffer_count, ffmpeg_);

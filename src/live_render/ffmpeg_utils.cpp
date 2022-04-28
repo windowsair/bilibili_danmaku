@@ -284,6 +284,12 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
 
     std::vector<const char *> ffmpeg_cmd_line{
         ffmpeg_exe_path.c_str(),
+
+        "-referer",
+        "https://live.bilibili.com/",
+        "-user_agent",
+        "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+
         "-i",
         stream_address.c_str(),
         nullptr,
@@ -383,6 +389,7 @@ bool init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
     for (auto &item : h264_stream_list) {
         if (ffmpeg_get_stream_meta_info(item.address_, config)) {
             flag = true;
+            break;
         }
     }
 
@@ -426,10 +433,12 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     std::vector<const char *> ffmpeg_cmd_line{
         ffmpeg_exe_path.c_str(),
         "-y",
-        "-headers",
-        "Content-Type: application/x-www-form-urlencoded\r\nUser-Agent: Mozilla/5.0 "
-        "(Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/87.0.4280.141 Safari/537.36\r\n",
+
+        "-referer",
+        "https://live.bilibili.com/",
+        "-user_agent",
+        "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+
         "-fflags",
         "+discardcorrupt",
         "-vsync",
@@ -448,6 +457,19 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
                 //"0",
             });
     }
+    // clang-format on
+    std::string ffmpeg_overlay_filter_str;
+
+    if (config.font_alpha_fix_) {
+        // quality first
+        ffmpeg_overlay_filter_str =
+            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb[v]";
+    } else {
+        // default option (speed first)
+        ffmpeg_overlay_filter_str = "[0:v][1:v]overlay=x=0:y=0:alpha=straight[v]";
+    }
+
+    // clang-format off
 
     ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-thread_queue_size",
@@ -462,24 +484,21 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
             ffmpeg_video_info.c_str(),
             "-pix_fmt",
             "rgba",
-			"-r",
+            "-r",
             //"-framerate",
             ffmpeg_fps_info.c_str(),
             "-i",
             "-",
             "-filter_complex",
-			"[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied[v]",
+            ffmpeg_overlay_filter_str.c_str(),
             //"[0:v][1:v]overlay=eof_action=endall[v]",
-            "-map",
-            "[v]",
-            "-map",
-            "0:a",
+            "-map", "[v]",
+            "-map", "0:a",
     });
 
     if (ffmpeg_copy_audio) {
         ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
-                "-c:a",
-                "copy",
+            "-c:a", "copy",
         });
     }
 
@@ -487,6 +506,7 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-c:v:0",
             config.encoder_.c_str(),
+            "-pix_fmt", "nv12",
     });
 
     // clang-format on

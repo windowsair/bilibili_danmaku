@@ -6,6 +6,7 @@
 #include <chrono>
 #include <thread>
 
+#include "ffmpeg_utils.h"
 #include "live_monitor.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
@@ -44,11 +45,15 @@ void live_monitor::live_status_monitor_thread() {
     assert(this->live_handle_ != nullptr);
 
     std::thread([&]() {
+        uint64_t live_end_time;
+
         while (true) {
             std::this_thread::sleep_for(30s);
             auto room_detail = this->live_handle_->get_room_detail(this->room_id_);
 
             if (room_detail.live_status_ != live_detail_t::VALID) {
+                live_end_time = get_now_timestamp();
+
                 std::this_thread::sleep_for(20s);
                 // retry
                 room_detail = this->live_handle_->get_room_detail(this->room_id_);
@@ -56,6 +61,24 @@ void live_monitor::live_status_monitor_thread() {
                     break;
                 }
             }
+        }
+
+        // let's wait ffmpeg done
+        uint64_t last_ffmpeg_time = this->ffmpeg_time_;
+        int time_count = 0;
+        while (time_count < 6) { // timeout: 1min
+            if (this->ffmpeg_time_ > live_end_time) {
+                break;
+            }
+
+            if (last_ffmpeg_time != this->ffmpeg_time_) {
+                time_count = 0;
+            }
+
+            last_ffmpeg_time = this->ffmpeg_time_;
+
+            std::this_thread::sleep_for(10s);
+            time_count++;
         }
 
         fmt::print(fg(fmt::color::yellow), "直播已结束\n");
