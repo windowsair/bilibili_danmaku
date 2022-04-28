@@ -359,12 +359,19 @@ void ffmpeg_render::run() {
         auto sz = fwrite(frame->buffer, 1, buffer_count, ffmpeg_);
     }
 
+    // time setting.
+
     wait_ffmpeg_ready(is_ffmpeg_started);
     kReal_world_time_base = get_now_timestamp();
+
+    assert(this->live_monitor_handle_ != nullptr);
     assert(this->live_danmaku_handle_ != nullptr);
     assert(this->config_.danmaku_lead_time_compensation_ <= 0);
+    
     this->live_danmaku_handle_->update_base_time(
         kReal_world_time_base - 1000 + this->config_.danmaku_lead_time_compensation_);
+
+    this->live_monitor_handle_->update_real_world_time_base(kReal_world_time_base);
 
     //wait_queue_ready(this->danmaku_queue_);
 

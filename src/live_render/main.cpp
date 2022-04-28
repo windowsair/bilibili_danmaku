@@ -109,6 +109,11 @@ int main(int argc, char **argv) {
     // step1: get live info: room_id, user uid
     auto room_id = std::stoull(argv[1]);
     auto room_detail = live.get_room_detail(room_id);
+    if (room_detail.code_ == -1) {
+        // just throw error
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间信息失败");
+        std::abort();
+    }
     config.user_uid_ = room_detail.user_uid_;
 
     // step2: get username

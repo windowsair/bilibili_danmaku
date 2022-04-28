@@ -48,15 +48,22 @@ void live_monitor::live_status_monitor_thread() {
         uint64_t live_end_time;
 
         while (true) {
+            // Note: The user needs to ensure that the request will not always fail.
             std::this_thread::sleep_for(30s);
             auto room_detail = this->live_handle_->get_room_detail(this->room_id_);
+            if (room_detail.code_ == -1) {
+                continue; // req failed.
+            }
 
             if (room_detail.live_status_ != live_detail_t::VALID) {
-                live_end_time = get_now_timestamp();
+                live_end_time = get_now_timestamp() - this->real_world_time_base_;
 
                 std::this_thread::sleep_for(20s);
                 // retry
                 room_detail = this->live_handle_->get_room_detail(this->room_id_);
+                if (room_detail.code_ == -1) {
+                    continue; // req failed
+                }
                 if (room_detail.live_status_ != live_detail_t::VALID) {
                     break;
                 }

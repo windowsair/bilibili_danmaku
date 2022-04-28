@@ -13,6 +13,7 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
 
+// noexcept
 live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     using namespace ix;
     using namespace rapidjson;
@@ -52,10 +53,13 @@ live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取房间号失败：{}\n",
                    errorMsg);
-        std::abort();
+
+        live_detail.code_ = -1;
+        return live_detail;
     }
 
     auto error_output = [&]() {
+        live_detail.code_ = -1;
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取房间号失败：{}\n",
                    body);
     };
@@ -94,9 +98,6 @@ live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     live_detail.user_uid_ = data["uid"].GetInt64();
 
     live_detail.live_status_ = data["live_status"].GetInt();
-//    if (live_detail.live_status_ != live_detail::live_status_enum::VALID) {
-//        return live_detail;
-//    }
 
     // get random uid
     std::random_device r;
@@ -316,7 +317,6 @@ std::string live_danmaku::get_live_room_title(uint64_t user_uid) {
     auto body = res->body;
     auto errorMsg = res->errorMsg;
 
-
     if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播标题失败：{}\n",
                    errorMsg);
@@ -331,7 +331,6 @@ std::string live_danmaku::get_live_room_title(uint64_t user_uid) {
 
     Document doc;
     doc.Parse(body.c_str());
-
 
     // doc["data"][user_uid_str]["title"]
 
@@ -409,7 +408,6 @@ std::string live_danmaku::get_username(uint64_t user_uid) {
         error_output();
         return ret;
     }
-
 
     if (doc["code"].GetInt() != 0) {
         error_output();

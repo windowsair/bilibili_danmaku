@@ -62,7 +62,7 @@ typedef struct live_stream_video_info {
 } live_stream_video_info_t;
 
 typedef struct live_detail {
-    int code_; // TODO: remove this
+    int code_; // 0: OK, -1: Req failed
     enum live_status_enum { VALID = 1, INVALID };
     int live_status_;
     int room_id_;
