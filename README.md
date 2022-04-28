@@ -68,11 +68,13 @@ live_render是一个bilibili直播录制工具，能够在录制直播视频的�
 
 ![](assets/normal_screenshot_1.png)
 
-![](assets/normal_screenshot_2.png)
-
 > 两小时的正常录播测试。 总弹幕154201条，装填弹幕88159条。
 
+3. 质量优先的弹幕渲染测试
 
+![](assets/danmaku_quality_test.png)
+
+> 50%透明度，0.4描边弹幕效果测试。
 
 更多效果演示链接： https://www.bilibili.com/video/BV1a94y1d72A
 
