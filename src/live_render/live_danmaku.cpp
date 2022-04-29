@@ -76,6 +76,8 @@ void live_danmaku::run(std::string room_info) {
                 // Maybe SSL is not configured properly
                 fmt::print(fg(fmt::color::crimson), "与弹幕服务器断开\n");
                 // TODO: retry
+
+                // It seems to be possible to reconnect automatically without additional configuration.
             }
         });
 

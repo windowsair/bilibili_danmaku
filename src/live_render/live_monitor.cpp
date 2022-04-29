@@ -15,6 +15,8 @@
 #include "thirdparty/windows-kill-library/windows-kill-library.h"
 #endif
 
+extern std::mutex kForce_exit_mutex;
+
 void live_monitor::stop_ffmpeg_record() {
     using namespace std::chrono_literals;
 
@@ -92,6 +94,12 @@ void live_monitor::live_status_monitor_thread() {
 
         this->is_live_valid_ = false;
         this->stop_ffmpeg_record();
+
+
+        // this may not happen....
+        std::this_thread::sleep_for(30s);
+        kForce_exit_mutex.lock();
+        std::quick_exit(0);
 
         // TODO: clean up
     }).detach();
