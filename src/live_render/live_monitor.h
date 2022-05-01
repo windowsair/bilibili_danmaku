@@ -66,6 +66,8 @@ class live_monitor {
 
     void stop_ffmpeg_record();
 
+    void exit_live_render();
+
   public:
     // stat info
     int danmaku_recv_count_;
@@ -79,6 +81,7 @@ class live_monitor {
     uint64_t real_world_time_base_;
 
   private:
+    std::mutex force_exit_mutex_;
     FILE *ffmpeg_output_handle_;
     struct subprocess_s *ffmpeg_process_handle_;
 

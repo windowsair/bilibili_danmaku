@@ -23,8 +23,6 @@
 
 extern bool kIs_ffmpeg_started;
 
-std::mutex kForce_exit_mutex;
-
 inline int kDanmaku_inserted_count = 0;
 inline volatile int kFfmpeg_output_time = 0; // time in ms
 inline volatile uint64_t kReal_world_time_base = 0;
@@ -344,8 +342,7 @@ void ffmpeg_render::run() {
             fclose(log_fp);
         }
 
-        kForce_exit_mutex.lock();
-        std::quick_exit(0);
+        this->live_monitor_handle_->exit_live_render();
     }).detach();
 
     image_t *frame = &(this->ass_img_);
@@ -370,7 +367,7 @@ void ffmpeg_render::run() {
     assert(this->live_monitor_handle_ != nullptr);
     assert(this->live_danmaku_handle_ != nullptr);
     assert(this->config_.danmaku_lead_time_compensation_ <= 0);
-    
+
     this->live_danmaku_handle_->update_base_time(
         kReal_world_time_base - 1000 + this->config_.danmaku_lead_time_compensation_);
 
