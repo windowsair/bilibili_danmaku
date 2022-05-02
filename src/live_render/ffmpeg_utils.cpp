@@ -441,10 +441,8 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
 
         "-fflags",
         "+discardcorrupt",
-        "-vsync",
-        "0",
-        "-analyzeduration",
-        "60",
+        "-vsync", "passthrough", // forces ffmpeg to extract frames as-is instead of trying to match a framerate
+        "-analyzeduration", "60",
     };
 
 
@@ -460,13 +458,19 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     // clang-format on
     std::string ffmpeg_overlay_filter_str;
 
+    // FFmpeg improved the calculation of premultiplied alpha for YUV format.
+    // Now we don't have to make extra pixel format conversion anymore.
+    // See: https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/bdf01a9
+
     if (config.font_alpha_fix_) {
         // quality first
         ffmpeg_overlay_filter_str =
             "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb[v]";
     } else {
         // default option (speed first)
-        ffmpeg_overlay_filter_str = "[0:v][1:v]overlay=x=0:y=0:alpha=straight[v]";
+        // For the newer ffmpeg, this actually performs better.
+        ffmpeg_overlay_filter_str =
+            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=yuv420[v]";
     }
 
     // clang-format off
@@ -506,8 +510,14 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-c:v:0",
             config.encoder_.c_str(),
-            "-pix_fmt", "nv12",
     });
+
+    // old version FFmpeg alpha fix
+    if (config.font_alpha_fix_) {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+            "-pix_fmt", "nv12",
+        });
+    }
 
     // clang-format on
 
