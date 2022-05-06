@@ -1,6 +1,6 @@
 ﻿constexpr auto config_live_render_template_json =
     R"--({
-    "version": "0.0.10",
+    "version": "0.0.14",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",

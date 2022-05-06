@@ -118,115 +118,121 @@ $ ./live_render 672353429
 
 ```json
 {
-   "version": "0.0.10",
+    "version": "0.0.14",
 
-   "ffmpeg_path": "tool/",
-   "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
+    "ffmpeg_path": "tool/",
+    "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
 
-   "output_path": "video/",
-   "#output_path": "视频存放路径，例如存放在video文件夹下",
+    "output_path": "video/",
+    "#output_path": "视频存放路径，例如存放在video文件夹下",
 
-   "video_bitrate": "15M",
-   "#video_bitrate": "视频流比特率，按照ffmpeg接受的格式输入",
+    "video_bitrate": "15M",
+    "#video_bitrate": "视频流比特率，按照ffmpeg接受的格式输入",
 
-   "audio_bitrate": "320K",
-   "#audio_bitrate": "音频流比特率，按照ffmpeg接受的格式输入。如果需要输出原始音频流，请设置为copy",
+    "audio_bitrate": "320K",
+    "#audio_bitrate": "音频流比特率，按照ffmpeg接受的格式输入。如果需要输出原始音频流，请设置为copy",
 
-   "decoder": "nvdec",
-   "#decoder": [
-      " 视频的硬件解码器类型，可能的值有",
-      " none (不使用硬件解码器) , nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows) ",
-      " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
-   ],
+    "decoder": "nvdec",
+    "#decoder": [
+        " 视频的硬件解码器类型，可能的值有",
+        " none (不使用硬件解码器) , nvdec (nvidia gpu), qsv (intel gpu), dxav2 (仅用于windows), d3d11va (仅用于windows) ",
+        " 注意，这些值并未经过广泛测试，且不建议采取其他值(如：不支持cuda)"
+    ],
 
-   "encoder": "hevc_nvenc",
-   "#encoder": [
-      " 视频的软/硬件编码器类型，可能的值有",
-      " hevc_nvenc (nvidia gpu h265), h264_nvenc (nvidia gpu h264)",
-      " h264_amf (amd gpu h264), hevc_amf (amd gpu h265), libx264 (cpu h264 软件编码), libx265 (cpu h265 软件编码)",
-      " h264_qsv (intel gpu h264), hevc_qsv (intel gpu h265) 等。",
-      " 或者您可以选择一个ffmpeg接受的编码器"
-   ],
+    "encoder": "hevc_nvenc",
+    "#encoder": [
+        " 视频的软/硬件编码器类型，可能的值有",
+        " hevc_nvenc (nvidia gpu h265), h264_nvenc (nvidia gpu h264)",
+        " h264_amf (amd gpu h264), hevc_amf (amd gpu h265), libx264 (cpu h264 软件编码), libx265 (cpu h265 软件编码)",
+        " h264_qsv (intel gpu h264), hevc_qsv (intel gpu h265) 等。",
+        " 或者您可以选择一个ffmpeg接受的编码器"
+    ],
 
-   "extra_encoder_info": [ ""
-   ],
-   "#extra_encoder_info": [
-      "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
-      ["-preset", "15"],
-      "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
-   ],
+    "extra_encoder_info": [ ""
+    ],
+    "#extra_encoder_info": [
+        "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
+        ["-preset", "15"],
+        "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
+    ],
 
-   "segment_time": 0,
-   "#segment_time" : "视频切片长度（以秒计），0表示不切片",
+    "segment_time": 0,
+    "#segment_time" : "视频切片长度（以秒计），0表示不切片",
 
-   "ffmpeg_thread_queue_size": 20000,
-   "#ffmpeg_thread_queue_size": "拉流线程队列大小，一般不调节此项。详见FAQ",
+    "ffmpeg_thread_queue_size": 20000,
+    "#ffmpeg_thread_queue_size": "拉流线程队列大小，一般不调节此项。详见FAQ",
 
-   "render_thread_queue_size": 64,
-   "#render_thread_queue_size": "渲染线程队列大小，详见FAQ",
+    "render_thread_queue_size": 64,
+    "#render_thread_queue_size": "渲染线程队列大小，详见FAQ",
 
 
-   "post_convert": true,
-   "#post_convert": "是否在录制结束后自动将格式转换为faststart形式（faststart可以加快视频加载的时间)",
+    "post_convert": true,
+    "#post_convert": "是否在录制结束后自动将格式转换为faststart形式（faststart可以加快视频加载的时间)",
 
-   "font_family": "微软雅黑",
-   "#font_family": "采用的字体集",
+    "use_custom_style": false,
+    "#use_custom_style": [ "是否使用自定义的ASS样式。（谨慎使用）",
+        "设置为true后，将读取相同目录下的custom_style.ass文件", "每一行弹幕对应一个样式",
+        "如第一行弹幕对应Danmu1, 第二行对应Danmu2，以此类推。"
+    ],
 
-   "font_scale": 1.8,
-   "#font_scale": "字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
+    "font_family": "微软雅黑",
+    "#font_family": "采用的字体集",
 
-   "font_alpha": 0.7,
-   "#font_alpha": "字体不透明度,取值为0~1.0,为0时完全透明",
+    "font_scale": 1.8,
+    "#font_scale": "字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
 
-   "font_alpha_fix": false,
-   "#font_alpha_fix": [ "为false时，采用默认的alpha混合策略（速度优先）。弹幕可能变暗，尤其是当不透明度小于0.6时",
-      "为true时，采用符合自觉的alpha混合策略（质量优先），但是会降低渲染速度",
-      "根据对渲染效果和渲染速度的要求选择合适的项目。"
-   ],
+    "font_alpha": 0.7,
+    "#font_alpha": "字体不透明度,取值为0~1.0,为0时完全透明",
 
-   "font_bold": true,
-   "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
+    "font_alpha_fix": false,
+    "#font_alpha_fix": [ "为false时，采用默认的alpha混合策略（速度优先）。弹幕可能变暗，尤其是当不透明度小于0.6时",
+        "为true时，采用符合自觉的alpha混合策略（质量优先），但是会降低渲染速度",
+        "根据对渲染效果和渲染速度的要求选择合适的项目。"
+    ],
 
-   "font_outline": 0.6,
-   "#font_outline": "字体描边（边框）值",
+    "font_bold": true,
+    "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
-   "font_shadow": 0.0,
-   "#font_shadow": "字体阴影值",
+    "font_outline": 0.6,
+    "#font_outline": "字体描边（边框）值",
 
-   "danmaku_show_range": 0.5,
-   "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+    "font_shadow": 0.0,
+    "#font_shadow": "字体阴影值",
 
-   "danmaku_move_time": 12,
-   "#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
+    "danmaku_show_range": 0.5,
+    "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
 
-   "danmaku_pos_time": 0,
-   "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
+    "danmaku_move_time": 12,
+    "#danmaku_move_time": "滚动弹幕的停留时间(以秒计)",
 
-   "danmaku_lead_time_compensation": -6000,
-   "#danmaku_pos_time": [ "弹幕超前补偿时间(以毫秒计)", "注意将您的本机时间与北京时间同步",
-      "该值必须小于等于0", "当该值的绝对值越大时，弹幕越后出现",
-      "例如-7000的弹幕将比-6000的弹幕更晚出现"
-   ],
+    "danmaku_pos_time": 0,
+    "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
 
-   "vertical_danmaku_strategy": 2,
-   "#vertical_danmaku_strategy": [ "竖版弹幕处理策略", "0不处理",
-      "1直接丢弃所有竖版弹幕", "2将竖版弹幕转为横版弹幕"
-   ],
+    "danmaku_lead_time_compensation": -6000,
+    "#danmaku_pos_time": [ "弹幕超前补偿时间(以毫秒计)", "注意将您的本机时间与北京时间同步",
+        "该值必须小于等于0", "当该值的绝对值越大时，弹幕越后出现",
+        "例如-7000的弹幕将比-6000的弹幕更晚出现"
+    ],
 
-   "verbose": 0,
-   "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
-      "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
-      "6屏蔽所有统计信息和弹幕信息输出", "7屏蔽所有ffmpeg、弹幕信息和一般统计信息输出"
-   ],
+    "vertical_danmaku_strategy": 2,
+    "#vertical_danmaku_strategy": [ "竖版弹幕处理策略", "0不处理",
+        "1直接丢弃所有竖版弹幕", "2将竖版弹幕转为横版弹幕"
+    ],
 
-   "video_width": 1920,
-   "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
+    "verbose": 0,
+    "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
+       "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
+       "6屏蔽所有统计信息和弹幕信息输出", "7屏蔽所有ffmpeg、弹幕信息和一般统计信息输出"
+    ],
 
-   "video_height": 1080,
-   "#video_height": "强制设置视频高度，一般情况下此项将被忽略",
+    "video_width": 1920,
+    "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
 
-   "fps": 60,
-   "#fps": "强制设置视频帧率，一般情况下此项将被忽略"
+    "video_height": 1080,
+    "#video_height": "强制设置视频高度，一般情况下此项将被忽略",
+
+    "fps": 60,
+    "#fps": "强制设置视频帧率，一般情况下此项将被忽略"
 
 }
 ```
@@ -346,32 +352,44 @@ $ ./xml2ass ./xml_path ./1.xml
 
 ```json
 {
-	"video_width": 1920,
-	"#video_width": "视频宽度",
+    "video_width": 1920,
+    "#video_width": "视频宽度",
 
-	"video_height": 1080,
-	"#video_height": "视频高度",
+    "video_height": 1080,
+    "#video_height": "视频高度",
 
-	"font_family": "微软雅黑",
-	"#font_family": "采用的字体集",
+    "use_custom_style": false,
+    "#use_custom_style": [ "是否使用自定义的ASS样式。（谨慎使用）",
+        "设置为true后，将读取相同目录下的custom_style.ass文件", "每一行弹幕对应一个样式",
+        "如第一行弹幕对应Danmu1, 第二行对应Danmu2，以此类推。"
+    ],
 
-	"font_scale": 1.6,
-	"#font_scale": "字体缩放倍数，为1.0时保持原始大小",
+    "font_family": "微软雅黑",
+    "#font_family": "采用的字体集",
 
-	"font_alpha": 0.75,
-	"#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
+    "font_scale": 1.6,
+    "#font_scale": "字体缩放倍数，为1.0时保持原始大小",
 
-	"font_bold": true,
-	"#font_bold": "是否设置字体加粗,true加粗,false不加粗",
+    "font_alpha": 0.75,
+    "#font_alpha": "字体透明度,取值为0~1.0,为0时完全透明",
 
-	"danmaku_show_range": 0.45,
-	"#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+    "font_bold": true,
+    "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
-	"danmaku_move_time": 15,
-	"#danmaku_move_time": "滚动弹幕的停留时间(以秒计)，设置为-1表示忽略滚动弹幕",
+    "font_outline": 1.0,
+    "#font_outline": "字体描边（边框）值",
 
-	"danmaku_pos_time": 5,
-	"#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，设置为-1表示忽略固定弹幕"
+    "font_shadow": 0.0,
+    "#font_shadow": "字体阴影值",
+
+    "danmaku_show_range": 0.45,
+    "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+
+    "danmaku_move_time": 15,
+    "#danmaku_move_time": "滚动弹幕的停留时间(以秒计)，设置为-1表示忽略滚动弹幕",
+
+    "danmaku_pos_time": 5,
+    "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，设置为-1表示忽略固定弹幕"
 }
 ```
 
@@ -399,6 +417,25 @@ $ make
 
 
 或者您也可以下载Release页面中的预构建版本： [Release 预编译文件](https://github.com/windowsair/bilibili_danmaku/releases/)
+
+
+# 关于自定义弹幕ASS样式
+
+
+当`use_custom_style`设置为`true`后，将读取相同目录下的`custom_style.ass`文件。
+
+每一行弹幕对应一个样式，如第一行弹幕对应`Danmu1`，第二行对应`Danmu2`，以此类推。
+
+您需要确保有ass文件中有足够多行的弹幕样式与之匹配。
+
+行数可以定义为：
+
+![](assets/max_line_compute.png)
+
+其中，`font_size = 25`。 （由于754精度的问题，实际行数可能较少）
+
+
+这里有一个ass文件可供参考： [custom_style.ass](assets/custom_style.ass)
 
 # 第三方项目
 
