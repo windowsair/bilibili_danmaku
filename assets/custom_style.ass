@@ -22,3 +22,7 @@ Style: Danmu7,微软雅黑,45,&H85D8EE54,&H7FFFFFFF,&H00000000,&H7F000000,-1,0,0
 Style: Danmu8,微软雅黑,45,&H8AD8EE54,&H7FFFFFFF,&H00000000,&H7F000000,-1,0,0,0,100,100,0,0,1,0.3,0,2,20,20,2,0
 Style: Danmu9,微软雅黑,45,&H8FD8EE54,&H7FFFFFFF,&H00000000,&H7F000000,-1,0,0,0,100,100,0,0,1,0.3,0,2,20,20,2,0
 Style: Danmu10,微软雅黑,45,&H8FD8EE54,&H7FFFFFFF,&H00000000,&H7F000000,-1,0,0,0,100,100,0,0,1,0.3,0,2,20,20,2,0
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,00:00:00.22,00:00:15.22,Danmu1,,69,69,5,,{\move(2160.0,40.0,-240.0,40.0)}DO_NOT_DELETE(该行无影响，不要删除)
