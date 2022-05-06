@@ -16,6 +16,27 @@ Style: {name},{font_name},{font_size},&H{font_alpha}{font_color},&H{font_alpha}F
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 )"; // \n here
 
+
+constexpr auto ass_header_script_info_prefix =
+R"([Script Info]
+Title: {title}
+ChatServer: {chat_server}
+ChatId: {chat_id}
+Count: {event_count}
+ScriptType: v4.00+
+PlayResX: {play_res_x}
+PlayResY: {play_res_y}
+
+[V4+ Styles]
+)"; // \n here
+
+constexpr auto ass_header_event_prefix =
+R"(
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+)"; // \n here
+
+
 constexpr auto ass_dialogue_format =
 R"(Dialogue: {},{},{},{},,69,69,5,,{{\{}({:.1f},{:.1f},{:.1f},{:.1f}){}}}{}
 )"; // \n here

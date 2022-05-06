@@ -19,7 +19,7 @@
 
 namespace config {
 
-constexpr auto user_ass_config_path = "config.json";
+constexpr auto user_ass_config_path = "xml2ass_config.json";
 
 ass_config_t get_default_ass_config() {
     ass_config_t config = {
@@ -96,6 +96,7 @@ ass_config_t get_user_ass_config() {
     ass_config_t config = {
         .video_width_ = doc["video_width"].GetInt(),
         .video_height_ = doc["video_height"].GetInt(),
+        .use_custom_style_ = doc["use_custom_style"].GetBool(),
         .font_family_ = doc["font_family"].GetString(),
         .font_color_ = 0xFFFFFF, // white
         .font_size_ = 25,

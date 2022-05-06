@@ -51,6 +51,12 @@
     "post_convert": true,
     "#post_convert": "是否在录制结束后自动将格式转换为faststart形式（faststart可以加快视频加载的时间)",
 
+    "use_custom_style": false,
+    "#use_custom_style": [ "是否使用自定义的ASS样式。（谨慎使用）",
+        "设置为true后，将读取相同目录下的custom_style.ass文件", "每一行弹幕对应一个样式",
+        "如第一行弹幕对应Danmu1, 第二行对应Danmu2，以此类推。"
+    ],
+
     "font_family": "微软雅黑",
     "#font_family": "采用的字体集",
 
@@ -159,6 +165,9 @@ constexpr auto config_live_render_template_schema =
         "video_height": {
             "type": "integer"
         },
+        "use_custom_style": {
+            "type": "boolean"
+        },
         "font_family": {
             "type": "string"
         },
@@ -224,6 +233,7 @@ constexpr auto config_live_render_template_schema =
         "ffmpeg_thread_queue_size",
         "render_thread_queue_size",
         "post_convert",
+        "use_custom_style",
         "font_family",
         "font_scale",
         "font_alpha",

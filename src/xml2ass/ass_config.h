@@ -12,6 +12,9 @@ typedef struct ass_config_ {
     int video_width_;
     int video_height_;
 
+    //
+    bool use_custom_style_;
+
     // font config
     std::string font_family_;
     int font_color_; // user not change

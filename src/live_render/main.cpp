@@ -10,6 +10,8 @@
 
 #include "live_render_config.h"
 
+#include "ass_danmaku.h"
+
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 
@@ -87,6 +89,13 @@ int main(int argc, char **argv) {
 
     auto config = config::get_user_live_render_config();
     check_live_render_path(config);
+
+    if (config.use_custom_style_ &&
+        !ass::is_custom_ass_file_exist("custom_style.ass")) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "已启用自定义样式，但custom_style.ass文件不存在\n");
+        return -1;
+    }
 
     if (argc < 2) {
         fmt::print(fg(fmt::color::yellow) | fmt::emphasis::italic,

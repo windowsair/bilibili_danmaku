@@ -35,7 +35,7 @@ inline live_render_config_t get_default_live_render_config() {
     config.video_bitrate_ = "15M";
     config.audio_bitrate_ = "320K";
 
-    config.font_alpha_fix_  = false;
+    config.font_alpha_fix_ = false;
 
     return config;
 }
@@ -115,6 +115,7 @@ live_render_config_t get_user_live_render_config() {
     config.danmaku_lead_time_compensation_ =
         doc["danmaku_lead_time_compensation"].GetInt();
 
+    config.use_custom_style_ = doc["use_custom_style"].GetBool();
     config.font_family_ = doc["font_family"].GetString();
     config.font_color_ = 0xFFFFFF; // white
     config.font_size_ = 25;
