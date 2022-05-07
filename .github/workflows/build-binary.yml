@@ -3,6 +3,9 @@ name: Build Binary
 on:
   push:
     branches: [ master, dev, ci_test ]
+    paths-ignore:
+      - '**/README.md'
+      - 'assets/**'
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc..)
