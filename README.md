@@ -302,13 +302,16 @@ $ cmake --install . --config Release
 
     A: 一般情况下，平均渲染速度应该保持在0.95X以上。在刚开始录制时，您可能会观察到速度的跳变，这是正常现象。
 
+3. Q: 为什么直播结束后仍在继续录制？
 
-3. Q: 如何选择合适的`render_thread_queue_size`值？
+    A: 为了确保录制到完整的直播，实际录制结束的时间会比直播结束的时间稍晚。如果机器的性能较差，那么将在弹幕渲染完毕后自动退出。如果因任何情况导致ffmpeg卡住，将会在一分钟后自动结束录制。总的来说，当机器性能尚可时，在直播结束后的1~2分钟内均可完成录制操作。当然，您也可以使用`ctrl+c`组合键强制退出录制。
+
+4. Q: 如何选择合适的`render_thread_queue_size`值？
 
     A: 过小的值会造成渲染队列的阻塞。当ffmpeg输出形如`rawvideo thread queue block`的提示时，您需要考虑增大`render_thread_queue_size`。但是较大的值会增加RAM占用。作为例子，128的值约占用720MB RAM；
 
 
-4. Q: 如何选择合适的`ffmpeg_thread_queue_size`值？
+5. Q: 如何选择合适的`ffmpeg_thread_queue_size`值？
 
    A: 一般情况下。您不需要修改此项的值。当ffmpeg输出形如`flv thread queue block`的提示时，您需要考虑增大`ffmpeg_thread_queue_size`。
 
