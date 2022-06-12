@@ -95,6 +95,10 @@ class live_danmaku {
         delete parse_helper_.danmaku_color_re_;
         delete parse_helper_.danmaku_info_re_;
         delete parse_helper_.danmaku_vertical_cr_re_;
+
+        for (auto item : blacklist_regex_) {
+            delete item;
+        }
     }
 
   public:
@@ -109,6 +113,8 @@ class live_danmaku {
     std::string get_live_room_title(uint64_t user_uid);
 
     std::string get_username(uint64_t user_uid);
+
+    void init_blacklist();
 
     void run(std::string room_info);
 
@@ -206,6 +212,9 @@ class live_danmaku {
 
     // live status
     bool is_live_start_;
+
+    bool is_blacklist_used_;
+    std::vector<RE2 *>blacklist_regex_;
 };
 
 #endif //BILIBILI_DANMAKU_LIVE_DANMAKU_H

@@ -2,10 +2,12 @@
 #include <cassert>
 #include <chrono>
 #include <iostream>
+#include <fstream>
 #include <random>
 #include <string>
 #include <thread>
 #include <vector>
+#include <filesystem>
 
 #include "live_danmaku.h"
 
@@ -13,6 +15,8 @@
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
+
+constexpr auto user_live_render_blacklist_path = "danmaku_blacklist.txt";
 
 size_t live_danmaku::zlib_decompress(void *buffer_in, size_t buffer_in_size) {
     size_t ret;
@@ -344,10 +348,68 @@ bool live_danmaku::danmaku_item_pre_process(int &color, int &danmaku_origin_type
 
     // add more custom rules here...
 
-    // drop history danmaku
+    // 2. check blacklist
+    if (this->is_blacklist_used_) {
+        for (auto re2_obj : this->blacklist_regex_) {
+            if (RE2::PartialMatch(content, *(re2_obj))) {
+                return false;
+            }
+        }
+    }
+
+    // 3. drop history danmaku
     if (timestamp < this->base_time_) {
         ret &= false;
     }
 
     return ret;
+}
+
+void live_danmaku::init_blacklist() {
+    std::filesystem::path file_path(user_live_render_blacklist_path);
+
+    if (!std::filesystem::exists(file_path)) {
+        this->is_blacklist_used_ = false;
+        return;
+    } else {
+        this->is_blacklist_used_ = true;
+    }
+
+
+    std::string filename(user_live_render_blacklist_path);
+    std::vector<std::string> regex_lines;
+    std::string line;
+
+    std::ifstream input_file(filename);
+    if (!input_file.is_open()) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法读取弹幕黑名单文件");
+        std::abort();
+    }
+
+    while (getline(input_file, line)){
+        regex_lines.push_back(line);
+    }
+
+    input_file.close();
+
+    for (auto i = 0; i < regex_lines.size(); i++) {
+        auto &item =  regex_lines[i];
+        if (item.empty()) {
+            continue;
+        }
+
+        RE2 * p = new RE2(item);
+        if (p == nullptr || !p->ok()) {
+            fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                       "弹幕黑名单第{}行无效:{}",
+                       i, item);
+            std::abort();
+        }
+
+        this->blacklist_regex_.push_back(p);
+    }
+
+    fmt::print(fg(fmt::color::green_yellow),
+               "已启用弹幕黑名单，共{}条规则\n",
+               this->blacklist_regex_.size());
 }
