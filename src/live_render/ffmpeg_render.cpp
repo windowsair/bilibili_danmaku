@@ -13,6 +13,7 @@
 #include "ffmpeg_render.h"
 #include "ffmpeg_utils.h"
 #include "live_monitor.h"
+#include "git.h"
 
 #include "thirdparty/libass/include/ass.h"
 
@@ -301,6 +302,12 @@ void ffmpeg_render::run() {
         auto log_fp = fopen(log_file_name.c_str(), "wb+");
         if (log_fp == nullptr) {
             fmt::print(fg(fmt::color::deep_sky_blue), "无法创建log文件\n");
+        } else {
+            // record version info
+            std::string version_str = fmt::format("live_render version {}\n",
+                                                  GitMetadata::Describe());
+            fwrite(version_str.c_str(), strlen(version_str.c_str()), 1,
+                   log_fp);
         }
 
         std::string ffmpeg_monitor_str(1024, 0);

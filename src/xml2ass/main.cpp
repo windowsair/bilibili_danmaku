@@ -9,6 +9,8 @@
 #include "ass_danmaku.h"
 #include "file_helper.h"
 
+#include "git.h"
+
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 
@@ -23,6 +25,10 @@ int main(int argc, char **argv) {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 #endif
+
+    fmt::print(fg(fmt::color::yellow),
+               "xml2ass version {}, https://github.com/windowsair/bilibili_danmaku\n\n",
+               GitMetadata::Describe());
 
     // get config
     auto user_config = config::get_user_ass_config();

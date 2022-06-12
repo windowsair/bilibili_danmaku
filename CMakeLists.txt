@@ -18,7 +18,7 @@ set(DANMAKU_THIRDPARTY_SRC
         ${CMAKE_SOURCE_DIR}/thirdparty/libdeflate/lib/zlib_compress.c
         )
 
-
+# check platform
 include(detect_platform.cmake)
 
 if ((CLR_CMAKE_PLATFORM_ARCH_AMD64) OR (CLR_CMAKE_PLATFORM_ARCH_I386))
@@ -32,10 +32,24 @@ endif ()
 
 include_directories(
         ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/thirdparty/fmt/include
         ${CMAKE_SOURCE_DIR}/thirdparty/libdeflate/
         ${CMAKE_SOURCE_DIR}/thirdparty/re2
 )
+
+
+# get git info
+set(PRE_CONFIGURE_FILE "src/git.h.in")
+set(POST_CONFIGURE_FILE "${CMAKE_CURRENT_BINARY_DIR}/git.cc")
+include(git_watcher.cmake)
+
+# Create a library out of the compiled post-configure file.
+add_library(git_info STATIC ${POST_CONFIGURE_FILE})
+target_include_directories(git_info PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+add_dependencies(git_info check_git)
+
+
 
 # use prebuild openssl libary on windows
 if (WIN32)

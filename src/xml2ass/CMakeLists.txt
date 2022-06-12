@@ -16,7 +16,7 @@ set(XML2ASS_SOURCES main.cpp
 
 add_executable(xml2ass ${DANMAKU_THIRDPARTY_SRC} ${XML2ASS_SOURCES})
 
-target_link_libraries(xml2ass -lpthread)
+target_link_libraries(xml2ass git_info -lpthread)
 
 install(TARGETS xml2ass
         CONFIGURATIONS Debug
