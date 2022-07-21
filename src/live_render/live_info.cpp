@@ -118,10 +118,15 @@ live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
  * @param qn stream quality
  * @return
  */
-std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(uint64_t room_id,
-                                                                   int qn) {
+std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(uint64_t room_id, int qn,
+                                   std::string proxy_address) {
     using namespace ix;
     using namespace rapidjson;
+
+    if (proxy_address.empty()) {
+        proxy_address
+            = "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo";
+    }
 
     std::vector<live_stream_info_t> ret;
 
@@ -146,7 +151,7 @@ std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(uint64_t room
     // Sync req
     HttpResponsePtr res;
     std::string url = fmt::format(
-        "https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo"
+        proxy_address +
         "?platform=web&ptype=8&qn={}&protocol=0,1&format=0,1,2&codec=0,1&room_id={}",
         qn, room_id);
 
@@ -206,7 +211,7 @@ std::vector<live_stream_info_t> live_danmaku::get_live_room_stream(uint64_t room
 
     // try to get max quality stream
     if (max_qn > current_qn) {
-        return get_live_room_stream(room_id, max_qn);
+        return get_live_room_stream(room_id, max_qn, proxy_address);
     }
 
     auto get_stream_address_list = [&ret](auto &item, int protocol) {

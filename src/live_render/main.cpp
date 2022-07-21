@@ -166,7 +166,7 @@ int main(int argc, char **argv) {
     // step5: get stream meta info and update config.
     bool is_stream_get_ok = false;
     do {
-        auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000);
+        auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000, config.bilibili_proxy_address_);
         is_stream_get_ok = init_stream_video_info(stream_list, config);
         if (!is_stream_get_ok) {
             std::this_thread::sleep_for(100ms);

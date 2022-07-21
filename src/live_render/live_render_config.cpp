@@ -141,6 +141,10 @@ live_render_config_t get_user_live_render_config() {
         config.fps_ = doc["fps"].GetInt();
     }
 
+    if (doc.HasMember("bilibili_proxy_address")) {
+        config.bilibili_proxy_address_ = doc["bilibili_proxy_address"].GetString();
+    }
+
     fclose(fp);
     return config;
 }

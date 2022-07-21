@@ -54,6 +54,8 @@ typedef struct live_render_config_ : public ass_config_t {
                                    // or it may be a timestamp format.
                                    // The encoding of this field is always UTF8
 
+    std::string bilibili_proxy_address_;
+
     // live info
     uint64_t user_uid_;
 

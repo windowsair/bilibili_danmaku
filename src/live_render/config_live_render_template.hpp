@@ -107,6 +107,9 @@
        "6屏蔽所有统计信息和弹幕信息输出", "7屏蔽所有ffmpeg、弹幕信息和一般统计信息输出"
     ],
 
+    "bilibili_proxy_address": "",
+    "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo",
+
     "video_width": 1920,
     "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
 
@@ -220,6 +223,9 @@ constexpr auto config_live_render_template_schema =
         },
         "verbose": {
             "type": "integer"
+        },
+        "bilibili_proxy_address": {
+            "type": "string"
         }
     },
     "required": [
