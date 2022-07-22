@@ -178,9 +178,27 @@ get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address) {
     bool flag = false;
     for (auto &item : doc["data"]["durl"].GetArray()) {
         std::string stream_url = item["url"].GetString();
-        if (!flag && stream_url.find("gotcha") != std::string::npos) {
-            flag = true;
-            fmt::print(fg(fmt::color::green_yellow), "\n获取到了gotcha地址\n");
+
+        // is gotcha cdn?
+        if (!flag) {
+            size_t index = 0;
+            int count = 0;
+            for (index = 0; index < stream_url.size(); index++) {
+                //  "https://xxxxxxgotchaxxxx/"
+                if (stream_url[index] == '/') {
+                    count++;
+                }
+                if (count == 3) {
+                    break;
+                }
+
+            }
+
+            std::string domain = stream_url.substr(0, index);
+            if (domain.find("gotcha") != std::string::npos) {
+                flag = true;
+                fmt::print(fg(fmt::color::green_yellow), "\n获取到了gotcha地址\n");
+            }
         }
 
         ret.emplace_back(live_stream_info_t::STREAM,
