@@ -108,7 +108,7 @@
     ],
 
     "bilibili_proxy_address": "",
-    "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/xlive/web-room/v2/index/getRoomPlayInfo",
+    "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/",
 
     "video_width": 1920,
     "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
