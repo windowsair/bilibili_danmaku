@@ -18,7 +18,7 @@
 
 
 [license-image]: https://img.shields.io/badge/license-GPLv3-green.svg
-[license-url]: https://github.com/windowsair/corsacOTA/LICENSE
+[license-url]: https://github.com/windowsair/bilibili_danmaku/LICENSE
 
 [love-image]: https://img.shields.io/badge/made%20with-%e2%9d%a4-ff69b4.svg
 [love-url]: https://github.com/windowsair/bilibili_danmuku
