@@ -550,6 +550,8 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
             "segment",
             "-segment_time",
             ffmpeg_segment_time.c_str(),
+            "-segment_format_options",
+            "movflags=+frag_keyframe+empty_moov",
         });
     }
     else {
