@@ -8,6 +8,8 @@
 
 #include "ass_danmaku.h"
 #include "file_helper.h"
+#include "danmaku_handle.h"
+
 
 #include "git.h"
 
@@ -53,6 +55,8 @@ int main(int argc, char **argv) {
     }
 
     auto valid_file_list = file_helper::get_xml_file_list(input_files);
+    DanmakuFilter filter;
+    filter.filter_init();
 
     std::mutex m;
     std::condition_variable cv;
@@ -65,7 +69,7 @@ int main(int argc, char **argv) {
         for (auto &item : valid_file_list) {
             std::thread([&]() {
                 danmaku::DanmakuHandle handle;
-                handle.danmaku_main_process(item, user_config);
+                handle.danmaku_main_process(item, user_config, filter);
                 count--;
                 cv.notify_all();
             }).detach();
@@ -78,7 +82,7 @@ int main(int argc, char **argv) {
         }
     } else if (valid_file_list.size() == 1) {
         danmaku::DanmakuHandle handle;
-        handle.danmaku_main_process(valid_file_list[0], user_config);
+        handle.danmaku_main_process(valid_file_list[0], user_config, filter);
     }
 
     auto job_end_time = std::chrono::high_resolution_clock::now();

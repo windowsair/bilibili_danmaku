@@ -13,6 +13,7 @@
 #include "ffmpeg_render.h"
 #include "ffmpeg_utils.h"
 #include "live_monitor.h"
+#include "danmaku_handle.h"
 #include "git.h"
 
 #include "thirdparty/libass/include/ass.h"

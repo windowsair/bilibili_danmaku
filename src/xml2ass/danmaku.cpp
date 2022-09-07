@@ -2,7 +2,7 @@
 #include <map>
 
 #include "ass_danmaku.h"
-#include "danmaku.h"
+#include "danmaku_handle.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
@@ -26,7 +26,7 @@ inline std::string_view trim(std::string_view s) {
  */
 int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc,
                                      pugi::xml_parse_result &parse_result,
-                                     std::string file_path,
+                                     std::string file_path, DanmakuFilter &filter,
                                      std::vector<danmaku_item_t> &danmaku_all_list,
                                      danmaku_info_t &danmaku_info) {
 
@@ -64,6 +64,10 @@ int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc,
 
         // already escape
         danmaku_all_list.emplace_back(origin_context, p);
+        if (!filter.danmaku_item_pre_process(danmaku_all_list.back())) {
+            danmaku_all_list.pop_back();
+        }
+
     }
 
     return 0;
@@ -386,15 +390,15 @@ template int DanmakuHandle::process_danmaku_dialogue_move<
     std::vector<ass_dialogue_t> &);
 
 // do not share config parameter cuz we will change it.
-int DanmakuHandle::danmaku_main_process(std::string xml_file,
-                                        config::ass_config_t config) {
+int DanmakuHandle::danmaku_main_process(std::string xml_file, config::ass_config_t config,
+                                        DanmakuFilter &filter) {
     std::vector<danmaku_item_t> danmaku_all_list, danmaku_move_list, danmaku_pos_list;
     danmaku_info_t danmaku_info;
     pugi::xml_document doc;
     pugi::xml_parse_result parse_result;
 
-    int ret =
-        parse_danmaku_xml(doc, parse_result, xml_file, danmaku_all_list, danmaku_info);
+    int ret = parse_danmaku_xml(doc, parse_result, xml_file, filter, danmaku_all_list,
+                                danmaku_info);
     if (ret != 0) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "{}:无效的XML文件\n",
                    xml_file);

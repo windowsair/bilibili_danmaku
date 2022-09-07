@@ -59,7 +59,7 @@ live_render是一个bilibili直播录制工具，能够在录制直播视频的�
 
 1. 压力测试
 
-![benckmark_screenshot_1.png](assets/benckmark_screenshot_1.png)
+![benchmark_screenshot_1.png](assets/benchmark_screenshot_1.png)
 
 > 测试机器环境： Windows i7-9750H + GTX1650（笔记本平台） 15分钟测试，渲染全屏固定弹幕和滚动弹幕。平均速率约为0.93X。
 
@@ -285,20 +285,6 @@ $ cmake --install . --config Release
 
 > 由于macOS对ffmpeg codec的支持较差，暂时没有添加macos支持的计划，但是您仍然可以尝试编译，并使用macOS的专有媒体工具箱插件完成编解码操作。
 
-## 弹幕黑名单
-
-目前，live_render支持使用正则表达式过滤黑名单中的弹幕。
-
-首先，创建`danmaku_blacklist.txt`文件，并在文件中填入需要屏蔽的弹幕，一行一个。例如：
-```
-123.*
-好好好
-```
-
-注意，live_render使用的正则表达式引擎re2存在一些限制，例如无法使用前向和后向断言。在使用时，程序将提示您不受支持的正则表达式行。
-
-更多的信息，请见[re2正则表达式语法](https://github.com/google/re2/wiki/Syntax)
-
 
 ## FAQ 经常会问的问题
 
@@ -452,6 +438,20 @@ $ make
 
 
 这里有一个ass文件可供参考： [custom_style.ass](assets/custom_style.ass)
+
+# 弹幕黑名单
+
+目前，live_render和xml2ass支持使用正则表达式过滤黑名单中的弹幕。
+
+首先，创建`danmaku_blacklist.txt`文件，并在文件中填入需要屏蔽的弹幕，一行一个。例如：
+```
+123.*
+好好好
+```
+
+注意，项目中采用正则表达式引擎re2存在一些限制，例如无法使用前向和后向断言。在使用时，程序将提示您不受支持的正则表达式行。
+
+更多的信息，请见[re2正则表达式语法](https://github.com/google/re2/wiki/Syntax)
 
 # 第三方项目
 

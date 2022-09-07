@@ -11,12 +11,12 @@ add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/utf-8>")
 
 set(XML2ASS_SOURCES main.cpp
         danmaku.cpp danmaku.h ass_config.cpp ass_config.h ass_danmaku.cpp ass_danmaku.h
-        file_helper.cpp file_helper.h)
+        file_helper.cpp file_helper.h danmaku_filter.cpp danmaku_filter.h)
 
 
 add_executable(xml2ass ${DANMAKU_THIRDPARTY_SRC} ${XML2ASS_SOURCES})
 
-target_link_libraries(xml2ass git_info -lpthread)
+target_link_libraries(xml2ass re2::re2 git_info -lpthread)
 
 install(TARGETS xml2ass
         CONFIGURATIONS Debug
