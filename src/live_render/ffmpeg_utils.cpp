@@ -1,5 +1,6 @@
 ﻿#ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
+#define _SILENCE_CXX20_U8PATH_DEPRECATION_WARNING
 #endif
 
 #include <cstdio>
@@ -28,54 +29,6 @@ const char *kOpenOption = "w";
 const char *kOpenReadOption = "r";
 #endif
 
-// Refer :
-// UTF-8 "support" in C++20 seems to be a bad joke.
-//
-// The only UTF functionality in the Standard Library is support for strings and
-// string_views (std::u8string, std::u8string_view, std::u16string, ...). That is all. T
-// here is no Standard Library support for UTF coding in regular expressions, formatting,
-// file i/o and so on.
-//
-//
-inline std::string str2local_codepage(const std::string str) {
-
-#if defined(_WIN32) || defined(_WIN64)
-
-    const auto sz = (str.size() + 1) * 6; // TODO: get actual length
-
-    std::string utf16_cov;
-    utf16_cov.resize(sz);
-
-    std::string local_code_page_str;
-    local_code_page_str.resize(sz);
-
-    memset(utf16_cov.data(), 0, sz);
-    memset(local_code_page_str.data(), 0, sz);
-
-    // convert to UTF-16LE
-    auto ret = simdutf::convert_utf8_to_utf16(
-        str.data(), str.size(), reinterpret_cast<char16_t *>(utf16_cov.data()));
-
-    if (ret == 0) {
-        return "";
-    }
-
-    int ret2 = WideCharToMultiByte(
-        CP_OEMCP, NULL, reinterpret_cast<LPCWCH>(utf16_cov.data()), -1,
-        local_code_page_str.data(), local_code_page_str.size(), NULL, NULL);
-
-    if (ret2 == 0) {
-        // TODO: log output
-        return "";
-    }
-
-    return local_code_page_str;
-
-#else
-    return str;
-#endif
-}
-
 /**
  * Check if the given path is correct. If the output path does not exist, an attempt will be made to create it.
  * If there are any errors, the program will terminate.
@@ -83,6 +36,7 @@ inline std::string str2local_codepage(const std::string str) {
  * @param config
  */
 void check_live_render_path(config::live_render_config_t &config) {
+
     using namespace std::filesystem;
 
     auto error_output = [](auto str) {
@@ -92,30 +46,31 @@ void check_live_render_path(config::live_render_config_t &config) {
     };
 
     // step1: check ffmpeg
-    auto ffmpeg_path_str = str2local_codepage(config.ffmpeg_path_);
-    path ffmpeg_path(ffmpeg_path_str);
+    auto ffmpeg_path_str = config.ffmpeg_path_;
+    auto ffmpeg_path = u8path(config.ffmpeg_path_);
     if (!exists(ffmpeg_path)) {
         error_output("ffmpeg");
     }
 
 #if defined(_WIN32) || defined(_WIN64)
-    ffmpeg_path_str =
-        str2local_codepage(config.ffmpeg_path_ + std::string("/ffmpeg.exe"));
+    ffmpeg_path_str = config.ffmpeg_path_ + std::string("/ffmpeg.exe");
 #else
-    ffmpeg_path_str = str2local_codepage(config.ffmpeg_path_ + std::string("/ffmpeg"));
+    ffmpeg_path_str = config.ffmpeg_path_ + std::string("/ffmpeg");
 #endif
 
-    directory_entry ffmpeg_entry(ffmpeg_path_str);
+
+    std::error_code _ec;
+    directory_entry ffmpeg_entry(u8path(ffmpeg_path_str), _ec);
 
     if (!exists(ffmpeg_entry)) {
         error_output("ffmpeg");
     }
 
     // step2: check output file location
-    auto output_path_str = str2local_codepage(config.output_file_path_);
-    path output_path(output_path_str);
+    auto output_path_str = config.output_file_path_;
+    auto output_path = u8path(output_path_str);
     if (exists(output_path)) {
-        directory_entry output_entry(output_path);
+        directory_entry output_entry(output_path, _ec);
         if (!output_entry.is_directory()) {
             error_output(fmt::format("视频输出文件夹:\"{}\"", config.output_file_path_));
         }
@@ -125,7 +80,7 @@ void check_live_render_path(config::live_render_config_t &config) {
         std::filesystem::create_directories(output_path);
         // the current compiler implementation is wrong, this return value cannot be used.
 
-        path output_pat_new(output_path_str);
+        auto output_pat_new = u8path(output_path_str);
         if (!exists(output_pat_new)) {
             fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                        "无法创建视频输出文件夹:{}\n", config.output_file_path_);
@@ -190,7 +145,7 @@ inline std::string get_random_file_name(config::live_render_config_t &config) {
 
     config.actual_file_name_ = filename;
 
-    return str2local_codepage(fmt::format("{}/{}", config.output_file_path_, filename));
+    return fmt::format("{}/{}", config.output_file_path_, filename);
 }
 
 // Dealing with the such minutiae is just annoying! And now you will see a bunch of nasty code.
@@ -238,34 +193,12 @@ inline std::string get_output_file_path(config::live_render_config_t &config) {
     std::string full_name =
         fmt::format("{}/{}", config.output_file_path_, live_render_output_file_name);
 
-#if defined(_WIN32) || defined(_WIN64)
-
-    // covert to local codepage
-    std::string cov_name = str2local_codepage(full_name);
-    if (cov_name.empty()) {
-        return get_random_file_name(config);
-    }
-
-    return cov_name;
-
-#else
     return full_name;
-#endif
 }
 
 inline std::string get_ffmpeg_file_path(const config::live_render_config_t &config) {
     std::string full_name = fmt::format("{}/ffmpeg", config.ffmpeg_path_);
-
-#if defined(_WIN32) || defined(_WIN64)
-
-    // covert to local codepage
-    std::string cov_name = str2local_codepage(full_name);
-    assert(!cov_name.empty());
-    return cov_name;
-
-#else
     return full_name;
-#endif
 }
 
 /**
@@ -288,7 +221,8 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
         "-referer",
         "https://live.bilibili.com/",
         "-user_agent",
-        "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/86.0.4240.198 Safari/537.36",
 
         "-i",
         stream_address.c_str(),
@@ -421,8 +355,10 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     std::string ffmpeg_fps_info = fmt::format("{}", config.fps_);
 
     std::string ffmpeg_segment_time = fmt::format("{}", config.segment_time_);
-    std::string ffmpeg_thread_queue_size = fmt::format("{}", config.ffmpeg_thread_queue_size_);
-    std::string render_thread_queue_size = fmt::format("{}", config.render_thread_queue_size_);
+    std::string ffmpeg_thread_queue_size =
+        fmt::format("{}", config.ffmpeg_thread_queue_size_);
+    std::string render_thread_queue_size =
+        fmt::format("{}", config.render_thread_queue_size_);
 
     bool ffmpeg_copy_audio = std::string("copy") == config.audio_bitrate_;
     // cmd line
@@ -529,7 +465,7 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     }
 
     // clang-format off
-    
+
     // set bitrate
     ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-b:v:0",

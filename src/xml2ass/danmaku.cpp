@@ -390,7 +390,8 @@ template int DanmakuHandle::process_danmaku_dialogue_move<
     std::vector<ass_dialogue_t> &);
 
 // do not share config parameter cuz we will change it.
-int DanmakuHandle::danmaku_main_process(std::string xml_file, config::ass_config_t config,
+int DanmakuHandle::danmaku_main_process(std::string xml_file,
+                                        config::ass_config_t &config,
                                         DanmakuFilter &filter) {
     std::vector<danmaku_item_t> danmaku_all_list, danmaku_move_list, danmaku_pos_list;
     danmaku_info_t danmaku_info;

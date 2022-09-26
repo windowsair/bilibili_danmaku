@@ -1,4 +1,4 @@
-/*
+﻿/*
    The latest version of this library is available on GitHub;
    https://github.com/sheredom/subprocess.h
 */
@@ -244,6 +244,7 @@ typedef size_t subprocess_size_t;
 typedef struct _PROCESS_INFORMATION *LPPROCESS_INFORMATION;
 typedef struct _SECURITY_ATTRIBUTES *LPSECURITY_ATTRIBUTES;
 typedef struct _STARTUPINFOA *LPSTARTUPINFOA;
+typedef struct _STARTUPINFOW *LPSTARTUPINFOW;
 typedef struct _OVERLAPPED *LPOVERLAPPED;
 
 #ifdef __clang__
@@ -266,9 +267,9 @@ struct subprocess_security_attributes_s {
 
 struct subprocess_startup_info_s {
   unsigned long cb;
-  char *lpReserved;
-  char *lpDesktop;
-  char *lpTitle;
+  wchar_t * lpReserved;
+  wchar_t *lpDesktop;
+  wchar_t *lpTitle;
   unsigned long dwX;
   unsigned long dwY;
   unsigned long dwXSize;
@@ -334,6 +335,17 @@ __declspec(dllimport) unsigned long __stdcall WaitForMultipleObjects(
     unsigned long, void *const *, int, unsigned long);
 __declspec(dllimport) int __stdcall GetOverlappedResult(void *, LPOVERLAPPED,
                                                         unsigned long *, int);
+__declspec(dllimport) int __stdcall CreateProcessW(const wchar_t *, wchar_t *,
+                                                   LPSECURITY_ATTRIBUTES,
+                                                   LPSECURITY_ATTRIBUTES, int,
+                                                   unsigned long, void *,
+                                                   const wchar_t *,
+                                                   LPSTARTUPINFOW,
+                                                   LPPROCESS_INFORMATION);
+__declspec(dllimport) int __stdcall MultiByteToWideChar(unsigned int,
+                                                        unsigned long,
+                                                        const char *,
+                                                        int, wchar_t *,int);
 
 #if defined(_DLL) && (_DLL == 1)
 #define SUBPROCESS_DLLIMPORT __declspec(dllimport)
@@ -681,20 +693,39 @@ int subprocess_create_ex(const char *const commandLine[], int options,
 
   commandLineCombined[len] = '\0';
 
-  if (!CreateProcessA(
+  // convert to UTF-16LE
+  int utf16Length = MultiByteToWideChar(65001, 0,
+                                        commandLineCombined, len + 1,
+                                        NULL, 0);
+
+  wchar_t *utf16CommandLine =
+      (wchar_t *)malloc(sizeof(wchar_t) * utf16Length);
+
+  if (utf16CommandLine == NULL) {
+      return -1;
+  }
+
+  MultiByteToWideChar(65001, 0, commandLineCombined,
+                      len + 1, utf16CommandLine, utf16Length);
+
+  if (!CreateProcessW(
           SUBPROCESS_NULL,
-          commandLineCombined, // command line
+          utf16CommandLine,    // command line
           SUBPROCESS_NULL,     // process security attributes
           SUBPROCESS_NULL,     // primary thread security attributes
           1,                   // handles are inherited
           flags,               // creation flags
           used_environment,    // used environment
           SUBPROCESS_NULL,     // use parent's current directory
-          SUBPROCESS_PTR_CAST(LPSTARTUPINFOA,
+          SUBPROCESS_PTR_CAST(LPSTARTUPINFOW,
                               &startInfo), // STARTUPINFO pointer
           SUBPROCESS_PTR_CAST(LPPROCESS_INFORMATION, &processInfo))) {
+
+    free(utf16CommandLine);
     return -1;
   }
+
+  free(utf16CommandLine);
 
   out_process->hProcess = processInfo.hProcess;
   out_process->dwProcessId  =   processInfo.dwProcessId;

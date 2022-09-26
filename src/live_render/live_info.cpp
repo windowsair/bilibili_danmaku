@@ -467,7 +467,7 @@ std::string live_danmaku::get_live_room_title(uint64_t user_uid) {
     return ret;
 }
 
-std::string live_danmaku::get_username(uint64_t user_uid) {
+std::string live_danmaku::get_username(uint64_t room_id) {
     using namespace ix;
     using namespace rapidjson;
 
@@ -489,10 +489,15 @@ std::string live_danmaku::get_username(uint64_t user_uid) {
     args->verbose = false;
     args->logger = [](const std::string &msg) { std::cout << msg; };
 
+    // Header
+    WebSocketHttpHeaders headers;
+    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36";
+    args->extraHeaders = headers;
+
     // Sync req
     HttpResponsePtr res;
     std::string url = fmt::format(
-        "https://api.bilibili.com/x/space/acc/info?mid={}&jsonp=jsonp", user_uid);
+        "https://api.live.bilibili.com/live_user/v1/UserInfo/get_anchor_in_room?roomid={}", room_id);
 
     res = httpClient.get(url, args);
 
@@ -529,10 +534,10 @@ std::string live_danmaku::get_username(uint64_t user_uid) {
     // get username
 
     auto &data = doc["data"];
-    if (!data.HasMember("name")) {
+    if (!data.HasMember("info") || !data["info"].HasMember("uname")) {
         error_output();
         return ret;
     }
 
-    return data["name"].GetString();
+    return data["info"]["uname"].GetString();
 }

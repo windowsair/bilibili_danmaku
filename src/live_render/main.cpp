@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     config.user_uid_ = room_detail.user_uid_;
 
     // step2: get username
-    auto username = live.get_username(room_detail.user_uid_);
+    auto username = live.get_username(room_detail.room_id_);
     fmt::print(fg(fmt::color::green_yellow), "用户名:{}\n", username);
 
     if (room_detail.room_detail_str_.empty()) {

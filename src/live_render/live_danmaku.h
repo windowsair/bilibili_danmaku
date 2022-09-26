@@ -113,7 +113,7 @@ class live_danmaku {
 
     std::string get_live_room_title(uint64_t user_uid);
 
-    std::string get_username(uint64_t user_uid);
+    std::string get_username(uint64_t room_id);
 
     void init_blacklist();
 

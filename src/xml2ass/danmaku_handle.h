@@ -35,7 +35,7 @@ class DanmakuHandle {
     int process_danmaku_dialogue_move(T &danmaku_list, const config::ass_config_t &config,
                                       std::vector<ass_dialogue_t> &ass_result_list);
 
-    int danmaku_main_process(std::string xml_file, config::ass_config_t config,
+    int danmaku_main_process(std::string xml_file, config::ass_config_t &config,
                              DanmakuFilter &filter);
 
     float get_max_danmaku_end_time(int move_time, int pos_time);
