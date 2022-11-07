@@ -145,6 +145,21 @@ live_render_config_t get_user_live_render_config() {
         config.bilibili_proxy_address_ = doc["bilibili_proxy_address"].GetString();
     }
 
+    config.is_output_scale_enable_ = false;
+    if (doc.HasMember("output_scale_enable")) {
+        config.is_output_scale_enable_ = doc["output_scale_enable"].GetBool();
+        config.output_scale_value_ = doc["output_scale_value"].GetString();
+        config.output_scale_algo_ = doc["output_scale_algo"].GetString();
+        config.output_scale_hwaccel_ = doc["output_scale_hwaccel"].GetString();
+
+        if (config.output_scale_hwaccel_ != "none" &&
+            config.output_scale_hwaccel_ != "nvidia") {
+            fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                       "不支持的输出缩放硬件加速类型 {}\n", config.output_scale_hwaccel_);
+            exit(-1);
+        }
+    }
+
     fclose(fp);
     return config;
 }

@@ -110,6 +110,38 @@
     "bilibili_proxy_address": "",
     "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/",
 
+    "output_scale_enable": false,
+    "#output_scale_enable": [ "是否要启用输出视频缩放", "该功能可以用于1080P转伪4K等需求，一般不启用",
+        "true为启用", "false为不启用"
+    ],
+
+    "output_scale_value": "2564:1442",
+    "#output_scale_value": [ "缩放的比例, 按照 w:h 的格式进行输入",
+        "例如1442P设置为2564:1442", "UHD设置为3840:2160", "4K设置为4096:2160"
+    ],
+
+    "output_scale_hwaccel": "nvidia",
+    "#output_scale_hwaccel": [ "在缩放时是否要使用硬件加速, 目前ffmpeg仅支持Nvidia卡的硬件加速",
+        "设置为nvidia使用nvidia加速",
+        "设置为none使用CPU进行计算，即无加速"
+    ],
+
+    "output_scale_algo": "bicubic",
+    "#output_scale_algo": [ "采用的缩放算法, 可用的算法有如下几种",
+        "bicubic 双三次插值(CPU/Nvidia)",
+        "bilinear 双线性插值(CPU/Nvidia)",
+        "neighbor 最近邻插值(CPU/Nvidia)",
+        "lanczos lanczos算法(CPU/Nvidia)",
+        "bicublin 亮度分量双三次缩放插值(CPU)",
+        "fast_bilinear 快速双线性插值(CPU)",
+        "area 平均面积插值(CPU)",
+        "gauss 高斯插值(CPU)",
+        "sinc sinc插值(CPU)",
+        "spline (natural bicubic spline算法)(CPU)",
+        "experimental 实验性算法(CPU)"
+    ],
+
+
     "video_width": 1920,
     "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
 
@@ -225,6 +257,18 @@ constexpr auto config_live_render_template_schema =
             "type": "integer"
         },
         "bilibili_proxy_address": {
+            "type": "string"
+        },
+        "output_scale_enable": {
+            "type": "boolean"
+        },
+        "output_scale_value": {
+            "type": "string"
+        },
+        "output_scale_hwaccel": {
+            "type": "string"
+        },
+        "output_scale_algo": {
             "type": "string"
         }
     },
