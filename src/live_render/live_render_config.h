@@ -56,13 +56,6 @@ typedef struct live_render_config_ : public ass_config_t {
 
     std::string bilibili_proxy_address_;
 
-    // output scale setting
-    bool is_output_scale_enable_;
-    std::string output_scale_value_;
-    std::string output_scale_hwaccel_;
-    std::string output_scale_algo_;
-
-
     // live info
     uint64_t user_uid_;
 

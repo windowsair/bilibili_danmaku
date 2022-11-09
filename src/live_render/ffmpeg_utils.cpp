@@ -401,31 +401,12 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     if (config.font_alpha_fix_) {
         // quality first
         ffmpeg_overlay_filter_str =
-            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb";
+            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb[v]";
     } else {
         // default option (speed first)
         // For the newer ffmpeg, this actually performs better.
         ffmpeg_overlay_filter_str =
-            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=yuv420";
-    }
-
-    // TODO: Perhaps the user can customize the filter,
-    // but it is not clear at this time what scenarios might be used.
-    if (config.is_output_scale_enable_) {
-        if (config.output_scale_hwaccel_ == "none") { // CPU
-            ffmpeg_overlay_filter_str +=
-                fmt::format("[v0];[v0]scale={}:flags={}[v]", config.output_scale_value_,
-                            config.output_scale_algo_);
-
-        } else if (config.output_scale_hwaccel_ == "nvidia") {
-            ffmpeg_overlay_filter_str += fmt::format(
-                "[v0];[v0]hwupload_cuda[v1];[v1]scale_cuda={}:interp_algo={}[v]",
-                config.output_scale_value_, config.output_scale_algo_);
-        }
-
-    } else {
-        // nothing to do
-        ffmpeg_overlay_filter_str += "[v]";
+            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=yuv420[v]";
     }
 
     // clang-format off
