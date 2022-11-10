@@ -30,6 +30,9 @@ typedef struct live_render_config_ : public ass_config_t {
     std::string decoder_;
     std::string encoder_;
     std::vector<std::string> extra_encoder_info_;
+    std::string extra_input_stream_info_;
+    std::string extra_filter_info_;
+
     uint64_t segment_time_;
 
     // ffmpeg setting

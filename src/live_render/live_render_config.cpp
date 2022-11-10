@@ -106,6 +106,14 @@ live_render_config_t get_user_live_render_config() {
         config.extra_encoder_info_.clear();
     }
 
+    if (doc.HasMember("extra_input_stream_info")) {
+        config.extra_input_stream_info_ = doc["extra_input_stream_info"].GetString();
+    }
+
+    if (doc.HasMember("extra_filter_info")) {
+        config.extra_filter_info_ = doc["extra_filter_info"].GetString();
+    }
+
     config.segment_time_ = doc["segment_time"].GetInt64();
     config.ffmpeg_thread_queue_size_ = doc["ffmpeg_thread_queue_size"].GetInt();
     config.render_thread_queue_size_ = doc["render_thread_queue_size"].GetInt();

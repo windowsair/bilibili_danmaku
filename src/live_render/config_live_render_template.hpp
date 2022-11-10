@@ -1,6 +1,6 @@
 ﻿constexpr auto config_live_render_template_json =
     R"--({
-    "version": "0.0.14",
+    "version": "0.0.20",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
@@ -36,6 +36,18 @@
         "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
         ["-preset", "15"],
         "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
+    ],
+
+    "extra_input_stream_info": "",
+    "#extra_input_info": [ "额外的ffmpeg输入流选项，可用于实现水印、裁剪、缩放等高级功能",
+        "详见https://github.com/windowsair/bilibili_danmaku/blob/master/doc/live_render_custom_feature.md",
+        "如果您不想传递额外信息，保持上面的项目不变即可。"
+    ],
+
+    "extra_filter_info": "",
+    "#extra_filter_info": [ "额外的ffmpeg输入流选项，可用于实现水印、裁剪、缩放等高级功能",
+        "详见https://github.com/windowsair/bilibili_danmaku/blob/master/doc/live_render_custom_feature.md",
+        "如果您不想传递额外信息，保持上面的项目不变即可。"
     ],
 
     "segment_time": 0,
@@ -149,6 +161,12 @@ constexpr auto config_live_render_template_schema =
             "items": {
                 "type": "string"
             }
+        },
+        "extra_input_stream_info": {
+            "type": "string"
+        },
+        "extra_filter_info": {
+            "type": "string"
         },
         "ffmpeg_thread_queue_size": {
             "type": "number",

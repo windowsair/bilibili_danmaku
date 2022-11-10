@@ -118,7 +118,7 @@ $ ./live_render 672353429
 
 ```json
 {
-    "version": "0.0.14",
+    "version": "0.0.20",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
@@ -154,6 +154,18 @@ $ ./live_render 672353429
         "您希望传递给编码器的额外信息，例如您可能想要调整预设，如果您想传递的参数为 `-preset 15` 需要这样做：",
         ["-preset", "15"],
         "每个字段用空格隔开即可。如果您不想传递额外信息，保持上面的项目不变即可。"
+    ],
+
+    "extra_input_stream_info": "",
+    "#extra_input_info": [ "额外的ffmpeg输入流选项，可用于实现水印、裁剪、缩放等高级功能",
+        "详见https://github.com/windowsair/bilibili_danmaku/blob/master/doc/live_render_custom_feature.md",
+        "如果您不想传递额外信息，保持上面的项目不变即可。"
+    ],
+
+    "extra_filter_info": "",
+    "#extra_filter_info": [ "额外的ffmpeg输入流选项，可用于实现水印、裁剪、缩放等高级功能",
+        "详见https://github.com/windowsair/bilibili_danmaku/blob/master/doc/live_render_custom_feature.md",
+        "如果您不想传递额外信息，保持上面的项目不变即可。"
     ],
 
     "segment_time": 0,
@@ -224,6 +236,9 @@ $ ./live_render 672353429
        "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
        "6屏蔽所有统计信息和弹幕信息输出", "7屏蔽所有ffmpeg、弹幕信息和一般统计信息输出"
     ],
+
+    "bilibili_proxy_address": "",
+    "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/",
 
     "video_width": 1920,
     "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",

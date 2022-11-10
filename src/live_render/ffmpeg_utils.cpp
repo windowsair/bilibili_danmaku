@@ -401,13 +401,49 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     if (config.font_alpha_fix_) {
         // quality first
         ffmpeg_overlay_filter_str =
-            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb[v]";
+            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb";
     } else {
         // default option (speed first)
         // For the newer ffmpeg, this actually performs better.
         ffmpeg_overlay_filter_str =
-            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=yuv420[v]";
+            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=yuv420";
     }
+
+    // extra user filter process
+    if (config.extra_filter_info_.empty()) {
+        ffmpeg_overlay_filter_str += "[v]";
+    } else {
+        ffmpeg_overlay_filter_str += "[v0];" + config.extra_filter_info_;
+    }
+
+    // extra user input video parameter process
+    auto split_string_space = [](const std::string &s,
+                                 std::vector<std::string> &split_res) {
+        std::string delim = " ";
+
+        auto start = 0U;
+        auto end = s.find(delim);
+
+        while (end != std::string::npos) {
+            std::string ss = s.substr(start, end - start);
+            if (!ss.empty()) {
+                split_res.push_back(ss);
+            }
+
+            start = end + delim.length();
+            end = s.find(delim, start);
+        }
+
+        std::string ss = s.substr(start, end);
+        if (!ss.empty()) {
+            split_res.push_back(ss);
+        }
+    };
+
+    std::vector<std::string> extra_input_stream_parameter_list;
+
+    split_string_space(config.extra_input_stream_info_,
+                       extra_input_stream_parameter_list);
 
     // clang-format off
 
@@ -429,6 +465,15 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
             ffmpeg_fps_info.c_str(),
             "-i",
             "-",
+    });
+
+    // extra video input parameter
+    for (auto &item : extra_input_stream_parameter_list) {
+        ffmpeg_cmd_line.push_back(item.c_str());
+    }
+
+
+    ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-filter_complex",
             ffmpeg_overlay_filter_str.c_str(),
             //"[0:v][1:v]overlay=eof_action=endall[v]",
