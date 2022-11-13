@@ -19,7 +19,6 @@ typedef struct image_t_ {
 class ffmpeg_render {
 
   public:
-    // TODO: do not use config width and height
     ffmpeg_render(config::live_render_config_t &config,
                   live_monitor *live_monitor_handle = nullptr,
                   live_danmaku *live_danmaku_handle = nullptr)

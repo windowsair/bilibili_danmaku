@@ -59,6 +59,17 @@ typedef struct live_render_config_ : public ass_config_t {
 
     std::string bilibili_proxy_address_;
 
+    // origin input stream info
+    int origin_video_width_;
+    int origin_video_height_;
+    int origin_video_fps_;
+
+    // adjust input stream info
+    int adjust_video_width_;
+    int adjust_video_height_;
+    int adjust_video_fps_;
+
+
     // live info
     uint64_t user_uid_;
 

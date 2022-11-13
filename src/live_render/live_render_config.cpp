@@ -139,14 +139,26 @@ live_render_config_t get_user_live_render_config() {
     config.verbose_ = doc["verbose"].GetInt();
     config.vertical_danmaku_strategy_ = doc["vertical_danmaku_strategy"].GetInt();
 
-    if (doc.HasMember("video_width")) {
-        config.video_width_ = doc["video_width"].GetInt();
+    config.adjust_video_width_ = 0;
+    config.adjust_video_height_ = 0;
+    config.adjust_video_fps_ = 0;
+
+    if (doc.HasMember("adjust_input_video_width")) {
+        config.adjust_video_width_ = doc["adjust_input_video_width"].GetInt();
     }
-    if (doc.HasMember("video_height")) {
-        config.video_height_ = doc["video_height"].GetInt();
+
+    if (doc.HasMember("adjust_input_video_height")) {
+        config.adjust_video_height_ = doc["adjust_input_video_height"].GetInt();
     }
-    if (doc.HasMember("fps")) {
-        config.fps_ = doc["fps"].GetInt();
+
+    if (doc.HasMember("adjust_input_video_fps")) {
+        config.adjust_video_fps_ = doc["adjust_input_video_fps"].GetInt();
+    }
+
+    if ((!!config.adjust_video_width_) ^ (!!config.adjust_video_height_)) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "\n若您要调整原始直播源尺寸，您必须同时指定高度和宽度\n");
+        std::abort();
     }
 
     if (doc.HasMember("bilibili_proxy_address")) {

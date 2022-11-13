@@ -43,10 +43,11 @@ live_render是一个bilibili直播录制工具，能够在录制直播视频的�
 
 优势
 
-- 📦 开箱即用。只需要ffmpeg即可开始录制。
+- 📦 开箱即用。只需要FFmpeg即可开始录制。
 - 🚀 无需等待。当录播结束时即可直接使用压制好的文件。
 - 🎨 支持更多的字体效果。您可以自定义字符集、透明度、描边、阴影、加粗等字体效果，此外支持更多的Unicode字符（取决于您机器内的字符集）。
-- ⚙️ 支持自定义编解码器。此外，您可以传递更多的编码器参数，能够获得与录制完毕再压制弹幕类似的压制效果。
+- ⚙️ 适用于高级用户的原生FFmpeg特性支持。支持自定义编解码器、多输入流、complex filter。添加水印、竖屏直播转横屏、1080P转伪4K等处理，录播结束时就已处理完毕。
+
 
 劣势
 
@@ -163,7 +164,7 @@ $ ./live_render 672353429
     ],
 
     "extra_filter_info": "",
-    "#extra_filter_info": [ "额外的ffmpeg输入流选项，可用于实现水印、裁剪、缩放等高级功能",
+    "#extra_filter_info": [ "额外的ffmpeg filter选项，可用于实现水印、裁剪、缩放等高级功能",
         "详见https://github.com/windowsair/bilibili_danmaku/blob/master/doc/live_render_custom_feature.md",
         "如果您不想传递额外信息，保持上面的项目不变即可。"
     ],
@@ -240,14 +241,26 @@ $ ./live_render 672353429
     "bilibili_proxy_address": "",
     "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/",
 
-    "video_width": 1920,
-    "#video_width": "强制设置视频宽度，一般情况下此项将被忽略",
 
-    "video_height": 1080,
-    "#video_height": "强制设置视频高度，一般情况下此项将被忽略",
+    "adjust_input_video_width": 0,
+    "#adjust_input_video_width": [ "重新调整原始直播源视频的宽度，如果不需要调整，设置为0即可",
+        "在一般情况下，live_render会使用FFmpeg中的scale对原始直播源视频的尺寸进行调整。",
+        "特别地，如果原始直播视频源是一个竖版视频，而此处设置的调整后的视频为横版视频，",
+        "live_render将尝试先在原始直播源视频上添加黑边，然后再调整为相应的视频尺寸。",
+        "这一特性可以用于将720P的竖版直播视频转换为1080P的横版视频",
+        "随意调整此项，可能会影响性能"
+    ],
 
-    "fps": 60,
-    "#fps": "强制设置视频帧率，一般情况下此项将被忽略"
+    "adjust_input_video_height": 0,
+    "#adjust_input_video_height": [ "重新调整原始直播源视频的高度，如果不需要调整，设置为0即可",
+        "随意调整此项，可能会影响性能"
+    ],
+
+    "adjust_input_video_fps": 0,
+    "#adjust_input_video_fps": [ "重新调整原始直播源视频的帧率，如果不需要调整，设置为0即可",
+        "如果设置了此项，会使用FFmpeg中的fps filter对原始直播源视频的帧率进行预调整",
+        "随意调整此项，可能会影响性能"
+    ],
 
 }
 ```

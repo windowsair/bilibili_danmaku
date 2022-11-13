@@ -58,7 +58,6 @@ void check_live_render_path(config::live_render_config_t &config) {
     ffmpeg_path_str = config.ffmpeg_path_ + std::string("/ffmpeg");
 #endif
 
-
     std::error_code _ec;
     directory_entry ffmpeg_entry(u8path(ffmpeg_path_str), _ec);
 
@@ -274,23 +273,31 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
 
     subprocess_destroy(&subprocess);
 
-    if (displayWidth == -1 && displayHeight == -1 && fps == -1) {
+    if (displayWidth == -1 || displayHeight == -1 || fps == -1) {
         return false;
     }
 
     config.stream_address_ = stream_address;
 
-    if (displayWidth != -1) {
-        config.video_width_ = displayWidth;
-    }
+    config.origin_video_fps_ = fps;
+    config.origin_video_height_ = displayHeight;
+    config.origin_video_width_ = displayWidth;
 
-    if (displayHeight != -1) {
-        config.video_height_ = displayHeight;
-    }
+    // when user not set video config, use origin video setting.
+    config.video_width_ =
+        config.adjust_video_width_ ? config.adjust_video_width_ : displayWidth;
 
-    if (fps != -1) {
-        config.fps_ = fps;
-    }
+    config.video_height_ =
+        config.adjust_video_height_ ? config.adjust_video_height_ : displayHeight;
+
+    config.fps_ = config.adjust_video_fps_ ? config.adjust_video_fps_ : fps;
+
+    config.adjust_video_height_ =
+        config.adjust_video_height_ ? config.adjust_video_height_ : config.video_height_;
+    config.adjust_video_width_ =
+        config.adjust_video_width_ ? config.adjust_video_width_ : config.video_width_;
+    config.adjust_video_fps_ =
+        config.adjust_video_fps_ ? config.adjust_video_fps_ : config.fps_;
 
     return true;
 }
@@ -333,6 +340,69 @@ bool init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
     }
 
     return flag;
+}
+
+inline void process_input_video_filter(std::string &filter_str,
+                                       const config::live_render_config_t &config) {
+    bool has_prefix_filter = false;
+
+    if (config.origin_video_width_ == config.adjust_video_width_ &&
+        config.origin_video_height_ == config.adjust_video_height_ &&
+        config.origin_video_fps_ == config.adjust_video_fps_) {
+        filter_str = "[0:v]"; // do not change input video
+        return;
+    }
+
+    if (config.origin_video_width_ < config.origin_video_height_ &&
+        config.adjust_video_height_ < config.adjust_video_width_) {
+        // convert a vertical video to horizontal
+        // and add black padding.
+
+        // padding = 1/2 * (new_video_width - scaled_video_width)
+        double scaled_video_width =
+            (double)config.origin_video_width_ *
+            ((double)config.adjust_video_height_ / (double)config.origin_video_height_);
+        double padding_left = 0.5 * (config.adjust_video_width_ - scaled_video_width);
+
+        if (padding_left < 0) {
+            fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                       "\n原视频无法进行调整，原始尺寸为{}x{}，预期尺寸为{}x{}\n",
+                       config.origin_video_width_, config.origin_video_height_,
+                       config.adjust_video_width_, config.adjust_video_height_);
+            std::abort();
+        }
+
+        filter_str = fmt::format("[0:v]scale=-1:{},pad={}:{}:{}:0",
+                                 config.adjust_video_height_, config.adjust_video_width_,
+                                 config.adjust_video_height_, (int)padding_left);
+
+        has_prefix_filter = true;
+    } else if (config.origin_video_height_ == config.adjust_video_height_ &&
+               config.origin_video_width_ == config.adjust_video_width_) {
+        // nothing to do
+        has_prefix_filter = false;
+    } else {
+        // just scale input video
+        filter_str = fmt::format("[0:v]scale={}:{}", config.adjust_video_width_,
+                                 config.adjust_video_height_);
+
+        has_prefix_filter = true;
+    }
+
+    // change fps
+    if (config.origin_video_fps_ != config.adjust_video_fps_) {
+        if (has_prefix_filter) {
+            filter_str += ","; // spilt multiple filter
+        } else {
+            filter_str = "[0:v]"; // fps is the first filter
+        }
+
+        filter_str += fmt::format("fps={}", config.adjust_video_fps_);
+        has_prefix_filter = true;
+    }
+
+    // output process [0:v] ===> [lr_v0]
+    filter_str += "[lr_v0];[lr_v0]";
 }
 
 /**
@@ -394,19 +464,21 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     // clang-format on
     std::string ffmpeg_overlay_filter_str;
 
+    process_input_video_filter(ffmpeg_overlay_filter_str, config);
+
     // FFmpeg improved the calculation of premultiplied alpha for YUV format.
     // Now we don't have to make extra pixel format conversion anymore.
     // See: https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/bdf01a9
 
     if (config.font_alpha_fix_) {
         // quality first
-        ffmpeg_overlay_filter_str =
-            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb";
+        ffmpeg_overlay_filter_str +=
+            "[1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb";
     } else {
         // default option (speed first)
         // For the newer ffmpeg, this actually performs better.
-        ffmpeg_overlay_filter_str =
-            "[0:v][1:v]overlay=x=0:y=0:alpha=premultiplied:format=yuv420";
+        ffmpeg_overlay_filter_str +=
+            "[1:v]overlay=x=0:y=0:alpha=premultiplied:format=yuv420";
     }
 
     // extra user filter process
