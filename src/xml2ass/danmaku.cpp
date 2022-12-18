@@ -389,6 +389,12 @@ template int DanmakuHandle::process_danmaku_dialogue_move<
     std::vector<std::reference_wrapper<danmaku_item_t>> &, const config::ass_config_t &,
     std::vector<ass_dialogue_t> &);
 
+// explicitly generate normal version
+template int DanmakuHandle::process_danmaku_dialogue_move<
+    std::vector<danmaku_item_t>>(
+    std::vector<danmaku_item_t> &, const config::ass_config_t &,
+    std::vector<ass_dialogue_t> &);
+
 // do not share config parameter cuz we will change it.
 int DanmakuHandle::danmaku_main_process(std::string xml_file,
                                         config::ass_config_t &config,
