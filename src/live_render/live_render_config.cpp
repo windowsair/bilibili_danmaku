@@ -165,6 +165,10 @@ live_render_config_t get_user_live_render_config() {
         config.bilibili_proxy_address_ = doc["bilibili_proxy_address"].GetString();
     }
 
+    if (doc.HasMember("bilibili_cookie")) {
+        config.bilibili_cookie_ = doc["bilibili_cookie"].GetString();
+    }
+
     fclose(fp);
     return config;
 }

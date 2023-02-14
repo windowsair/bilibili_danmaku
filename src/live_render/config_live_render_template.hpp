@@ -122,6 +122,9 @@
     "bilibili_proxy_address": "",
     "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/",
 
+    "bilibili_cookie": "",
+    "#bilibili_cookie": "bilibili的cookie，用于获取加密或付费直播源",
+
 
     "adjust_input_video_width": 0,
     "#adjust_input_video_width": [ "重新调整原始直播源视频的宽度，如果不需要调整，设置为0即可",
@@ -258,6 +261,9 @@ constexpr auto config_live_render_template_schema =
             "type": "integer"
         },
         "bilibili_proxy_address": {
+            "type": "string"
+        },
+        "bilibili_cookie": {
             "type": "string"
         }
     },

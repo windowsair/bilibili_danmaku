@@ -113,7 +113,7 @@ live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
 }
 
 inline std::vector<live_stream_info_t>
-get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address) {
+get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address, std::string user_cookie) {
     using namespace ix;
     using namespace rapidjson;
 
@@ -123,6 +123,13 @@ get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address) {
 
     HttpClient httpClient;
     HttpRequestArgsPtr args = httpClient.createRequest();
+
+    WebSocketHttpHeaders req_header;
+    if (!user_cookie.empty()) {
+        req_header["cookie"] = user_cookie;
+    }
+
+    args->extraHeaders = req_header;
 
     // Timeout options
     args->connectTimeout = 10;
@@ -220,7 +227,7 @@ get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address) {
  * @return
  */
 std::vector<live_stream_info_t>
-live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_address) {
+live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_address, std::string user_cookie) {
     using namespace ix;
     using namespace rapidjson;
 
@@ -231,7 +238,7 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
 
     std::vector<live_stream_info_t> ret;
 
-    ret = get_live_room_stream_v1(room_id, qn, proxy_address);
+    ret = get_live_room_stream_v1(room_id, qn, proxy_address, user_cookie);
     if (!ret.empty()) {
         return ret;
     }
@@ -240,6 +247,12 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
 
     HttpClient httpClient;
     HttpRequestArgsPtr args = httpClient.createRequest();
+    WebSocketHttpHeaders req_header;
+    if (!user_cookie.empty()) {
+        req_header["cookie"] = user_cookie;
+    }
+
+    args->extraHeaders = req_header;
 
     // Timeout options
     args->connectTimeout = 10;

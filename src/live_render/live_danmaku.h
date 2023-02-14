@@ -109,7 +109,8 @@ class live_danmaku {
     live_detail_t get_room_detail(uint64_t live_id);
 
     std::vector<live_stream_info_t> get_live_room_stream(uint64_t room_id, int qn,
-        std::string proxy_address = "");
+                                                         std::string proxy_address = "",
+                                                         std::string user_cookie = "");
 
     std::string get_live_room_title(uint64_t user_uid);
 

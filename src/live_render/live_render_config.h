@@ -58,6 +58,7 @@ typedef struct live_render_config_ : public ass_config_t {
                                    // The encoding of this field is always UTF8
 
     std::string bilibili_proxy_address_;
+    std::string bilibili_cookie_;
 
     // origin input stream info
     int origin_video_width_;
