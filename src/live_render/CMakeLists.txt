@@ -27,7 +27,7 @@ set(LIVE_RENDER_SOURCES
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
         ../xml2ass/danmaku_filter.cpp
-        live_monitor.cpp live_monitor.h live_render_config.cpp ffmpeg_utils.cpp ffmpeg_utils.h)
+        live_monitor.cpp live_monitor.h live_render_config.cpp ffmpeg_utils.cpp ffmpeg_utils.h ass_render_utils.h)
 
 ## TODO: windows only
 if (WIN32)

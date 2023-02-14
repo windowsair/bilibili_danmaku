@@ -12,6 +12,9 @@ std::string time2ass(float time);
 
 bool is_custom_ass_file_exist(std::string filename);
 
+std::string get_sc_ass_header(const config::ass_config_t &config,
+                              std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list);
+
 std::string get_ass_header(const config::ass_config_t &config,
                            std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list);
 
