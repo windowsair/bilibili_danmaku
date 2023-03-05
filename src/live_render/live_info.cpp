@@ -215,6 +215,15 @@ get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address, std
 
     }
 
+    // Prefer to use gotcha05 address for better recording
+    for (auto i = 0; i < ret.size(); i++) {
+        auto &stream_url = ret[i].address_;
+        if (stream_url.find("gotcha05") != std::string::npos) {
+            std::swap(ret[0], ret[i]);
+            break;
+        }
+    }
+
     return ret;
 
 
