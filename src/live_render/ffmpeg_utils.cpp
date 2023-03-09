@@ -470,7 +470,7 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     // Now we don't have to make extra pixel format conversion anymore.
     // See: https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/bdf01a9
 
-    if (config.font_alpha_fix_) {
+    if (0) {
         // quality first
         ffmpeg_overlay_filter_str +=
             "[1:v]overlay=x=0:y=0:alpha=premultiplied:format=rgb";
@@ -566,7 +566,7 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     });
 
     // old version FFmpeg alpha fix
-    if (config.font_alpha_fix_) {
+    if (0) {
         ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-pix_fmt", "nv12",
         });

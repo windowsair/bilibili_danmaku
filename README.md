@@ -197,11 +197,6 @@ $ ./live_render 672353429
     "font_alpha": 0.7,
     "#font_alpha": "字体不透明度,取值为0~1.0,为0时完全透明",
 
-    "font_alpha_fix": false,
-    "#font_alpha_fix": [ "为false时，采用默认的alpha混合策略（速度优先）。弹幕可能变暗，尤其是当不透明度小于0.6时",
-        "为true时，采用符合自觉的alpha混合策略（质量优先），但是会降低渲染速度",
-        "根据对渲染效果和渲染速度的要求选择合适的项目。"
-    ],
 
     "font_bold": true,
     "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
