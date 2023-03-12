@@ -112,8 +112,10 @@ live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     return live_detail;
 }
 
-inline std::vector<live_stream_info_t>
-get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address, std::string user_cookie) {
+inline std::vector<live_stream_info_t> get_live_room_stream_v1(uint64_t room_id, int qn,
+                                                               std::string &proxy_address,
+                                                               std::string &user_cookie,
+                                                               int retry_count) {
     using namespace ix;
     using namespace rapidjson;
 
@@ -147,9 +149,7 @@ get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address, std
     // Sync req
     HttpResponsePtr res;
     std::string url = fmt::format(
-        fmt::runtime(
-            proxy_address +
-            "room/v1/Room/playUrl?qn={}&cid={}&platform=web"),
+        fmt::runtime(proxy_address + "room/v1/Room/playUrl?qn={}&cid={}&platform=web"),
         qn, room_id);
 
     // qn 20000 -> 4K
@@ -186,47 +186,32 @@ get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address, std
     for (auto &item : doc["data"]["durl"].GetArray()) {
         std::string stream_url = item["url"].GetString();
 
-        // is gotcha cdn?
-        if (!flag) {
-            size_t index = 0;
-            int count = 0;
-            for (index = 0; index < stream_url.size(); index++) {
-                //  "https://xxxxxxgotchaxxxx/"
-                if (stream_url[index] == '/') {
-                    count++;
-                }
-                if (count == 3) {
-                    break;
-                }
-
-            }
-
-            std::string domain = stream_url.substr(0, index);
-            if (domain.find("gotcha") != std::string::npos) {
-                flag = true;
-                fmt::print(fg(fmt::color::green_yellow), "\n获取到了gotcha地址\n");
-            }
-        }
-
-        ret.emplace_back(live_stream_info_t::STREAM,
-                         live_stream_info_t::AVC,
-                         live_stream_info_t::FLV,
-                         stream_url);
-
+        ret.emplace_back(live_stream_info_t::STREAM, live_stream_info_t::AVC,
+                         live_stream_info_t::FLV, stream_url);
     }
 
     // Prefer to use gotcha05 address for better recording
     for (auto i = 0; i < ret.size(); i++) {
         auto &stream_url = ret[i].address_;
         if (stream_url.find("gotcha05") != std::string::npos) {
+            fmt::print(fg(fmt::color::green_yellow), "\n获取到了gotcha05地址\n");
             std::swap(ret[0], ret[i]);
+            flag = true;
             break;
         }
     }
 
+    if (flag == false) {
+        if (retry_count == 0) {
+            // rollback to v2 method
+            return {};
+        }
+
+        return get_live_room_stream_v1(room_id, qn, proxy_address, user_cookie,
+                                       retry_count - 1);
+    }
+
     return ret;
-
-
 }
 
 /**
@@ -236,18 +221,21 @@ get_live_room_stream_v1(uint64_t room_id, int qn, std::string proxy_address, std
  * @return
  */
 std::vector<live_stream_info_t>
-live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_address, std::string user_cookie) {
+live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_address,
+                                   std::string user_cookie) {
     using namespace ix;
     using namespace rapidjson;
 
+    int retry_count = 3;
+
     if (proxy_address.empty()) {
-        proxy_address =
-            "https://api.live.bilibili.com/";
+        retry_count = 0;
+        proxy_address = "https://api.live.bilibili.com/";
     }
 
     std::vector<live_stream_info_t> ret;
 
-    ret = get_live_room_stream_v1(room_id, qn, proxy_address, user_cookie);
+    ret = get_live_room_stream_v1(room_id, qn, proxy_address, user_cookie, retry_count);
     if (!ret.empty()) {
         return ret;
     }
@@ -279,9 +267,9 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
     // Sync req
     HttpResponsePtr res;
     std::string url = fmt::format(
-        fmt::runtime(
-            proxy_address +
-            "xlive/web-room/v2/index/getRoomPlayInfo?platform=web&ptype=8&qn={}&protocol=0,1&format=0,1,2&codec=0,1&room_id={}"),
+        fmt::runtime(proxy_address + "xlive/web-room/v2/index/"
+                                     "getRoomPlayInfo?platform=web&ptype=8&qn={}&"
+                                     "protocol=0,1&format=0,1,2&codec=0,1&room_id={}"),
         qn, room_id);
 
     // qn 20000 -> 4K
@@ -513,13 +501,16 @@ std::string live_danmaku::get_username(uint64_t room_id) {
 
     // Header
     WebSocketHttpHeaders headers;
-    headers["User-Agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36";
+    headers["User-Agent"] =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like "
+        "Gecko) Chrome/105.0.0.0 Safari/537.36";
     args->extraHeaders = headers;
 
     // Sync req
     HttpResponsePtr res;
-    std::string url = fmt::format(
-        "https://api.live.bilibili.com/live_user/v1/UserInfo/get_anchor_in_room?roomid={}", room_id);
+    std::string url = fmt::format("https://api.live.bilibili.com/live_user/v1/UserInfo/"
+                                  "get_anchor_in_room?roomid={}",
+                                  room_id);
 
     res = httpClient.get(url, args);
 
