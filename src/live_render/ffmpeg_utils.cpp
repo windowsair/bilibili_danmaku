@@ -255,19 +255,48 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
         }
     };
 
+    /*
+    * Stream #0:1: Video: h264 (High), yuv420p(tv, bt709, progressive), 1920x1080, 10240 kb/s, 60 fps, 60 tbr, 1k tbn
+    */
+    std::size_t pos;
+    char *substr;
+
     while (!feof(fp)) {
         if (fgets(buffer.data(), 10240 - 1, fp) != NULL) {
-            auto displayWidth_it = buffer.find("displayWidth");
-            auto displayHeight_it = buffer.find("displayHeight");
-            auto fps_it = buffer.find("fps");
-
-            get_item(displayWidth_it, displayWidth);
-            get_item(displayHeight_it, displayHeight);
-            get_item(fps_it, fps);
-
-            if (displayWidth != -1 && displayHeight != -1 && fps != -1) {
-                break;
+            if (buffer.find("Stream") == std::string::npos) {
+                continue;
             }
+
+            if ((pos = buffer.find("Video")) == std::string::npos) {
+                continue;
+            }
+
+            // get displayWidth and displayHeight
+            pos = 0;
+            while (pos != std::string::npos) {
+                pos = buffer.find("x");
+                // , 1920x
+                pos = buffer.find_last_of(",", pos);
+                //  1920x1080
+                substr = buffer.data() + pos + 1;
+
+                ret = sscanf(substr, "%dx%d", &displayWidth, &displayHeight);
+                if (ret == 2) {
+                    break;
+                }
+            }
+
+            assert(pos != std::string::npos);
+
+            // get fps
+            pos = buffer.find("fps", pos);
+            assert(pos != std::string::npos);
+            pos = buffer.find_last_of(",", pos);
+            substr = buffer.data() + pos + 1;
+
+            sscanf(substr, "%d", &fps);
+
+            break;
         }
     }
 

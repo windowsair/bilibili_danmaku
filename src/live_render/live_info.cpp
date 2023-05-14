@@ -235,10 +235,12 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
 
     std::vector<live_stream_info_t> ret;
 
-    ret = get_live_room_stream_v1(room_id, qn, proxy_address, user_cookie, retry_count);
-    if (!ret.empty()) {
-        return ret;
-    }
+    // gotcha address doesn't seem to work anymore
+
+    //ret = get_live_room_stream_v1(room_id, qn, proxy_address, user_cookie, retry_count);
+    //if (!ret.empty()) {
+    //    return ret;
+    //}
 
     live_detail_t live_detail;
 
