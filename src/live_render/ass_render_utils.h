@@ -3,45 +3,57 @@
 
 #include "thirdparty/libass/include/ass.h"
 
-struct ass_render_control {
+struct ass_render_control_base {
   public:
-    explicit ass_render_control(ASS_Library *lib)
-        : ass_library_(lib), danmaku_track_(nullptr), sc_track_(nullptr) {
-    }
+    ass_render_control_base(ASS_Library *lib, ASS_Track *track)
+        : ass_library_(lib), track_(track){};
 
-    void create_new_sc_track(char *ass_style_header, size_t ass_style_header_length);
-    void create_new_danmaku_track(char *ass_style_header, size_t ass_style_header_length);
+    virtual void create_track(char *ass_style_header, size_t ass_style_header_length) = 0;
 
-    inline auto get_sc_track() {
-        return this->sc_track_;
-    }
-    inline auto get_danmaku_track() {
-        return this->danmaku_track_;
+    inline auto get_track() {
+        return this->track_;
     }
 
   public:
-    ASS_Track *danmaku_track_;
-    ASS_Track *sc_track_;
+    ASS_Track *track_;
     ASS_Library *ass_library_;
 };
 
-void ass_render_control::create_new_sc_track(char *ass_style_header,
-                                             size_t ass_style_header_length) {
-    if (this->sc_track_ != nullptr) {
-        ass_free_track(sc_track_);
+struct danmaku_ass_render_control : public ass_render_control_base {
+  public:
+    explicit danmaku_ass_render_control(ASS_Library *lib)
+        : ass_render_control_base(lib, nullptr) {
     }
 
-    sc_track_ =
+    void create_track(char *ass_style_header, size_t ass_style_header_length);
+};
+
+struct sc_ass_render_control : public ass_render_control_base {
+  public:
+    explicit sc_ass_render_control(ASS_Library *lib)
+        : ass_render_control_base(lib, nullptr) {
+    }
+
+    void create_track(char *ass_style_header, size_t ass_style_header_length);
+};
+
+void danmaku_ass_render_control::create_track(char *ass_style_header,
+                                              size_t ass_style_header_length) {
+    if (this->track_ != nullptr) {
+        ass_free_track(track_);
+    }
+
+    this->track_ =
         ass_read_memory(ass_library_, ass_style_header, ass_style_header_length, NULL);
 }
 
-void ass_render_control::create_new_danmaku_track(char *ass_style_header,
-                                                  size_t ass_style_header_length) {
-    if (this->danmaku_track_ != nullptr) {
-        ass_free_track(danmaku_track_);
+void sc_ass_render_control::create_track(char *ass_style_header,
+                                         size_t ass_style_header_length) {
+    if (this->track_ != nullptr) {
+        ass_free_track(track_);
     }
 
-    this->danmaku_track_ =
+    this->track_ =
         ass_read_memory(ass_library_, ass_style_header, ass_style_header_length, NULL);
 }
 

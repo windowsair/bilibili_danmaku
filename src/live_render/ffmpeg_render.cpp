@@ -137,8 +137,8 @@ inline void wait_ffmpeg_ready(bool &is_ffmpeg_ready) {
     kIs_ffmpeg_started = true;
 }
 
-inline void update_libass_event(
-    ass_render_control *ass_object, danmaku::DanmakuHandle &handle,
+inline void update_danmaku_event(
+    danmaku_ass_render_control *ass_object, danmaku::DanmakuHandle &handle,
     config::ass_config_t &config, int base_time, bool is_base_time_lag,
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *queue,
     live_monitor *monitor) {
@@ -221,41 +221,13 @@ inline void update_libass_event(
                                                      ass_dialogue_list);
             }
 
-#if 1
             for (auto &item : ass_dialogue_list) {
                 // convert to event_str
                 std::string event_str = ass::get_ass_event(config, item);
                 event_str.push_back('\0');
                 // insert danmaku
-                ass_process_events_line(ass_object->get_danmaku_track(),
-                                        event_str.data());
+                ass_process_events_line(ass_object->get_track(), event_str.data());
             }
-#endif
-            static int sc_process = 0;
-#if 1
-            if (sc_process % 10 == 0) {
-                std::string event_str;
-
-                ass_object->create_new_sc_track(kTest_sc_string.data(),
-                                                kTest_sc_string.size());
-
-                FILE *fp = fopen("D:/my_sc_test.txt", "rb");
-
-                event_str.resize(1024);
-
-                while (1) {
-                    if (fgets(event_str.data(), 1024, fp) != NULL) {
-                        ass_process_events_line(ass_object->get_sc_track(),
-                                                event_str.data());
-                    } else {
-                        break;
-                    }
-                }
-
-                fclose(fp);
-            }
-#endif
-            sc_process++;
 
             kDanmaku_inserted_count += ass_dialogue_list.size();
 
@@ -302,12 +274,13 @@ void ffmpeg_render::run() {
     //        ass_read_memory(ass_library, const_cast<char *>(ass_header_str.c_str()),
     //                        ass_header_str.size(), NULL);
 
-    ass_render_control ass_object{ass_library};
+    danmaku_ass_render_control danmaku_render{ass_library};
+    sc_ass_render_control sc_render{ass_library};
 
-    ass_object.create_new_danmaku_track(const_cast<char *>(ass_header_str.c_str()),
-                                        ass_header_str.size());
-    ass_object.create_new_sc_track(const_cast<char *>(sc_ass_header_str.c_str()),
-                                   sc_ass_header_str.size());
+    danmaku_render.create_track(const_cast<char *>(ass_header_str.c_str()),
+                                ass_header_str.size());
+    sc_render.create_track(const_cast<char *>(sc_ass_header_str.c_str()),
+                           sc_ass_header_str.size());
 
     // create ffmpeg subprocess
     struct subprocess_s subprocess;
@@ -441,8 +414,35 @@ void ffmpeg_render::run() {
     while (stop_cond) {
         using namespace std::chrono_literals;
 
-        update_libass_event(&ass_object, handle, this->config_, tm, false,
-                            this->danmaku_queue_, this->live_monitor_handle_);
+#if 0
+
+        static int sc_process = 0;
+
+        if (sc_process % 100 == 0) {
+            std::string event_str;
+
+            sc_render.create_track(kTest_sc_string.data(), kTest_sc_string.size());
+
+            FILE *fp = fopen("D:/my_sc_test.txt", "rb");
+
+            event_str.resize(1024);
+
+            while (1) {
+                if (fgets(event_str.data(), 1024, fp) != NULL) {
+                    ass_process_events_line(sc_render.get_track(), event_str.data());
+                } else {
+                    break;
+                }
+            }
+
+            fclose(fp);
+        }
+
+        sc_process++;
+#endif
+
+        update_danmaku_event(&danmaku_render, handle, this->config_, tm, false,
+                             this->danmaku_queue_, this->live_monitor_handle_);
 
         // render too fast. just slow down
         if (kReal_world_time - tm < 6 * 1000) {
@@ -508,7 +508,7 @@ void ffmpeg_render::run() {
         //        }
 
         //        // lagging. update danmaku now
-        //        update_libass_event(ass_track, handle, this->config_, tm, true,
+        //        update_danmaku_event(ass_track, handle, this->config_, tm, true,
         //                            this->danmaku_queue_, this->live_monitor_handle_);
 
         //        wait_render = false;
@@ -523,54 +523,53 @@ void ffmpeg_render::run() {
         auto tmp_double_tm = double_tm;
         auto tmp_tm = tm;
 
-        img = ass_render_frame(ass_renderer, ass_object.get_danmaku_track(), tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, 0);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_object.get_danmaku_track(), tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 1);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_object.get_danmaku_track(), tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 2);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_object.get_danmaku_track(), tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 3);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_object.get_danmaku_track(), tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 4);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
         {
-            img =
-                ass_render_frame(ass_renderer, ass_object.get_sc_track(), tm, NULL);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
             blend(frame, img, 0);
             tmp_double_tm += step;
             tmp_tm = static_cast<int>(tmp_double_tm);
 
-            img = ass_render_frame(ass_renderer, ass_object.get_sc_track(), tm, NULL);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
             blend(frame, img, buffer_count * 1);
             tmp_double_tm += step;
             tmp_tm = static_cast<int>(tmp_double_tm);
 
-            img = ass_render_frame(ass_renderer, ass_object.get_sc_track(), tm, NULL);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
             blend(frame, img, buffer_count * 2);
             tmp_double_tm += step;
             tmp_tm = static_cast<int>(tmp_double_tm);
 
-            img = ass_render_frame(ass_renderer, ass_object.get_sc_track(), tm, NULL);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
             blend(frame, img, buffer_count * 3);
             tmp_double_tm += step;
             tmp_tm = static_cast<int>(tmp_double_tm);
 
-            img = ass_render_frame(ass_renderer, ass_object.get_sc_track(), tm, NULL);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
             blend(frame, img, buffer_count * 4);
             tmp_double_tm += step;
             tmp_tm = static_cast<int>(tmp_double_tm);
