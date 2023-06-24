@@ -107,6 +107,9 @@
         "1直接丢弃所有竖版弹幕", "2将竖版弹幕转为横版弹幕"
     ],
 
+    "sc_enable": false,
+    "#sc_enable": "是否录制Super Chat，false为不录制，true为录制",
+
     "verbose": 0,
     "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
        "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
@@ -247,6 +250,9 @@ constexpr auto config_live_render_template_schema =
         "vertical_danmaku_strategy": {
             "type": "integer",
             "enum": [0, 1, 2]
+        },
+        "sc_enable": {
+            "type": "boolean"
         },
         "verbose": {
             "type": "integer"

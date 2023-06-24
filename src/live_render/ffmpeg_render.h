@@ -23,7 +23,8 @@ class ffmpeg_render {
                   live_monitor *live_monitor_handle = nullptr,
                   live_danmaku *live_danmaku_handle = nullptr)
         : config_(config), live_monitor_handle_(live_monitor_handle),
-          live_danmaku_handle_(live_danmaku_handle) {
+          live_danmaku_handle_(live_danmaku_handle), danmaku_queue_(nullptr),
+          sc_queue_(nullptr) {
         ass_img_.stride = config.video_width_ * 4;
         ass_img_.width = config.video_width_;
 
@@ -58,6 +59,10 @@ class ffmpeg_render {
         danmaku_queue_ = p;
     }
 
+    void set_sc_queue(moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *p) {
+        sc_queue_ = p;
+    }
+
     void set_live_monitor_handle(live_monitor *handle) {
         live_monitor_handle_ = handle;
     }
@@ -69,6 +74,7 @@ class ffmpeg_render {
     live_danmaku *live_danmaku_handle_;
     live_monitor *live_monitor_handle_;
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *danmaku_queue_;
+    moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *sc_queue_;
     image_t ass_img_;
     config::live_render_config_t config_;
 };

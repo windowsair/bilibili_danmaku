@@ -139,6 +139,10 @@ live_render_config_t get_user_live_render_config() {
     config.adjust_video_height_ = 0;
     config.adjust_video_fps_ = 0;
 
+    if (doc.HasMember("sc_enable")) {
+        config.sc_enable_ = doc["sc_enable"].GetBool();
+    }
+
     if (doc.HasMember("adjust_input_video_width")) {
         config.adjust_video_width_ = doc["adjust_input_video_width"].GetInt();
     }

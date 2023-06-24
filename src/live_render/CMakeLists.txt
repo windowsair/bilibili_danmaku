@@ -23,6 +23,7 @@ endfunction(copy_lib)
 set(LIVE_RENDER_SOURCES
         live_danmaku.cpp live_danmaku.h ffmpeg_render.cpp ffmpeg_render.h
         live_info.cpp
+        ../xml2ass/ass_sc.cpp
         ../xml2ass/ass_danmaku.cpp
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
