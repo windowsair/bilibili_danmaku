@@ -29,8 +29,11 @@ class ffmpeg_render {
         ass_img_.width = config.video_width_;
 
         // If the user only needs "move" type danmaku,
+        // and they don't want to record super chat message,
         // then we can safely reduce the height of the screen.
-        if (config_.danmaku_pos_time_ == 0) {
+        // Note that sc and danmaku share the same image buffer, even though their
+        // layers may be different.
+        if (config_.sc_enable_ == false && config_.danmaku_pos_time_ == 0) {
             float height =
                 static_cast<float>(config_.video_height_) * config_.danmaku_show_range_;
             height += static_cast<float>(config_.font_size_) *

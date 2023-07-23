@@ -548,7 +548,8 @@ void ffmpeg_render::run() {
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        {
+        // sc layer is above danmaku layer
+        if (config_.sc_enable_) [[unlikely]] {
             img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
             blend(frame, img, 0);
             tmp_double_tm += step;

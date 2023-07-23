@@ -155,6 +155,24 @@ if (LIVE_RENDER_BUILD_TESTING)
     copy_lib()
 
 
+    # superchat ass template test
+    set(TEST_SC_TEMPLATE
+            test/test_sc_template.cpp
+            ../xml2ass/ass_sc.cpp
+            ../xml2ass/ass_danmaku.cpp
+            ../xml2ass/ass_config.cpp
+            ../xml2ass/ass_util.hpp
+            ../xml2ass/sc_item.h
+            ${DANMAKU_THIRDPARTY_PATH}/simdutf/simdutf.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/fmt/src/format.cc
+            ${DANMAKU_THIRDPARTY_PATH}/fmt/src/os.cc
+    )
+    add_executable(test_sc_template ${TEST_SC_TEMPLATE}
+            ${DANMAKU_THIRDPARTY_SRC}
+            ${LIVE_RENDER_THIRDPARTY_SRC})
+    file(COPY test/sc_content_list.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+
 endif () # LIVE_RENDER_BUILD_TESTING
 
 

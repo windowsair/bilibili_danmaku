@@ -351,7 +351,7 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
     }
 
     if (!danmaku_list.empty()) {
-        danmaku_queue_->enqueue(danmaku_list);
+        danmaku_queue_->enqueue(std::move(danmaku_list));
     }
 }
 
@@ -457,6 +457,6 @@ void live_danmaku::process_sc_list(std::vector<std::string> &raw_sc) {
     }
 
     if (!sc_list.empty() && sc_queue_) {
-        sc_queue_->enqueue(sc_list);
+        sc_queue_->enqueue(std::move(sc_list));
     }
 }
