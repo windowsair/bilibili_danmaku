@@ -197,18 +197,16 @@ std::string get_sc_ass_header(const config::ass_config_t &config,
 
     std::string ass_font_color = rgb2bgr(config.font_color_);
     std::string ass_font_alpha =
-        fmt::format("{:X}", static_cast<uint8_t>(255 * (1.0f - config.font_alpha_)));
+        fmt::format("{:02X}", static_cast<uint8_t>(255 * (1.0f - config.font_alpha_)));
     std::string ass_font_outline = fmt::format("{:.1f}", config.font_outline_);
     std::string ass_font_shadow = fmt::format("{:.1f}", config.font_shadow_);
-
-    //int ass_font_size = config.font_size_ * config.font_scale_;
 
     return fmt::format(
         sc_ass_header_format, "title"_a = "hello", "play_res_x"_a = config.video_width_,
         "play_res_y"_a = config.video_height_, "font_name"_a = config.font_family_,
-        "font_alpha"_a = ass_font_alpha, "font_color"_a = ass_font_color,
-        "font_bold"_a = config.font_bold_ ? -1 : 0, "font_outline"_a = ass_font_outline,
-        "font_shadow"_a = ass_font_shadow);
+        "font_size"_a = config.font_size_, "font_alpha"_a = ass_font_alpha,
+        "font_color"_a = ass_font_color, "font_bold"_a = config.font_bold_ ? -1 : 0,
+        "font_outline"_a = ass_font_outline, "font_shadow"_a = ass_font_shadow);
 }
 
 std::string get_ass_header(const config::ass_config_t &config,

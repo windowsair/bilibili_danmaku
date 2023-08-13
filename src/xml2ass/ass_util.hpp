@@ -308,6 +308,7 @@ class SuperChatMessage {
     int total_height_;
     int content_height_;
     int user_height_;
+    int width_;
     const int corner_radius_;
     const int font_size_;
 
@@ -322,7 +323,8 @@ class SuperChatMessage {
     explicit SuperChatMessage(sc::sc_item_t &sc, int x, int y, int width,
                               int corner_radius,
                               int font_size) // TODO: may be we can remove x/y?
-        : sc_(std::move(sc)), corner_radius_(corner_radius), font_size_(font_size) {
+        : sc_(std::move(sc)), corner_radius_(corner_radius), font_size_(font_size),
+          width_(width) {
         const float line_top_margin = (float)font_size / 6.0f;
         constexpr float SC_BOX_STR_LEN_COMPENSATION = 0.9f;
 
@@ -338,7 +340,7 @@ class SuperChatMessage {
 
         content_height_ = calc_content_box_height(font_size, line_num, corner_radius);
         user_height_ = calc_user_box_height(font_size, corner_radius);
-        total_height_ = content_height_ + user_height_;
+        total_height_ = content_height_ + user_height_ + line_top_margin;
 
         sc_box_ = SuperChatBox{x, y, width, user_height_, content_height_, corner_radius};
 
@@ -366,6 +368,12 @@ class SuperChatMessage {
             user_name_color_ = SuperChatUserIDColor3;
         }
     }
+
+    SuperChatMessage(const SuperChatMessage &) = delete;
+    SuperChatMessage &operator=(const SuperChatMessage &) = delete;
+
+    SuperChatMessage(SuperChatMessage &&) = default;
+    SuperChatMessage &operator=(SuperChatMessage &&) = default;
 
     std::string getSuperChatAss(int startX, int startY, int endX, int endY, int startTime,
                                 int endTime);
@@ -420,8 +428,9 @@ class SuperChatMessage {
     }
 };
 
-std::string SuperChatMessage::getSuperChatAss(int startX, int startY, int endX, int endY,
-                                              int startTime, int endTime) {
+inline std::string SuperChatMessage::getSuperChatAss(int startX, int startY, int endX,
+                                                     int endY, int startTime,
+                                                     int endTime) {
     std::string pos, ret;
     std::string start_time = ass::time2ass(startTime);
     std::string end_time = ass::time2ass(endTime);

@@ -20,7 +20,7 @@ typedef struct sc_item_ {
     std::string content_;
     size_t user_name_len_;
     size_t content_len_;
-    uint64_t start_time_;
+    uint64_t start_time_; // TODO: is u32 type ok?
     int price_;
 
     sc_item_(std::string &user_name, std::string &content, uint64_t start_time,

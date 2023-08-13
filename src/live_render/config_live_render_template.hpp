@@ -1,6 +1,6 @@
 ﻿constexpr auto config_live_render_template_json =
     R"--({
-    "version": "0.0.20",
+    "version": "0.0.25",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
@@ -73,19 +73,19 @@
     "#font_family": "采用的字体集",
 
     "font_scale": 1.8,
-    "#font_scale": "字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
+    "#font_scale": "弹幕字体缩放倍数，为1.0时保持原始大小（基础字号为25）",
 
     "font_alpha": 0.7,
-    "#font_alpha": "字体不透明度,取值为0~1.0,为0时完全透明",
+    "#font_alpha": "弹幕字体不透明度,取值为0~1.0,为0时完全透明",
 
     "font_bold": true,
     "#font_bold": "是否设置字体加粗,true加粗,false不加粗",
 
     "font_outline": 0.6,
-    "#font_outline": "字体描边（边框）值",
+    "#font_outline": "弹幕字体描边（边框）值",
 
     "font_shadow": 0.0,
-    "#font_shadow": "字体阴影值",
+    "#font_shadow": "弹幕字体阴影值",
 
     "danmaku_show_range": 0.5,
     "#danmaku_show_range": "弹幕在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
@@ -97,7 +97,7 @@
     "#danmaku_pos_time": "固定弹幕的停留时间(以秒计)，为0时忽略固定弹幕",
 
     "danmaku_lead_time_compensation": -6000,
-    "#danmaku_pos_time": [ "弹幕超前补偿时间(以毫秒计)", "注意将您的本机时间与北京时间同步",
+    "#danmaku_lead_time_compensation": [ "弹幕超前补偿时间(以毫秒计)", "注意将您的本机时间与北京时间同步",
         "该值必须小于等于0", "当该值的绝对值越大时，弹幕越后出现",
         "例如-7000的弹幕将比-6000的弹幕更晚出现"
     ],
@@ -109,6 +109,27 @@
 
     "sc_enable": false,
     "#sc_enable": "是否录制Super Chat，false为不录制，true为录制",
+
+    "sc_font_size": 35,
+    "#sc_font_size": "Super Chat字号大小",
+
+    "sc_alpha": 1.0,
+    "#sc_font_alpha": "Super Chat消息的不透明度,取值为0~1.0,为0时完全透明",
+
+    "sc_show_range": 0.7,
+    "#sc_show_range": "Super Chat在屏幕上的显示范围，取值为0~1.0，为1时全屏显示",
+
+    "sc_max_width": 450,
+    "#sc_max_width": "Super Chat消息占用的最大宽度（以px计）",
+
+    "sc_margin_x": 10,
+    "#sc_margin_x": "Super Chat消息在水平方向上与屏幕边缘的边距大小（以px计）",
+
+    "sc_y_mirror": false,
+    "#sc_y_mirror": [ "Super Chat垂直方向镜像显示",
+        "设置为false优先从屏幕下方显示Super Chat",
+        "设置为true优先从屏幕上方显示Super Chat"
+    ],
 
     "verbose": 0,
     "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
@@ -252,6 +273,31 @@ constexpr auto config_live_render_template_schema =
             "enum": [0, 1, 2]
         },
         "sc_enable": {
+            "type": "boolean"
+        },
+        "sc_font_size": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "sc_alpha": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+        },
+        "sc_show_range": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+        },
+        "sc_max_width": {
+            "type": "integer",
+            "minimum": 10
+        },
+        "sc_margin_x": {
+            "type": "integer",
+            "minimum": 0
+        },
+        "sc_y_mirror": {
             "type": "boolean"
         },
         "verbose": {

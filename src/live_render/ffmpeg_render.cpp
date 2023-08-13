@@ -11,6 +11,7 @@
 
 #include "ass_danmaku.h"
 #include "ass_render_utils.h"
+#include "sc_control.h"
 #include "danmaku_handle.h"
 #include "ffmpeg_render.h"
 #include "ffmpeg_utils.h"
@@ -138,7 +139,7 @@ inline void wait_ffmpeg_ready(bool &is_ffmpeg_ready) {
 }
 
 inline void update_danmaku_event(
-    danmaku_ass_render_control *ass_object, danmaku::DanmakuHandle &handle,
+    ass::danmaku_ass_render_control *ass_object, danmaku::DanmakuHandle &handle,
     config::ass_config_t &config, int base_time, bool is_base_time_lag,
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *queue,
     live_monitor *monitor) {
@@ -266,7 +267,16 @@ void ffmpeg_render::run() {
 
     std::string ass_header_str = ass::get_ass_header(config_, ass_dialogue_list);
 
-    std::string sc_ass_header_str = ass::get_sc_ass_header(config_, ass_dialogue_list);
+    std::string sc_ass_header_str;
+    if (config_.sc_enable_) {
+        config::live_render_config_t copy_cfg = config_;
+        copy_cfg.font_size_ = copy_cfg.sc_font_size_;
+        copy_cfg.font_alpha_  = copy_cfg.sc_alpha_;
+
+        sc_ass_header_str = ass::get_sc_ass_header(copy_cfg, ass_dialogue_list);
+    } else {
+        sc_ass_header_str = ass::get_sc_ass_header(config_, ass_dialogue_list);
+    }
 
     kTest_sc_string = sc_ass_header_str;
 
@@ -274,8 +284,8 @@ void ffmpeg_render::run() {
     //        ass_read_memory(ass_library, const_cast<char *>(ass_header_str.c_str()),
     //                        ass_header_str.size(), NULL);
 
-    danmaku_ass_render_control danmaku_render{ass_library};
-    sc_ass_render_control sc_render{ass_library};
+    ass::danmaku_ass_render_control danmaku_render{ass_library};
+    ass::sc_ass_render_control sc_render{ass_library};
 
     danmaku_render.create_track(const_cast<char *>(ass_header_str.c_str()),
                                 ass_header_str.size());

@@ -445,6 +445,9 @@ void live_danmaku::process_sc_list(std::vector<std::string> &raw_sc) {
     std::string user_name, sc_content;
     int price;
     uint64_t start_time;
+    int dummy_color = 0, dummy_danmaku_type = 0, dummy_player_type = 0;
+    float dummy_start_time = 0;
+
 
     std::vector<sc::sc_item_t> sc_list;
 
@@ -453,6 +456,14 @@ void live_danmaku::process_sc_list(std::vector<std::string> &raw_sc) {
         RE2::PartialMatch(item, *(parse_helper_.sc_user_name_re_), &user_name);
         RE2::PartialMatch(item, *(parse_helper_.sc_price_re_), &price);
         RE2::PartialMatch(item, *(parse_helper_.sc_start_time_re_), &start_time);
+
+        start_time *= 1000; // second to millisecond
+        if (!danmaku_item_pre_process(dummy_color, dummy_danmaku_type, dummy_player_type,
+                                      start_time, dummy_start_time, sc_content)) {
+            continue; // this item should be dropped
+        }
+
+        start_time -= this->base_time_;
         sc_list.emplace_back(user_name, sc_content, start_time, price);
     }
 

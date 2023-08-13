@@ -70,6 +70,12 @@ typedef struct live_render_config_ : public ass_config_t {
 
     // super chat
     bool sc_enable_;
+    int sc_font_size_;
+    float sc_show_range_;
+    float sc_alpha_;
+    int sc_max_width_;
+    int sc_margin_x_;
+    bool sc_y_mirror_;
 
     // live info
     uint64_t user_uid_;
