@@ -4,10 +4,12 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <bit>
 
 #include "sc_item.h"
 #include "ass_danmaku.h"
 
+#include "thirdparty/fmt/include/fmt/format.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 
 namespace ass {

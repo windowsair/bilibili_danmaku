@@ -131,8 +131,8 @@ bool is_custom_ass_file_exist(std::string filename) {
 }
 
 inline std::string
-get_ass_header_impl(const auto ass_header_template, const config::ass_config_t &config,
-                    std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
+get_ass_header_default(const config::ass_config_t &config,
+                       std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
 
     using namespace fmt::literals;
 
@@ -145,7 +145,7 @@ get_ass_header_impl(const auto ass_header_template, const config::ass_config_t &
     int ass_font_size = config.font_size_ * config.font_scale_;
 
     return fmt::format(
-        ass_header_template, "title"_a = "hello", "chat_server"_a = config.chat_server_,
+        ass_header_format, "title"_a = "hello", "chat_server"_a = config.chat_server_,
         "chat_id"_a = config.chat_id_, "event_count"_a = ass_dialogue_list.size(),
         "play_res_x"_a = config.video_width_, "play_res_y"_a = config.video_height_,
         "name"_a = danmaku_name, "font_name"_a = config.font_family_,
@@ -215,7 +215,7 @@ std::string get_ass_header(const config::ass_config_t &config,
     using namespace fmt::literals;
 
     if (!config.use_custom_style_) {
-        return get_ass_header_impl(ass_header_format, config, ass_dialogue_list);
+        return get_ass_header_default(config, ass_dialogue_list);
     }
 
     // use custom style

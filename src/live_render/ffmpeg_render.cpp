@@ -18,9 +18,8 @@
 #include "git.h"
 #include "live_monitor.h"
 
-#include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
-
+#include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/subprocess/subprocess.h"
 
 extern bool kIs_ffmpeg_started;
