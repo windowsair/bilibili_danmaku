@@ -76,6 +76,13 @@ inline void blend(image_t *frame, ASS_Image *img, uint64_t offset) {
     }
 }
 
+inline void sc_blend(image_t *frame, ASS_Image *img, uint64_t offset) {
+    while (img) {
+        blend_single(frame, img, offset);
+        img = img->next;
+    }
+}
+
 void libass_msg_callback(int level, const char *fmt, va_list va, void *data) {
     if (level > 6)
         return;
@@ -271,7 +278,7 @@ void ffmpeg_render::run() {
     if (config_.sc_enable_) {
         config::live_render_config_t copy_cfg = config_;
         copy_cfg.font_size_ = copy_cfg.sc_font_size_;
-        copy_cfg.font_alpha_  = copy_cfg.sc_alpha_;
+        copy_cfg.font_alpha_ = copy_cfg.sc_alpha_;
 
         sc_ass_header_str = ass::get_sc_ass_header(copy_cfg, ass_dialogue_list);
     } else {
@@ -419,37 +426,27 @@ void ffmpeg_render::run() {
     double raw_step = ((double)(1000) / (double)(config_.fps_));
     double step = ((double)(1000) / (double)(config_.fps_));
     double double_tm = 0;
+    double sc_double_tm = 0;
+    double sc_double_end_update_tm = 0;
+    int sc_tm = 0;
 
     ASS_Image *img;
+    sc::ScControl sc_control{&sc_render, config_};
     while (stop_cond) {
         using namespace std::chrono_literals;
 
-#if 0
+        if (this->config_.sc_enable_) {
+            int sc_end_time;
 
-        static int sc_process = 0;
-
-        if (sc_process % 100 == 0) {
-            std::string event_str;
-
-            sc_render.create_track(kTest_sc_string.data(), kTest_sc_string.size());
-
-            FILE *fp = fopen("D:/my_sc_test.txt", "rb");
-
-            event_str.resize(1024);
-
-            while (1) {
-                if (fgets(event_str.data(), 1024, fp) != NULL) {
-                    ass_process_events_line(sc_render.get_track(), event_str.data());
-                } else {
-                    break;
-                }
+            for (int i = 0; i < 5; i++) {
+                sc_double_end_update_tm += step;
             }
+            sc_end_time = static_cast<int>(sc_double_end_update_tm);
 
-            fclose(fp);
+            sc_control.updateSuperChatEvent(&sc_render, this->config_, sc_tm,
+                                            sc_double_end_update_tm - sc_tm,
+                                            this->sc_queue_, this->live_monitor_handle_);
         }
-
-        sc_process++;
-#endif
 
         update_danmaku_event(&danmaku_render, handle, this->config_, tm, false,
                              this->danmaku_queue_, this->live_monitor_handle_);
@@ -530,8 +527,6 @@ void ffmpeg_render::run() {
         // clear buffer
         memset(frame->buffer, 0, buffer_count * 5);
 
-        auto tmp_double_tm = double_tm;
-        auto tmp_tm = tm;
 
         img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, 0);
@@ -560,30 +555,30 @@ void ffmpeg_render::run() {
 
         // sc layer is above danmaku layer
         if (config_.sc_enable_) [[unlikely]] {
-            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
-            blend(frame, img, 0);
-            tmp_double_tm += step;
-            tmp_tm = static_cast<int>(tmp_double_tm);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, 0);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
 
-            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
-            blend(frame, img, buffer_count * 1);
-            tmp_double_tm += step;
-            tmp_tm = static_cast<int>(tmp_double_tm);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 1);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
 
-            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
-            blend(frame, img, buffer_count * 2);
-            tmp_double_tm += step;
-            tmp_tm = static_cast<int>(tmp_double_tm);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 2);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
 
-            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
-            blend(frame, img, buffer_count * 3);
-            tmp_double_tm += step;
-            tmp_tm = static_cast<int>(tmp_double_tm);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 3);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
 
-            img = ass_render_frame(ass_renderer, sc_render.get_track(), tm, NULL);
-            blend(frame, img, buffer_count * 4);
-            tmp_double_tm += step;
-            tmp_tm = static_cast<int>(tmp_double_tm);
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 4);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
         }
 
         auto sz = fwrite(frame->buffer, 5, buffer_count, ffmpeg_);

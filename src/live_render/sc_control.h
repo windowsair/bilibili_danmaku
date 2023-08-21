@@ -20,6 +20,8 @@ constexpr int SC_ANIME_FADE_IN_MOVE_RIGHT_TIME = 200;
 constexpr int SC_ANIME_FADE_OUT_MOVE_DOWN_TIME = 300;
 constexpr int SC_ANIME_FADE_OUT_MOVE_LEFT_TIME = 200;
 
+class ScControlDebugProbe;
+
 typedef struct sc_show_info_ {
     ass::SuperChatMessage *msg;
     std::list<ass::SuperChatMessage>::iterator it;
@@ -97,6 +99,7 @@ class ScControl {
     friend class Default;
     friend class AnimeFadeIn;
     friend class AnimeFadeOut;
+    friend class ScControlDebugProbe;
 
   private:
     int updateExpireItem(int base_time);
@@ -124,9 +127,9 @@ class ScControl {
      */
     int next_show_time_, next_fade_out_time_, next_end_time_;
     std::list<ass::SuperChatMessage> sc_list_;
-    std::deque<sc_show_info_t> wait_in_deque_;
-    std::deque<sc_show_info_t> show_deque_;
-    std::deque<sc_show_info_t> fade_out_deque_;
+    std::list<sc_show_info_t> wait_in_deque_;
+    std::list<sc_show_info_t> show_deque_;
+    std::list<sc_show_info_t> fade_out_deque_;
 };
 
 

@@ -26,6 +26,7 @@ void ScControl::changeState(ScControlState *state) {
     state_ = state;
 }
 // TODO: stat information
+// TODO: unused parameter
 void ScControl::updateSuperChatEvent(
     ass::sc_ass_render_control *ass_object, config::ass_config_t &config, int base_time,
     int duration_time, moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *queue,
@@ -71,9 +72,7 @@ int ScControl::updateExpireItem(int base_time) {
     }
 
     for (auto it = show_deque_.begin(); it != show_deque_.end(); it++) {
-        sc_show_info_t &item = *it;
-
-        if (item.fade_out_time < base_time) {
+        if (it->fade_out_time < base_time) {
             interest_list.push_back(it);
         }
     }
@@ -86,9 +85,10 @@ int ScControl::updateExpireItem(int base_time) {
     const int start_time = base_time;
     const int move_left_end_time = start_time + SC_ANIME_FADE_OUT_MOVE_LEFT_TIME;
     const int move_down_end_time = move_left_end_time + SC_ANIME_FADE_OUT_MOVE_DOWN_TIME;
+    const int end_time = move_down_end_time + 2 * 60 * 60 * 1000;
     const int line_top_margin = static_cast<int>(font_size_ / 6.0f);
     int y1, y2;
-    std::string ass_str;
+    std::vector<std::string> ass_list;
 
     // Initial state -> Item 1 expired.
     // First, Item 1 moves to the left and exits the screen.
@@ -120,12 +120,17 @@ int ScControl::updateExpireItem(int base_time) {
         item.fade_out_time = start_time;
         item.end_time = move_left_end_time;
 
-        ass_str = item.msg->getSuperChatAss(x_, item.y, -item.width() - 10, item.y,
-                                            start_time, move_left_end_time);
-        ass_object_->update_event_line(ass_str);
+        item.msg->getSuperChatAss(x_, item.y, -item.width() - 10, item.y, start_time,
+                                  move_left_end_time, ass_list);
 
         fade_out_deque_.push_back(item);
         show_deque_.erase(it);
+    }
+
+    // Unexpired items remain in the same position until they are moved down.
+    for (auto &item : show_deque_) {
+        item.msg->getSuperChatAss(x_, item.y, x_, item.y, start_time, move_left_end_time,
+                                  ass_list);
     }
 
     y2 = y_mirror_ ? line_top_margin : screen_height_;
@@ -141,11 +146,15 @@ int ScControl::updateExpireItem(int base_time) {
             y2 += item.total_height();
         }
 
-        ass_str = item.msg->getSuperChatAss(x_, y1, x_, y2, move_left_end_time,
-                                            move_down_end_time);
-        ass_object_->update_event_line(ass_str);
+        // move down
+        item.msg->getSuperChatAss(x_, y1, x_, y2, move_left_end_time, move_down_end_time,
+                                  ass_list);
+
+        // then always on
+        item.msg->getSuperChatAss(x_, y2, x_, y2, move_down_end_time, end_time, ass_list);
     }
 
+    ass_object_->update_event_line(ass_list);
     next_end_time_ = move_down_end_time;
     return ret;
 }
@@ -156,7 +165,7 @@ int ScControl::addNewItem(std::vector<sc_show_info_t *> &sc_list, int base_time)
     const int end_time = move_right_end_time + 2 * 60 * 60 * 1000;
     const int line_top_margin = static_cast<int>(font_size_ / 6.0f);
     int y1, y2;
-    std::string ass_str;
+    std::vector<std::string> ass_list;
 
     ass_object_->flush_track();
     // Initial state -> Add new item.
@@ -212,22 +221,25 @@ int ScControl::addNewItem(std::vector<sc_show_info_t *> &sc_list, int base_time)
             y2 += item.total_height();
         }
 
-        ass_str = item.msg->getSuperChatAss(x_, y1, x_, y2, base_time, move_up_end_time);
-        ass_object_->update_event_line(ass_str);
+        item.msg->getSuperChatAss(x_, y1, x_, y2, base_time, move_up_end_time, ass_list);
+    }
+
+    // keep old items position
+    for (auto &item : show_deque_) {
+        item.msg->getSuperChatAss(x_, item.y, x_, item.y, move_up_end_time,
+                                  move_right_end_time, ass_list);
     }
 
     // update new items insert anime
     for (auto p : sc_list) {
-        ass_str = p->msg->getSuperChatAss(-10 - p->width(), p->y, x_, p->y,
-                                          move_up_end_time, move_right_end_time);
-        ass_object_->update_event_line(ass_str);
+        p->msg->getSuperChatAss(-10 - p->width(), p->y, x_, p->y, move_up_end_time,
+                                move_right_end_time, ass_list);
     }
 
     // always on screen
     for (auto &item : show_deque_) {
-        ass_str = item.msg->getSuperChatAss(x_, item.y, x_, item.y, move_right_end_time,
-                                            end_time);
-        ass_object_->update_event_line(ass_str);
+        item.msg->getSuperChatAss(x_, item.y, x_, item.y, move_right_end_time, end_time,
+                                  ass_list);
     }
 
     // always on screen : new items
@@ -235,9 +247,9 @@ int ScControl::addNewItem(std::vector<sc_show_info_t *> &sc_list, int base_time)
         p->show_time = move_right_end_time;
         p->fade_out_time = move_right_end_time + getItemAliveTime(p->price());
 
-        ass_str =
-            p->msg->getSuperChatAss(x_, p->y, x_, p->y, move_right_end_time, end_time);
-        ass_object_->update_event_line(ass_str);
+
+        p->msg->getSuperChatAss(x_, p->y, x_, p->y, move_right_end_time, end_time,
+                                ass_list);
     }
 
     // update show/wait deque
@@ -249,6 +261,7 @@ int ScControl::addNewItem(std::vector<sc_show_info_t *> &sc_list, int base_time)
         wait_in_deque_.erase(it);
     }
 
+    ass_object_->update_event_line(ass_list);
     next_show_time_ = move_right_end_time;
     return 0;
 }
@@ -315,7 +328,6 @@ void Default::updateSuperChat(ScControl *control, int base_time, int duration_ti
     const int max_height = control->max_height_;
     int total_height = control->getItemTotalHeight();
     int wait_list_height = 0;
-    bool try_to_insert = true;
 
     for (auto p : interest_list) {
         wait_list_height += p->total_height();
@@ -346,40 +358,37 @@ void Default::updateSuperChat(ScControl *control, int base_time, int duration_ti
         if (ret != 0) {
             changeState(control, AnimeFadeOut::getInstance());
             return;
-        } else {
-            try_to_insert = false;
         }
     }
 
     // It is possible to try the insertion again,
     // but there is no guarantee that all items will be inserted successfully.
-    if (try_to_insert) {
-        // Prioritize selecting items with the highest price
-        // and maximum length for insertion.
-        std::sort(interest_list.begin(), interest_list.end(), [](auto a, auto b) {
-            if (a->price() == b->price()) {
-                return a->total_height() > b->total_height();
-            } else {
-                return a->price() > b->price();
-            }
-        });
 
-        std::vector<sc_show_info_t *> insert_list;
-        for (auto p : interest_list) {
-            if (total_height + p->total_height() > max_height) {
-                break;
-            }
-            total_height += p->total_height();
-            insert_list.push_back(p);
+    // Prioritize selecting items with the highest price
+    // and maximum length for insertion.
+    std::sort(interest_list.begin(), interest_list.end(), [](auto a, auto b) {
+        if (a->price() == b->price()) {
+            return a->total_height() > b->total_height();
+        } else {
+            return a->price() > b->price();
         }
+    });
 
-        if (insert_list.empty()) {
-            return;
+    std::vector<sc_show_info_t *> insert_list;
+    for (auto p : interest_list) {
+        if (total_height + p->total_height() > max_height) {
+            break;
         }
-
-        control->addNewItem(insert_list, base_time);
-        changeState(control, AnimeFadeIn::getInstance());
+        total_height += p->total_height();
+        insert_list.push_back(p);
     }
+
+    if (insert_list.empty()) {
+        return;
+    }
+
+    control->addNewItem(insert_list, base_time);
+    changeState(control, AnimeFadeIn::getInstance());
 }
 
 void AnimeFadeIn::updateSuperChat(ScControl *control, int base_time, int duration_time) {

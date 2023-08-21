@@ -2,6 +2,7 @@
 #define BILIBILI_DANMAKU_ASS_UTIL_HPP
 
 #include <string>
+#include <vector>
 #include <array>
 
 #include "sc_item.h"
@@ -375,8 +376,8 @@ class SuperChatMessage {
     SuperChatMessage(SuperChatMessage &&) = default;
     SuperChatMessage &operator=(SuperChatMessage &&) = default;
 
-    std::string getSuperChatAss(int startX, int startY, int endX, int endY, int startTime,
-                                int endTime);
+    void getSuperChatAss(int startX, int startY, int endX, int endY, int startTime,
+                         int endTime, std::vector<std::string> &line_list);
 
   private:
     static int round_up(int num, int divisor) {
@@ -398,7 +399,7 @@ class SuperChatMessage {
         size_t sz = s.size();
         size_t word_count = 0, i = 0;
         int utf8_byte_len;
-        res.resize(sz + 1 + sizeof(new_line_arr) * (line_num - 1));
+        res.resize(sz + sizeof(new_line_arr) * (line_num - 1));
         unsigned char *src =
             reinterpret_cast<unsigned char *>(const_cast<char *>(s.c_str()));
         unsigned char *dst =
@@ -423,15 +424,14 @@ class SuperChatMessage {
             }
         }
 
-        *dst = '\0';
         s = res;
     }
 };
 
-inline std::string SuperChatMessage::getSuperChatAss(int startX, int startY, int endX,
-                                                     int endY, int startTime,
-                                                     int endTime) {
-    std::string pos, ret;
+inline void SuperChatMessage::getSuperChatAss(int startX, int startY, int endX, int endY,
+                                              int startTime, int endTime,
+                                              std::vector<std::string> &line_list) {
+    std::string pos;
     std::string start_time = ass::time2ass(startTime);
     std::string end_time = ass::time2ass(endTime);
 
@@ -443,56 +443,59 @@ inline std::string SuperChatMessage::getSuperChatAss(int startX, int startY, int
         }
     };
 
+    auto add_list = [&line_list](std::string &&str) {
+        line_list.push_back(std::move(str));
+    };
+
     // All items have the same starting point,
     // plus a suitable offset to keep them in the correct position.
 
     // user box -> bottom layer
     pos = getPosAss(startX, startY, endX, endY);
-    ret = fmt::format("Dialogue: 0,{},{},"
-                      "sc,,0000,0000,0000,,"
-                      "{{{}\\c&{}\\shad0\\p1}}"
-                      "{}\n",
-                      start_time, end_time, pos, user_box_color_, user_box_outline_ass_);
+    add_list(fmt::format("Dialogue: 0,{},{},"
+                         "sc,,0000,0000,0000,,"
+                         "{{{}\\c&{}\\shad0\\p1}}"
+                         "{}\n",
+                         start_time, end_time, pos, user_box_color_,
+                         user_box_outline_ass_));
 
     // content box -> bottom layer
     pos = getPosAss(startX, startY + user_height_, endX, endY + user_height_);
-    ret += fmt::format("Dialogue: 0,{},{},"
-                       "sc,,0000,0000,0000,,"
-                       "{{{}\\shad0\\p1\\c&{}}}"
-                       "{}\n",
-                       start_time, end_time, pos, content_box_color_,
-                       content_box_outline_ass_);
+    add_list(fmt::format("Dialogue: 0,{},{},"
+                         "sc,,0000,0000,0000,,"
+                         "{{{}\\shad0\\p1\\c&{}}}"
+                         "{}\n",
+                         start_time, end_time, pos, content_box_color_,
+                         content_box_outline_ass_));
 
     // username -> top layer
     pos = getPosAss(startX + corner_radius_ / 2, startY + corner_radius_ / 3,
                     endX + corner_radius_ / 2, endY + corner_radius_ / 3);
-    ret += fmt::format("Dialogue: 1,{},{},"
-                       "sc,,0000,0000,0000,,"
-                       "{{{}\\c&{}\\fs{}\\b1\\q2}}"
-                       "{}\n",
-                       start_time, end_time, pos, user_name_color_, font_size_,
-                       sc_.user_name_);
+    add_list(fmt::format("Dialogue: 1,{},{},"
+                         "sc,,0000,0000,0000,,"
+                         "{{{}\\c&{}\\fs{}\\b1\\q2}}"
+                         "{}\n",
+                         start_time, end_time, pos, user_name_color_, font_size_,
+                         sc_.user_name_));
 
     // price -> top layer
     pos = getPosAss(startX + corner_radius_ / 2, startY + font_size_ + corner_radius_ / 3,
                     endX + corner_radius_ / 2, endY + font_size_ + corner_radius_ / 3);
-    ret += fmt::format("Dialogue: 1,{},{},"
-                       "sc,,0000,0000,0000,,"
-                       "{{{}\\c&{}\\fs{}\\q2}}"
-                       "🔋 {}\n",
-                       start_time, end_time, pos, text_color_,
-                       static_cast<int>(font_size_ * 0.8), sc_.price_);
+    add_list(fmt::format("Dialogue: 1,{},{},"
+                         "sc,,0000,0000,0000,,"
+                         "{{{}\\c&{}\\fs{}\\q2}}"
+                         "🔋 {}\n",
+                         start_time, end_time, pos, text_color_,
+                         static_cast<int>(font_size_ * 0.8), sc_.price_));
 
     // content -> top layer
     pos = getPosAss(startX + corner_radius_ / 2, startY + user_height_,
                     endX + corner_radius_ / 2, endY + user_height_);
-    ret += fmt::format("Dialogue: 1,{},{},"
-                       "sc,,0000,0000,0000,,"
-                       "{{{}\\c&HFFFFFF\\q2}}"
-                       "{}\n",
-                       start_time, end_time, pos, sc_.content_);
-
-    return ret;
+    add_list(fmt::format("Dialogue: 1,{},{},"
+                         "sc,,0000,0000,0000,,"
+                         "{{{}\\c&HFFFFFF\\q2}}"
+                         "{}\n",
+                         start_time, end_time, pos, sc_.content_));
 }
 
 } // namespace ass
