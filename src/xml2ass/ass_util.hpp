@@ -336,7 +336,9 @@ class SuperChatMessage {
         int line_num = static_cast<int>(
             (sc_content_len * font_size * SC_BOX_STR_LEN_COMPENSATION) / width + 1);
         if (line_num > 1) {
-            int line_max_word = round_up(sc_content_len, line_num);
+            //int line_max_word = round_up(sc_content_len, line_num);
+            int line_max_word =
+                static_cast<int>(width / (font_size * SC_BOX_STR_LEN_COMPENSATION));
             insert_new_line(sc_content, line_max_word, line_num);
         }
 
@@ -475,7 +477,7 @@ inline void SuperChatMessage::getSuperChatAss(int startX, int startY, int endX, 
                     endX + corner_radius_ / 2, endY + corner_radius_ / 3);
     add_list(fmt::format("Dialogue: 1,{},{},"
                          "sc,,0000,0000,0000,,"
-                         "{{{}\\c&{}\\fs{}\\b1\\q2}}"
+                         "{{{}\\c&{}\\fs{}\\b0\\q2}}" // do not use bold: \\b1
                          "{}\n",
                          start_time, end_time, pos, user_name_color_, font_size_,
                          sc_.user_name_));
@@ -485,7 +487,7 @@ inline void SuperChatMessage::getSuperChatAss(int startX, int startY, int endX, 
                     endX + corner_radius_ / 2, endY + font_size_ + corner_radius_ / 3);
     add_list(fmt::format("Dialogue: 1,{},{},"
                          "sc,,0000,0000,0000,,"
-                         "{{{}\\c&{}\\fs{}\\q2}}"
+                         "{{{}\\c&{}\\fs{}\\b0\\q2}}" // do not use bold
                          "🔋 {}\n",
                          start_time, end_time, pos, text_color_,
                          static_cast<int>(font_size_ * 0.8), sc_.price_));

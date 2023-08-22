@@ -37,14 +37,18 @@ int main() {
 
     read_file(sc_list, "sc_content_list.txt");
     for (auto &content : sc_list) {
+        std::vector<std::string> res_list;
+
         tmp_user_name = user_name;
         tmp_content = content;
         sc::sc_item_t sc{tmp_user_name, tmp_content, 0, price};
         ass::SuperChatMessage sc_msg{sc, 0, 0, width, corner_radius, font_size};
 
-        res = sc_msg.getSuperChatAss(x1, y1, x2, y2, start_time, start_time + 1500);
+        sc_msg.getSuperChatAss(x1, y1, x2, y2, start_time, start_time + 1500, res_list);
 
-        cout << res;
+        for (auto &item : res_list) {
+            cout << item;
+        }
         start_time += 1500;
         price += 50;
     }
