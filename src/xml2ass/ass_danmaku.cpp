@@ -50,7 +50,7 @@ std::string rgb2bgr(int rgb) {
  * @param time relative values of unix timestamp
  * @return std::string "Hrs:Mins:Secs.hundredths"
  */
-std::string timestamp2ass(int time) {
+std::string time2ass(int time) {
     char time_str[] = "00:00:00.00";
     //       index :   0  3  6  9
 
@@ -131,8 +131,8 @@ bool is_custom_ass_file_exist(std::string filename) {
 }
 
 inline std::string
-get_ass_header_impl(const config::ass_config_t &config,
-                    std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
+get_ass_header_default(const config::ass_config_t &config,
+                       std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
 
     using namespace fmt::literals;
 
@@ -191,13 +191,31 @@ inline std::string get_ass_event_impl(const config::ass_config_t &config,
     return ss;
 }
 
+std::string get_sc_ass_header(const config::ass_config_t &config,
+                              std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
+    using namespace fmt::literals;
+
+    std::string ass_font_color = rgb2bgr(config.font_color_);
+    std::string ass_font_alpha =
+        fmt::format("{:02X}", static_cast<uint8_t>(255 * (1.0f - config.font_alpha_)));
+    std::string ass_font_outline = fmt::format("{:.1f}", config.font_outline_);
+    std::string ass_font_shadow = fmt::format("{:.1f}", config.font_shadow_);
+
+    return fmt::format(
+        sc_ass_header_format, "title"_a = "hello", "play_res_x"_a = config.video_width_,
+        "play_res_y"_a = config.video_height_, "font_name"_a = config.font_family_,
+        "font_size"_a = config.font_size_, "font_alpha"_a = ass_font_alpha,
+        "font_color"_a = ass_font_color, "font_bold"_a = config.font_bold_ ? -1 : 0,
+        "font_outline"_a = ass_font_outline, "font_shadow"_a = ass_font_shadow);
+}
+
 std::string get_ass_header(const config::ass_config_t &config,
                            std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
 
     using namespace fmt::literals;
 
     if (!config.use_custom_style_) {
-        return get_ass_header_impl(config, ass_dialogue_list);
+        return get_ass_header_default(config, ass_dialogue_list);
     }
 
     // use custom style

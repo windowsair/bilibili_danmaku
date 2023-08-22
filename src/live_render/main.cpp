@@ -109,10 +109,13 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> queue(100);
+    moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> danmaku_queue(
+        100);
+    moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> sc_queue(10);
     live_danmaku live;
     live.init_blacklist();
-    live.set_danmaku_queue(&queue);
+    live.set_danmaku_queue(&danmaku_queue);
+    live.set_sc_queue(&sc_queue);
     live.set_vertical_danmaku_process_strategy(config.vertical_danmaku_strategy_);
     if (config.danmaku_pos_time_ > 0) {
         live.enable_pos_danmaku_process();
@@ -141,7 +144,7 @@ int main(int argc, char **argv) {
     }
 
     // capture live danmaku: thread 1
-    live.run(room_detail.room_detail_str_);
+    live.run(room_detail.room_detail_str_, config);
 
     // step3: wait live start
     if (room_detail.live_status_ != live_detail_t::VALID) {
@@ -166,7 +169,9 @@ int main(int argc, char **argv) {
     // step5: get stream meta info and update config.
     bool is_stream_get_ok = false;
     do {
-        auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000, config.bilibili_proxy_address_, config.bilibili_cookie_);
+        auto stream_list = live.get_live_room_stream(room_detail.room_id_, 20000,
+                                                     config.bilibili_proxy_address_,
+                                                     config.bilibili_cookie_);
         is_stream_get_ok = init_stream_video_info(stream_list, config);
         if (!is_stream_get_ok) {
             std::this_thread::sleep_for(100ms);
@@ -176,7 +181,8 @@ int main(int argc, char **argv) {
     //
     //
     ffmpeg_render render(config, &global_monitor, &live);
-    render.set_danmaku_queue(&queue);
+    render.set_danmaku_queue(&danmaku_queue);
+    render.set_sc_queue(&sc_queue);
 
     // start ffmpeg render: thread 2
     render.main_thread();

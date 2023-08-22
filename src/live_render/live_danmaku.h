@@ -7,6 +7,7 @@
 
 #include "danmaku.h"
 #include "live_render_config.h"
+#include "sc_item.h"
 
 #include "thirdparty/IXWebSocket/ixwebsocket/IXNetSystem.h"
 #include "thirdparty/IXWebSocket/ixwebsocket/IXUserAgent.h"
@@ -76,7 +77,8 @@ class live_danmaku {
   public:
     live_danmaku()
         : base_time_(0), danmaku_recv_count_(0), is_pos_danmaku_process_(false),
-          do_not_print_danmaku_info_(false), is_live_start_(false) {
+          do_not_print_danmaku_info_(false), is_live_start_(false),
+          danmaku_queue_(nullptr), sc_queue_(nullptr) {
         zlib_handle_ = libdeflate_alloc_decompressor();
         zlib_buffer_.resize(10240);
 
@@ -85,6 +87,11 @@ class live_danmaku {
         parse_helper_.danmaku_color_re_ = nullptr;
         parse_helper_.danmaku_info_re_ = nullptr;
         parse_helper_.danmaku_vertical_cr_re_ = nullptr;
+
+        parse_helper_.sc_content_re_ = nullptr;
+        parse_helper_.sc_user_name_re_ = nullptr;
+        parse_helper_.sc_price_re_ = nullptr;
+        parse_helper_.sc_start_time_re_ = nullptr;
 
         ix::initNetSystem();
     }
@@ -95,6 +102,9 @@ class live_danmaku {
         delete parse_helper_.danmaku_color_re_;
         delete parse_helper_.danmaku_info_re_;
         delete parse_helper_.danmaku_vertical_cr_re_;
+        delete parse_helper_.sc_content_re_;
+        delete parse_helper_.sc_user_name_re_;
+        delete parse_helper_.sc_price_re_;
 
         for (auto item : blacklist_regex_) {
             delete item;
@@ -118,7 +128,7 @@ class live_danmaku {
 
     void init_blacklist();
 
-    void run(std::string room_info);
+    void run(std::string room_info, config::live_render_config_t &live_config);
 
     bool is_live_start() const {
         return is_live_start_;
@@ -135,6 +145,10 @@ class live_danmaku {
     void set_danmaku_queue(
         moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *p) {
         danmaku_queue_ = p;
+    }
+
+    void set_sc_queue(moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *p) {
+        sc_queue_ = p;
     }
 
     void enable_pos_danmaku_process() {
@@ -170,13 +184,16 @@ class live_danmaku {
      */
     size_t zlib_decompress(void *buffer_in, size_t buffer_in_size);
 
-    void process_websocket_data(const ix::WebSocketMessagePtr &msg);
+    void process_websocket_data(const ix::WebSocketMessagePtr &msg,
+                                config::live_render_config_t &live_config);
 
     /**
      *
      * @param danmaku_list
      */
     void process_danmaku_list(std::vector<std::string> &raw_danmaku);
+
+    void process_sc_list(std::vector<std::string> &raw_sc);
 
     /**
      * Customize danmaku item.
@@ -198,15 +215,22 @@ class live_danmaku {
     std::vector<char> zlib_buffer_;
     class ParseHelper {
       public:
+        // danmaku type
         RE2 *content_re_;
         RE2 *danmaku_type_re_;
         RE2 *danmaku_color_re_;
         RE2 *danmaku_info_re_;
-        //
         RE2 *danmaku_vertical_cr_re_;
+
+        // sc type
+        RE2 *sc_content_re_;
+        RE2 *sc_user_name_re_;
+        RE2 *sc_price_re_;
+        RE2 *sc_start_time_re_;
     } parse_helper_;
     uint64_t base_time_;
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *danmaku_queue_;
+    moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *sc_queue_;
     int danmaku_recv_count_;
     int vertical_danmaku_process_strategy_; // config::verticalProcessEnum
     bool is_pos_danmaku_process_;
@@ -216,7 +240,7 @@ class live_danmaku {
     bool is_live_start_;
 
     bool is_blacklist_used_;
-    std::vector<RE2 *>blacklist_regex_;
+    std::vector<RE2 *> blacklist_regex_;
 };
 
 #endif //BILIBILI_DANMAKU_LIVE_DANMAKU_H

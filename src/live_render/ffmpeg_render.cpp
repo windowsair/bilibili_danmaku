@@ -10,17 +10,16 @@
 #include <thread>
 
 #include "ass_danmaku.h"
+#include "ass_render_utils.h"
+#include "sc_control.h"
+#include "danmaku_handle.h"
 #include "ffmpeg_render.h"
 #include "ffmpeg_utils.h"
-#include "live_monitor.h"
-#include "danmaku_handle.h"
 #include "git.h"
+#include "live_monitor.h"
 
-#include "thirdparty/libass/include/ass.h"
-
-#include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
-
+#include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/subprocess/subprocess.h"
 
 extern bool kIs_ffmpeg_started;
@@ -29,6 +28,8 @@ inline int kDanmaku_inserted_count = 0;
 inline volatile int kFfmpeg_output_time = 0; // time in ms
 inline volatile uint64_t kReal_world_time_base = 0;
 inline volatile uint64_t kReal_world_time = 0;
+
+std::string kTest_sc_string;
 
 extern "C" {
 int ass_process_events_line(ASS_Track *track, char *str);
@@ -68,6 +69,13 @@ inline void blend_single(image_t *frame, ASS_Image *img, uint64_t offset) {
 }
 
 inline void blend(image_t *frame, ASS_Image *img, uint64_t offset) {
+    while (img) {
+        blend_single(frame, img, offset);
+        img = img->next;
+    }
+}
+
+inline void sc_blend(image_t *frame, ASS_Image *img, uint64_t offset) {
     while (img) {
         blend_single(frame, img, offset);
         img = img->next;
@@ -136,9 +144,9 @@ inline void wait_ffmpeg_ready(bool &is_ffmpeg_ready) {
     kIs_ffmpeg_started = true;
 }
 
-inline void update_libass_event(
-    ASS_Track *ass_track, danmaku::DanmakuHandle &handle, config::ass_config_t &config,
-    int base_time, bool is_base_time_lag,
+inline void update_danmaku_event(
+    ass::danmaku_ass_render_control *ass_object, danmaku::DanmakuHandle &handle,
+    config::ass_config_t &config, int base_time, bool is_base_time_lag,
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *queue,
     live_monitor *monitor) {
 
@@ -225,7 +233,7 @@ inline void update_libass_event(
                 std::string event_str = ass::get_ass_event(config, item);
                 event_str.push_back('\0');
                 // insert danmaku
-                ass_process_events_line(ass_track, event_str.data());
+                ass_process_events_line(ass_object->get_track(), event_str.data());
             }
 
             kDanmaku_inserted_count += ass_dialogue_list.size();
@@ -265,9 +273,30 @@ void ffmpeg_render::run() {
 
     std::string ass_header_str = ass::get_ass_header(config_, ass_dialogue_list);
 
-    ASS_Track *ass_track =
-        ass_read_memory(ass_library, const_cast<char *>(ass_header_str.c_str()),
-                        ass_header_str.size(), NULL);
+    std::string sc_ass_header_str;
+    if (config_.sc_enable_) {
+        config::live_render_config_t copy_cfg = config_;
+        copy_cfg.font_size_ = copy_cfg.sc_font_size_;
+        copy_cfg.font_alpha_ = copy_cfg.sc_alpha_;
+
+        sc_ass_header_str = ass::get_sc_ass_header(copy_cfg, ass_dialogue_list);
+    } else {
+        sc_ass_header_str = ass::get_sc_ass_header(config_, ass_dialogue_list);
+    }
+
+    kTest_sc_string = sc_ass_header_str;
+
+    //    ASS_Track *ass_track =
+    //        ass_read_memory(ass_library, const_cast<char *>(ass_header_str.c_str()),
+    //                        ass_header_str.size(), NULL);
+
+    ass::danmaku_ass_render_control danmaku_render{ass_library};
+    ass::sc_ass_render_control sc_render{ass_library};
+
+    danmaku_render.create_track(const_cast<char *>(ass_header_str.c_str()),
+                                ass_header_str.size());
+    sc_render.create_track(const_cast<char *>(sc_ass_header_str.c_str()),
+                           sc_ass_header_str.size());
 
     // create ffmpeg subprocess
     struct subprocess_s subprocess;
@@ -305,10 +334,9 @@ void ffmpeg_render::run() {
             fmt::print(fg(fmt::color::deep_sky_blue), "无法创建log文件\n");
         } else {
             // record version info
-            std::string version_str = fmt::format("live_render version {}\n",
-                                                  GitMetadata::Describe());
-            fwrite(version_str.c_str(), strlen(version_str.c_str()), 1,
-                   log_fp);
+            std::string version_str =
+                fmt::format("live_render version {}\n", GitMetadata::Describe());
+            fwrite(version_str.c_str(), strlen(version_str.c_str()), 1, log_fp);
         }
 
         std::string ffmpeg_monitor_str(1024, 0);
@@ -397,13 +425,30 @@ void ffmpeg_render::run() {
     double raw_step = ((double)(1000) / (double)(config_.fps_));
     double step = ((double)(1000) / (double)(config_.fps_));
     double double_tm = 0;
+    double sc_double_tm = 0;
+    double sc_double_end_update_tm = 0;
+    int sc_tm = 0;
 
     ASS_Image *img;
+    sc::ScControl sc_control{&sc_render, config_};
     while (stop_cond) {
         using namespace std::chrono_literals;
 
-        update_libass_event(ass_track, handle, this->config_, tm, false,
-                            this->danmaku_queue_, this->live_monitor_handle_);
+        if (this->config_.sc_enable_) {
+            int sc_end_time;
+
+            for (int i = 0; i < 5; i++) {
+                sc_double_end_update_tm += step;
+            }
+            sc_end_time = static_cast<int>(sc_double_end_update_tm);
+
+            sc_control.updateSuperChatEvent(&sc_render, this->config_, sc_tm,
+                                            sc_double_end_update_tm - sc_tm,
+                                            this->sc_queue_, this->live_monitor_handle_);
+        }
+
+        update_danmaku_event(&danmaku_render, handle, this->config_, tm, false,
+                             this->danmaku_queue_, this->live_monitor_handle_);
 
         // render too fast. just slow down
         if (kReal_world_time - tm < 6 * 1000) {
@@ -469,7 +514,7 @@ void ffmpeg_render::run() {
         //        }
 
         //        // lagging. update danmaku now
-        //        update_libass_event(ass_track, handle, this->config_, tm, true,
+        //        update_danmaku_event(ass_track, handle, this->config_, tm, true,
         //                            this->danmaku_queue_, this->live_monitor_handle_);
 
         //        wait_render = false;
@@ -481,30 +526,59 @@ void ffmpeg_render::run() {
         // clear buffer
         memset(frame->buffer, 0, buffer_count * 5);
 
-        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, 0);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 1);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 2);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 3);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
-        img = ass_render_frame(ass_renderer, ass_track, tm, NULL);
+        img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
         blend(frame, img, buffer_count * 4);
         double_tm += step;
         tm = static_cast<int>(double_tm);
+
+        // sc layer is above danmaku layer
+        if (config_.sc_enable_) [[unlikely]] {
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, 0);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
+
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 1);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
+
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 2);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
+
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 3);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
+
+            img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
+            sc_blend(frame, img, buffer_count * 4);
+            sc_double_tm += step;
+            sc_tm = static_cast<int>(sc_double_tm);
+        }
 
         auto sz = fwrite(frame->buffer, 5, buffer_count, ffmpeg_);
 

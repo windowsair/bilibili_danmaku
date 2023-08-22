@@ -68,13 +68,23 @@ typedef struct live_render_config_ : public ass_config_t {
     int adjust_video_height_;
     int adjust_video_fps_;
 
+    // super chat
+    bool sc_enable_;
+    int sc_font_size_;
+    float sc_show_range_;
+    float sc_alpha_;
+    int sc_max_width_;
+    int sc_margin_x_;
+    bool sc_y_mirror_;
 
     // live info
     uint64_t user_uid_;
 
     live_render_config_() {
+        sc_enable_ = false;
     }
     live_render_config_(const ass_config_t &cfg) : ass_config_t(cfg) {
+        sc_enable_ = false;
     }
 
 } live_render_config_t;

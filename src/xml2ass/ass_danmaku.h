@@ -9,8 +9,12 @@ int ass_render(const std::string &output_file_name, const config::ass_config_t &
 
 std::string rgb2bgr(int rgb);
 std::string time2ass(float time);
+std::string time2ass(int time);
 
 bool is_custom_ass_file_exist(std::string filename);
+
+std::string get_sc_ass_header(const config::ass_config_t &config,
+                              std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list);
 
 std::string get_ass_header(const config::ass_config_t &config,
                            std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list);

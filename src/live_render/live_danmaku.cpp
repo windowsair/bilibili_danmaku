@@ -34,9 +34,9 @@ size_t live_danmaku::zlib_decompress(void *buffer_in, size_t buffer_in_size) {
 
     return ret;
 }
-void live_danmaku::run(std::string room_info) {
+void live_danmaku::run(std::string room_info, config::live_render_config_t &live_config) {
 
-    std::thread([this, room_info]() {
+    std::thread([this, room_info, &live_config]() {
         init_parser();
 
         ix::WebSocket webSocket;
@@ -67,7 +67,7 @@ void live_danmaku::run(std::string room_info) {
             if (msg->type == ix::WebSocketMessageType::Message) {
 
                 if (msg->binary)
-                    this->process_websocket_data(msg);
+                    this->process_websocket_data(msg, live_config);
 
             } else if (msg->type == ix::WebSocketMessageType::Open) {
                 webSocket.sendBinary(start_msg_buffer);
@@ -103,36 +103,47 @@ void live_danmaku::run(std::string room_info) {
     }).detach();
 }
 
-void live_danmaku::process_websocket_data(const ix::WebSocketMessagePtr &msg) {
+void live_danmaku::process_websocket_data(const ix::WebSocketMessagePtr &msg,
+                                          config::live_render_config_t &live_config) {
     std::string buffer = msg->str;
 
-    std::vector<std::string> res_list;
+    std::vector<std::string> danmaku_list;
+    std::vector<std::string> sc_list;
 
     auto add_danmaku_res = [&](char *content, size_t data_len) {
+        auto is_type_match = [&](const char *type_name, int type_name_len,
+                                 int min_search_len = 20) {
+            bool type_match =
+                (content + std::min<int>(min_search_len, data_len)) !=
+                std::search(content, content + std::min<int>(min_search_len, data_len),
+                            type_name, type_name + type_name_len);
+            return type_match;
+        };
+
         // hard code. Let's quickly determine the type of content
         if (this->is_live_start_) [[likely]] {
-
-            const char *cmd = "DANMU";
-            constexpr auto cmd_len = 5;
-
-            bool is_danmaku_type =
-                (content + std::min<int>(20, data_len)) !=
-                std::search(content, content + std::min<int>(20, data_len), cmd,
-                            cmd + cmd_len);
+            bool is_danmaku_type = is_type_match("DANMU", 5);
 
             if (is_danmaku_type) {
                 std::string item(content, data_len);
                 item.push_back('\0'); //TODO:
-                res_list.emplace_back(item);
+                danmaku_list.emplace_back(item);
+                return;
             }
-        } else {
-            const char *live_cmd = R"("cmd":"LIVE")";
-            constexpr auto live_cmd_len = 12;
 
-            bool is_live_start_type =
-                (content + std::min<int>(20, data_len)) !=
-                std::search(content, content + std::min<int>(20, data_len), live_cmd,
-                            live_cmd + live_cmd_len);
+            if (live_config.sc_enable_) [[unlikely]] {
+                bool is_sc_type = is_type_match("SUPER_CHAT_MESSAGE\"", 19,
+                                                30); // ignore SUPER_CHAT_MESSAGE_JPN
+                if (is_sc_type) {
+                    std::string item(content, data_len);
+                    item.push_back('\0'); //TODO:
+                    sc_list.emplace_back(item);
+                    return;
+                }
+            }
+
+        } else {
+            bool is_live_start_type = is_type_match(R"("cmd":"LIVE")", 12);
 
             if (is_live_start_type) {
                 this->is_live_start_ = true;
@@ -227,8 +238,12 @@ void live_danmaku::process_websocket_data(const ix::WebSocketMessagePtr &msg) {
     }
 
     // parse json string, then send to ffmpeg.
-    if (!res_list.empty()) {
-        process_danmaku_list(res_list);
+    if (!danmaku_list.empty()) {
+        process_danmaku_list(danmaku_list);
+    }
+
+    if (!sc_list.empty()) {
+        process_sc_list(sc_list);
     }
 }
 
@@ -254,6 +269,22 @@ void live_danmaku::init_parser() {
     const auto danmaku_vertical_cr_re_str = R"(\\\\r)";
     parse_helper_.danmaku_vertical_cr_re_ = new RE2(danmaku_vertical_cr_re_str);
     assert(parse_helper_.danmaku_vertical_cr_re_->ok());
+
+    const auto sc_content_re_str = R"(message\":\"(.*?)\",\")";
+    parse_helper_.sc_content_re_ = new RE2(sc_content_re_str);
+    assert(parse_helper_.sc_content_re_->ok());
+
+    const auto sc_user_name_re_str = R"(\"uname\":\"(.*?)\",\")";
+    parse_helper_.sc_user_name_re_ = new RE2(sc_user_name_re_str);
+    assert(parse_helper_.sc_user_name_re_->ok());
+
+    const auto sc_price_re_str = R"(price\":(\d*))";
+    parse_helper_.sc_price_re_ = new RE2(sc_price_re_str);
+    assert(parse_helper_.sc_price_re_->ok());
+
+    const auto sc_start_time_re_str = R"(ts\":(\d*))";
+    parse_helper_.sc_start_time_re_ = new RE2(sc_start_time_re_str);
+    assert(parse_helper_.sc_start_time_re_->ok());
 }
 
 // FIXME: trim raw content
@@ -271,18 +302,17 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
         // Use the manual time as the base time.
         return;
 
-
         // find start base time
-//        uint64_t min_timestamp = UINT64_MAX;
-//
-//        for (auto &item : raw_danmaku) {
-//            RE2::PartialMatch(item, *(parse_helper_.danmaku_info_re_),
-//                              &danmaku_player_type, &timestamp);
-//
-//            min_timestamp = std::min<uint64_t>(min_timestamp, timestamp);
-//        }
-//
-//        base_time_ = min_timestamp - 10; // 10ms offset
+        //        uint64_t min_timestamp = UINT64_MAX;
+        //
+        //        for (auto &item : raw_danmaku) {
+        //            RE2::PartialMatch(item, *(parse_helper_.danmaku_info_re_),
+        //                              &danmaku_player_type, &timestamp);
+        //
+        //            min_timestamp = std::min<uint64_t>(min_timestamp, timestamp);
+        //        }
+        //
+        //        base_time_ = min_timestamp - 10; // 10ms offset
     }
 
     for (auto &item : raw_danmaku) {
@@ -321,7 +351,7 @@ void live_danmaku::process_danmaku_list(std::vector<std::string> &raw_danmaku) {
     }
 
     if (!danmaku_list.empty()) {
-        danmaku_queue_->enqueue(danmaku_list);
+        danmaku_queue_->enqueue(std::move(danmaku_list));
     }
 }
 
@@ -375,7 +405,6 @@ void live_danmaku::init_blacklist() {
         this->is_blacklist_used_ = true;
     }
 
-
     std::string filename(user_live_render_blacklist_path);
     std::vector<std::string> regex_lines;
     std::string line;
@@ -386,30 +415,59 @@ void live_danmaku::init_blacklist() {
         std::abort();
     }
 
-    while (getline(input_file, line)){
+    while (getline(input_file, line)) {
         regex_lines.push_back(line);
     }
 
     input_file.close();
 
     for (auto i = 0; i < regex_lines.size(); i++) {
-        auto &item =  regex_lines[i];
+        auto &item = regex_lines[i];
         if (item.empty()) {
             continue;
         }
 
-        RE2 * p = new RE2(item);
+        RE2 *p = new RE2(item);
         if (p == nullptr || !p->ok()) {
             fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
-                       "弹幕黑名单第{}行无效:{}",
-                       i, item);
+                       "弹幕黑名单第{}行无效:{}", i, item);
             std::abort();
         }
 
         this->blacklist_regex_.push_back(p);
     }
 
-    fmt::print(fg(fmt::color::green_yellow),
-               "已启用弹幕黑名单，共{}条规则\n",
+    fmt::print(fg(fmt::color::green_yellow), "已启用弹幕黑名单，共{}条规则\n",
                this->blacklist_regex_.size());
+}
+
+void live_danmaku::process_sc_list(std::vector<std::string> &raw_sc) {
+    std::string user_name, sc_content;
+    int price;
+    uint64_t start_time;
+    int dummy_color = 0, dummy_danmaku_type = 0, dummy_player_type = 0;
+    float dummy_start_time = 0;
+
+
+    std::vector<sc::sc_item_t> sc_list;
+
+    for (auto &item : raw_sc) {
+        RE2::PartialMatch(item, *(parse_helper_.sc_content_re_), &sc_content);
+        RE2::PartialMatch(item, *(parse_helper_.sc_user_name_re_), &user_name);
+        RE2::PartialMatch(item, *(parse_helper_.sc_price_re_), &price);
+        RE2::PartialMatch(item, *(parse_helper_.sc_start_time_re_), &start_time);
+
+        start_time *= 1000; // second to millisecond
+        if (!danmaku_item_pre_process(dummy_color, dummy_danmaku_type, dummy_player_type,
+                                      start_time, dummy_start_time, sc_content)) {
+            continue; // this item should be dropped
+        }
+
+        start_time -= this->base_time_;
+        sc_list.emplace_back(user_name, sc_content, start_time, price);
+    }
+
+    if (!sc_list.empty() && sc_queue_) {
+        sc_queue_->enqueue(std::move(sc_list));
+    }
 }

@@ -6,3 +6,5 @@ AlignConsecutiveMacros: AcrossEmptyLines
 AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: None
 ReflowComments: False
+SortIncludes: Never
+MaxEmptyLinesToKeep: 2

@@ -23,11 +23,12 @@ endfunction(copy_lib)
 set(LIVE_RENDER_SOURCES
         live_danmaku.cpp live_danmaku.h ffmpeg_render.cpp ffmpeg_render.h
         live_info.cpp
+        ../xml2ass/ass_sc.cpp
         ../xml2ass/ass_danmaku.cpp
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
         ../xml2ass/danmaku_filter.cpp
-        live_monitor.cpp live_monitor.h live_render_config.cpp ffmpeg_utils.cpp ffmpeg_utils.h)
+        live_monitor.cpp live_monitor.h live_render_config.cpp ffmpeg_utils.cpp ffmpeg_utils.h ass_render_utils.h sc_control.cpp)
 
 ## TODO: windows only
 if (WIN32)
@@ -154,10 +155,89 @@ if (LIVE_RENDER_BUILD_TESTING)
     copy_lib()
 
 
+    # superchat ass template test
+    set(TEST_SC_TEMPLATE
+            test/test_sc_template.cpp
+            ../xml2ass/ass_sc.cpp
+            ../xml2ass/ass_danmaku.cpp
+            ../xml2ass/ass_config.cpp
+            ../xml2ass/ass_util.hpp
+            ../xml2ass/sc_item.h
+            ${DANMAKU_THIRDPARTY_PATH}/simdutf/simdutf.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/fmt/src/format.cc
+            ${DANMAKU_THIRDPARTY_PATH}/fmt/src/os.cc
+    )
+    add_executable(test_sc_template ${TEST_SC_TEMPLATE}
+            ${DANMAKU_THIRDPARTY_SRC}
+            ${LIVE_RENDER_THIRDPARTY_SRC})
+    file(COPY test/sc_content_list.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
+
+    # superchat ass control & output control
+    set(TEST_SC_COMMON
+            test/test_sc_common.cpp
+            sc_control.cpp
+            live_render_config.cpp
+            ../xml2ass/ass_sc.cpp
+            ../xml2ass/ass_danmaku.cpp
+            ../xml2ass/ass_config.cpp
+            ../xml2ass/ass_util.hpp
+            ../xml2ass/sc_item.h
+            ../xml2ass/file_helper.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/simdutf/simdutf.cpp
+            ${DANMAKU_THIRDPARTY_PATH}/fmt/src/format.cc
+            ${DANMAKU_THIRDPARTY_PATH}/fmt/src/os.cc
+            )
+    add_executable(test_sc_control test/test_sc_control.cpp ${TEST_SC_COMMON}
+            ${DANMAKU_THIRDPARTY_SRC}
+            ${LIVE_RENDER_THIRDPARTY_SRC})
+    add_executable(test_sc_control_render test/test_sc_control_render.cpp ${TEST_SC_COMMON}
+            ${DANMAKU_THIRDPARTY_SRC}
+            ${LIVE_RENDER_THIRDPARTY_SRC})
+    file(GLOB sc_file_list "test/sc_list/*.xml")
+    foreach(file ${sc_file_list})
+        file(COPY "${file}" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/sc_list/)
+    endforeach()
+
+    # test_sc_control link lib
+    if (WIN32)
+        target_link_libraries(test_sc_control
+                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
+                )
+    else ()
+        # Linux version
+        find_package(PkgConfig REQUIRED)
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${DANMAKU_THIRDPARTY_PATH}/libass/linux/")
+        pkg_check_modules(LIBASS_DEP_PKG REQUIRED fontconfig harfbuzz fribidi freetype2)
+
+        target_link_libraries(test_sc_control
+                -L${DANMAKU_THIRDPARTY_PATH}/libass/linux/lib -lass
+                ${LIBASS_DEP_PKG_LDFLAGS}
+                )
+    endif ()
+
+    # test_sc_control_render link lib
+    if (WIN32)
+        target_link_libraries(test_sc_control_render -lpthread
+                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
+                )
+    else ()
+        # Linux version
+        find_package(PkgConfig REQUIRED)
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${DANMAKU_THIRDPARTY_PATH}/libass/linux/")
+        pkg_check_modules(LIBASS_DEP_PKG REQUIRED fontconfig harfbuzz fribidi freetype2)
+
+
+        target_link_libraries(test_sc_control_render -lpthread
+                -L${DANMAKU_THIRDPARTY_PATH}/libass/linux/lib -lass
+                ${LIBASS_DEP_PKG_LDFLAGS}
+                )
+    endif ()
+
 endif () # LIVE_RENDER_BUILD_TESTING
 
 
-include_directories(../xml2ass)
+include_directories(../xml2ass ../live_render)
 
 add_executable(live_render ./main.cpp ${DANMAKU_THIRDPARTY_SRC} ${LIVE_RENDER_SOURCES} ${LIVE_RENDER_THIRDPARTY_SRC})
 
