@@ -44,7 +44,7 @@ void ScControl::updateSuperChatEvent(
             auto it = this->sc_list_.end();
             it--;
 
-            wait_in_deque_.emplace_back(pmsg, it, fade_in_time, 0, 0, 0);
+            wait_in_deque_.emplace_back(pmsg, it, fade_in_time, 0, 0, 0, 0);
         }
 
         queue->pop();

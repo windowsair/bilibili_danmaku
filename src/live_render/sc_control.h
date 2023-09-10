@@ -31,6 +31,13 @@ typedef struct sc_show_info_ {
     int end_time;
     int y;
 
+    sc_show_info_(ass::SuperChatMessage *msg_,
+                  std::list<ass::SuperChatMessage>::iterator it_, int fade_in_time_,
+                  int show_time_, int fade_out_time_, int end_time_, int y_)
+        : msg(msg_), it(it_), fade_in_time(fade_in_time_), show_time(show_time_),
+          fade_out_time(fade_out_time_), end_time(end_time_), y(y_) {
+    }
+
     inline int price() {
         return msg->sc_.price_;
     }

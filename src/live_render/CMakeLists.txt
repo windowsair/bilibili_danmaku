@@ -258,6 +258,9 @@ else ()
 
     target_link_libraries(live_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
             re2::re2 git_info
+            brotlicommon
+            brotlidec
+            brotlienc
             -L${DANMAKU_THIRDPARTY_PATH}/libass/linux/lib -lass
             ${LIBASS_DEP_PKG_LDFLAGS}
             )
