@@ -15,6 +15,7 @@
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
+#include "thirdparty/brotli/c/include/brotli/decode.h"
 
 constexpr auto user_live_render_blacklist_path = "danmaku_blacklist.txt";
 
@@ -34,6 +35,33 @@ size_t live_danmaku::zlib_decompress(void *buffer_in, size_t buffer_in_size) {
 
     return ret;
 }
+
+size_t live_danmaku::brotli_decompress(void *buffer_in, size_t buffer_in_size) {
+    auto instance = BrotliDecoderCreateInstance(nullptr, nullptr, nullptr);
+
+    size_t available_in = buffer_in_size;
+    size_t available_out = brotli_buffer_.size();
+
+    const uint8_t *next_in = reinterpret_cast<const uint8_t *>(buffer_in);
+    uint8_t *next_out = reinterpret_cast<uint8_t *>(brotli_buffer_.data());
+
+    auto res = BrotliDecoderDecompressStream(instance, &available_in, &next_in,
+                                             &available_out, &next_out, nullptr);
+
+    BrotliDecoderDestroyInstance(instance);
+
+    if (res == BROTLI_DECODER_RESULT_ERROR) {
+        return 0;
+    } else if (available_in != 0 || res == BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT) {
+        // no enough space, retry
+        brotli_buffer_.resize(brotli_buffer_.size() * 2);
+        return brotli_decompress(buffer_in, buffer_in_size);
+    }
+
+    return brotli_buffer_.size() - available_out;
+}
+
+
 void live_danmaku::run(std::string room_info, config::live_render_config_t &live_config) {
 
     std::thread([this, room_info, &live_config]() {
@@ -47,6 +75,14 @@ void live_danmaku::run(std::string room_info, config::live_render_config_t &live
         webSocket.setPingInterval(25);
 
         webSocket.disablePerMessageDeflate();
+
+        ix::WebSocketHttpHeaders headers;
+        headers["User-Agent"] =
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like "
+            "Gecko) Chrome/105.0.0.0 Safari/537.36";
+        headers["origin"] = "https://live.bilibili.com";
+        headers["referer"] = "https://live.bilibili.com/";
+        webSocket.setExtraHeaders(headers);
 
         auto packet_len = sizeof(live_danmaku_req_header_t) + room_info.size();
         live_danmaku_req_header_t start_header = {
@@ -214,13 +250,26 @@ void live_danmaku::process_websocket_data(const ix::WebSocketMessagePtr &msg,
 
             buffer = buffer.substr(packet_len);
             if (payload_len == 0) {
-                printf("wrong payload\n");
+                fmt::print("wrong payload\n");
                 continue;
             }
 
             payload_ptr = static_cast<char *>(zlib_buffer_.data());
             process_decompress_data(payload_ptr, payload_len);
+        } else if (version == 3) {
+            size_t compress_data_size = packet_len - header_len;
+            // brotli compress version
+            payload_len =
+                brotli_decompress(buffer.data() + header_len, compress_data_size);
 
+            buffer = buffer.substr(packet_len);
+            if (payload_len == 0) {
+                fmt::print("wrong payload\n");
+                continue;
+            }
+
+            payload_ptr = static_cast<char *>(brotli_buffer_.data());
+            process_decompress_data(payload_ptr, payload_len);
         } else if (version == 1 || version == 0) {
             // normal version
             payload_ptr = static_cast<char *>(buffer.data() + header_len);
@@ -230,7 +279,7 @@ void live_danmaku::process_websocket_data(const ix::WebSocketMessagePtr &msg,
             add_danmaku_res(payload_ptr, payload_len);
 
         } else {
-            printf("\nunknown version: %d\n", version);
+            fmt::print("\nunknown version: %d\n", version);
             // just ignore this packet
             buffer = buffer.substr(packet_len);
             continue;

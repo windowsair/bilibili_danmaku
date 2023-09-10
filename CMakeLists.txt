@@ -71,6 +71,11 @@ add_subdirectory(${DANMAKU_THIRDPARTY_PATH}/re2)
 
 add_subdirectory(src/xml2ass)
 
+# brotli
+set(BROTLI_BUNDLED_MODE ON)
+set(BROTLI_DISABLE_TESTS TRUE)
+add_subdirectory(${DANMAKU_THIRDPARTY_PATH}/brotli)
+
 # TODO:
 if (NOT APPLE)
     add_subdirectory(src/live_render)

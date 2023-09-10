@@ -13,6 +13,83 @@
 #include "thirdparty/fmt/include/fmt/core.h"
 #include "thirdparty/rapidjson/document.h"
 
+inline std::string get_danmaku_ws_token(uint64_t room_id) {
+    using namespace ix;
+    using namespace rapidjson;
+
+    std::string ret;
+
+    HttpClient httpClient;
+    HttpRequestArgsPtr args = httpClient.createRequest();
+
+    // Timeout options
+    args->connectTimeout = 10;
+    args->transferTimeout = 10;
+
+    // Redirect options
+    args->followRedirects = false;
+    args->maxRedirects = 0;
+
+    // Misc
+    args->compress = false;
+    args->verbose = false;
+    args->logger = [](const std::string &msg) { std::cout << msg; };
+
+    WebSocketHttpHeaders headers;
+    headers["User-Agent"] =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like "
+        "Gecko) Chrome/105.0.0.0 Safari/537.36";
+    headers["origin"] = "https://live.bilibili.com";
+    headers["referer"] = "https://live.bilibili.com/";
+    args->extraHeaders = headers;
+
+    std::string url = fmt::format(
+        "https://api.live.bilibili.com/xlive/web-room/v1/index/getDanmuInfo?id={}&type=0",
+        room_id);
+
+    // Sync req
+    HttpResponsePtr res;
+    res = httpClient.get(url, args);
+
+    auto statusCode = res->statusCode;
+    auto errorCode = res->errorCode;
+    auto responseHeaders = res->headers;
+    auto body = res->body;
+    auto errorMsg = res->errorMsg;
+
+    auto error_output = [&]() {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "获取弹幕服务器Token失败：{}\n", body);
+    };
+
+    if (errorCode != HttpErrorCode::Ok || statusCode != 200) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "获取弹幕服务器Token失败：{}\n", errorMsg);
+        return ret;
+    }
+
+    Document doc;
+    doc.Parse(body.c_str());
+
+    if (!doc.HasMember("code") || !doc.HasMember("data")) {
+        error_output();
+        return ret;
+    }
+
+    if (doc["code"].GetInt() != 0) {
+        error_output();
+        return ret;
+    }
+
+    if (!doc["data"].HasMember("token")) {
+        error_output();
+        return ret;
+    }
+
+    ret = doc["data"]["token"].GetString();
+    return ret;
+}
+
 // noexcept
 live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     using namespace ix;
@@ -105,9 +182,15 @@ live_detail_t live_danmaku::get_room_detail(uint64_t live_id) {
     std::uniform_int_distribution<uint64_t> uniform_dist(1, 2e14);
     uint64_t random_uid = uniform_dist(e1) + 1e14;
 
-    live_detail.room_detail_str_ =
-        fmt::format(R"({{"roomid":{},"uid":{},"protover":2}})", room_id,
-                    random_uid); // {"roomid":0000,"uid":0000,"protover":2}
+    std::string ws_token = get_danmaku_ws_token(room_id);
+    if (ws_token.empty()) {
+        return live_detail;
+    }
+
+    // uid 0 for guest user
+    live_detail.room_detail_str_ = fmt::format(
+        R"({{"roomid":{},"uid":{},"key":"{}","type":2,"protover":3,"platform":"web"}})",
+        room_id, 0, ws_token);
 
     return live_detail;
 }

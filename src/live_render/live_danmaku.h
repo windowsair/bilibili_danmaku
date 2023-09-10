@@ -81,6 +81,7 @@ class live_danmaku {
           danmaku_queue_(nullptr), sc_queue_(nullptr) {
         zlib_handle_ = libdeflate_alloc_decompressor();
         zlib_buffer_.resize(10240);
+        brotli_buffer_.resize(20480);
 
         parse_helper_.content_re_ = nullptr;
         parse_helper_.danmaku_type_re_ = nullptr;
@@ -184,6 +185,16 @@ class live_danmaku {
      */
     size_t zlib_decompress(void *buffer_in, size_t buffer_in_size);
 
+    /**
+     * Decompress brotli data
+     *
+     * @param buffer_in [in]
+     * @param buffer_in_size
+     * @return decompressed data size
+     *  return 0 when error occur
+     */
+    size_t brotli_decompress(void *buffer_in, size_t buffer_in_size);
+
     void process_websocket_data(const ix::WebSocketMessagePtr &msg,
                                 config::live_render_config_t &live_config);
 
@@ -213,6 +224,7 @@ class live_danmaku {
   private:
     struct libdeflate_decompressor *zlib_handle_;
     std::vector<char> zlib_buffer_;
+    std::vector<char> brotli_buffer_;
     class ParseHelper {
       public:
         // danmaku type

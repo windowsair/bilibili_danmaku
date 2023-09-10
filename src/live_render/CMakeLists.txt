@@ -244,6 +244,9 @@ add_executable(live_render ./main.cpp ${DANMAKU_THIRDPARTY_SRC} ${LIVE_RENDER_SO
 if (WIN32)
     target_link_libraries(live_render -lpthread OpenSSL::SSL OpenSSL::Crypto ixwebsocket
             re2::re2 git_info
+            brotlicommon
+            brotlidec
+            brotlienc
             ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
             )
 else ()
