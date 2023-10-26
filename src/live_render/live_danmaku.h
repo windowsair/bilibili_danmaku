@@ -78,6 +78,7 @@ class live_danmaku {
     live_danmaku()
         : base_time_(0), danmaku_recv_count_(0), is_pos_danmaku_process_(false),
           do_not_print_danmaku_info_(false), is_live_start_(false),
+          vertical_danmaku_process_strategy_(config::verticalProcessEnum::DEFAULT),
           danmaku_queue_(nullptr), sc_queue_(nullptr) {
         zlib_handle_ = libdeflate_alloc_decompressor();
         zlib_buffer_.resize(10240);

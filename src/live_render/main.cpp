@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     auto room_detail = live.get_room_detail(room_id);
     if (room_detail.code_ == -1) {
         // just throw error
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间信息失败");
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间信息失败\n");
         std::abort();
     }
     config.user_uid_ = room_detail.user_uid_;
@@ -139,8 +139,12 @@ int main(int argc, char **argv) {
     fmt::print(fg(fmt::color::green_yellow), "用户名:{}\n", username);
 
     if (room_detail.room_detail_str_.empty()) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间详细信息失败");
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间详细信息失败\n");
         std::abort();
+    }
+
+    if (config.bilibili_cookie_.empty()) {
+        fmt::print(fg(fmt::color::red), "未指定Cookie，获取最高画质直播流可能会失败！\n");
     }
 
     // capture live danmaku: thread 1

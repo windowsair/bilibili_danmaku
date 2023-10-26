@@ -124,13 +124,19 @@ $ ./live_render 672353429
 
 ```json
 {
-    "version": "0.0.25",
+    "version": "0.0.28",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
 
     "output_path": "video/",
     "#output_path": "视频存放路径，例如存放在video文件夹下",
+
+    "bilibili_cookie": "",
+    "#bilibili_cookie": [ "bilibili的cookie，用于获取最高画质直播源、加密或付费直播源",
+        "获取方法可以参考下面的链接",
+        "https://github.com/windowsair/bilibili_danmaku/blob/master/assets/how_to_get_bilibili_cookie.png"
+    ],
 
     "video_bitrate": "15M",
     "#video_bitrate": "视频流比特率，按照ffmpeg接受的格式输入",

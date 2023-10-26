@@ -1,12 +1,18 @@
 ﻿constexpr auto config_live_render_template_json =
     R"--({
-    "version": "0.0.25",
+    "version": "0.0.28",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
 
     "output_path": "video/",
     "#output_path": "视频存放路径，例如存放在video文件夹下",
+
+    "bilibili_cookie": "",
+    "#bilibili_cookie": [ "bilibili的cookie，用于获取最高画质直播源、加密或付费直播源",
+        "获取方法可以参考下面的链接",
+        "https://github.com/windowsair/bilibili_danmaku/blob/master/assets/how_to_get_bilibili_cookie.png"
+    ],
 
     "video_bitrate": "15M",
     "#video_bitrate": "视频流比特率，按照ffmpeg接受的格式输入",
@@ -139,10 +145,6 @@
 
     "bilibili_proxy_address": "",
     "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/",
-
-    "bilibili_cookie": "",
-    "#bilibili_cookie": "bilibili的cookie，用于获取加密或付费直播源",
-
 
     "adjust_input_video_width": 0,
     "#adjust_input_video_width": [ "重新调整原始直播源视频的宽度，如果不需要调整，设置为0即可",

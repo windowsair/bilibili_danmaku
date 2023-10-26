@@ -354,7 +354,7 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
     std::string url = fmt::format(
         fmt::runtime(proxy_address + "xlive/web-room/v2/index/"
                                      "getRoomPlayInfo?platform=web&ptype=8&qn={}&"
-                                     "protocol=0,1&format=0,1,2&codec=0,1&room_id={}"),
+                                     "protocol=0,1&format=0,1,2&codec=0&ptype=8&dolby=5&panorama=1&room_id={}"),
         qn, room_id);
 
     // qn 20000 -> 4K
@@ -402,13 +402,32 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
     // get max accept qn
     int max_qn = qn;
     int current_qn = qn;
+    bool fail_to_get_max_qn = false;
     for (auto &item : stream_list.GetArray()) {
+        int min_qn = INT32_MAX;
+        int qn_count = 0;
         for (auto &accpet_qn : item["format"][0]["codec"][0]["accept_qn"].GetArray()) {
             int qn_now = accpet_qn.GetInt();
+
             if (qn_now > max_qn) {
                 max_qn = qn_now;
             }
+
+            if (qn_now < min_qn) {
+                min_qn = qn_now;
+            }
+
+            qn_count++;
         }
+
+        int accurary_qn = item["format"][0]["codec"][0]["current_qn"].GetInt();
+        if (qn_count > 1 && accurary_qn == min_qn) {
+            fail_to_get_max_qn = true;
+        }
+    }
+
+    if (fail_to_get_max_qn) {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法获取最高画质直播流，可能是Cookie信息失效\n");
     }
 
     // try to get max quality stream
