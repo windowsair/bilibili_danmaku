@@ -1,6 +1,44 @@
 ﻿#include "test_sc_common.h"
 #include "thirdparty/pugixml/pugixml.hpp"
 
+inline void libass_msg_callback(int level, const char *fmt, va_list va, void *data) {
+    if (level > 6)
+        return;
+    printf("libass: ");
+    vprintf(fmt, va);
+    printf("\n");
+}
+
+inline void libass_no_msg_callback(int level, const char *fmt, va_list va, void *data) {
+}
+
+void libass_init(ASS_Library **ass_library, ASS_Renderer **ass_renderer,
+                        int frame_w, int frame_h, bool enable_message_output) {
+    *ass_library = ass_library_init();
+    if (!(*ass_library)) {
+        printf("ass_library_init failed!\n");
+        std::abort();
+    }
+
+    if (enable_message_output) {
+        ass_set_message_cb(*ass_library, libass_msg_callback, NULL);
+    } else {
+        ass_set_message_cb(*ass_library, libass_no_msg_callback, NULL);
+    }
+
+    ass_set_extract_fonts(*ass_library, 1);
+
+    *ass_renderer = ass_renderer_init(*ass_library);
+    if (!(*ass_renderer)) {
+        printf("ass_renderer_init failed!\n");
+        std::abort();
+    }
+
+    ass_set_frame_size(*ass_renderer, frame_w, frame_h);
+    ass_set_fonts(*ass_renderer, NULL, "sans-serif", ASS_FONTPROVIDER_AUTODETECT, NULL,
+                  1);
+}
+
 inline int getItemAliveTime(int price) {
     if (price < 50) {
         return 60 * 1000;

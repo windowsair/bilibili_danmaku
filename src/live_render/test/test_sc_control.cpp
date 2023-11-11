@@ -19,8 +19,8 @@
 #define USE_AEGISUB_OVERLAY 1
 
 inline std::string kFileName;
-constexpr int VIDEO_HEIGHT = 1080;
 constexpr int VIDEO_WIDTH = 1920;
+constexpr int VIDEO_HEIGHT = 1080;
 
 class sc::ScControlDebugProbe {
   public:

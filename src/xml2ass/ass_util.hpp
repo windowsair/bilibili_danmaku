@@ -12,6 +12,15 @@
 #include "thirdparty/fmt/include/fmt/format.h"
 #include "thirdparty/fmt/include/fmt/core.h"
 
+typedef struct ass_library ASS_Library;
+typedef struct ass_renderer ASS_Renderer;
+typedef struct ass_track ASS_Track;
+
+extern "C" {
+int ass_get_text_width(ASS_Renderer *render_priv, ASS_Track *track, int style_index,
+                       char *text);
+};
+
 namespace ass {
 
 template <typename Tp> class Point_ {
@@ -303,6 +312,165 @@ class SuperChatBox {
     }
 };
 
+class TextProcess {
+  protected:
+    TextProcess() = default;
+    inline static ASS_Library *ass_library_ = nullptr;
+    inline static ASS_Renderer *ass_renderer_ = nullptr;
+    inline static ASS_Track *ass_track_ = nullptr;
+
+  public:
+    static void Init(ASS_Library *lib, ASS_Renderer *render, ASS_Track *track) {
+        ass_library_ = lib;
+        ass_renderer_ = render;
+        ass_track_ = track;
+    }
+
+    static TextProcess *GetInstance() {
+        static TextProcess instance{};
+        return &instance;
+    }
+
+    /**
+     * Handle long text by inserting line breaks at appropriate locations
+     *
+     * @param text [in&out] text to be converted
+     * @param max_width max line width in pixel
+     * @param font_size font size
+     *
+     * @return line num
+     */
+    int break_word(std::string &text, int max_width, int font_size);
+};
+
+inline int TextProcess::break_word(std::string &text, int max_width, int font_size) {
+    assert(ass_library_ != nullptr);
+    assert(ass_renderer_ != nullptr);
+    assert(ass_track_ != nullptr);
+
+    constexpr auto ASS_STYLE_PREFIX = "{\\c&HFFFFFF\\q2}";
+    constexpr float LINE_COMPENSATION = 0.8f;
+    constexpr float WORD_COMPENSATION = 0.9f;
+    char new_line_arr[2] = {'\\', 'N'};
+    const int line_max_word =
+        static_cast<int>(max_width / (font_size * LINE_COMPENSATION));
+    int ret = 0;
+
+    std::string res;
+    assert(!text.empty());
+    res.resize(text.size() * (1 + sizeof(new_line_arr)) + 1);
+
+    const char *left = text.c_str();
+    const char *right = left;
+    const char *const border = left + text.length();
+    char *dst = const_cast<char *>(res.c_str());
+
+    // always process text [left, right)
+
+    auto word_iter_move_left = [](const char *iter, const char *left_border,
+                                  int max_word) {
+        int words = 0;
+        const auto *p = reinterpret_cast<const unsigned char *>(iter);
+        const auto *border = reinterpret_cast<const unsigned char *>(left_border);
+
+        p--;
+        while (words < max_word && p >= border) {
+            if (*p < 0x80) {
+                words++;
+            } else if ((*p & 0xC0) == 0xC0) { // 0b11xxxxxx, utf8 first byte
+                words++;
+            }
+
+            p--;
+        }
+        p++;
+
+        return reinterpret_cast<const char *>(p);
+    };
+
+    auto word_iter_move_right = [](const char *iter, const char *right_border,
+                                   int max_word) {
+        int words = 0;
+        const auto *p = reinterpret_cast<const unsigned char *>(iter);
+        const auto *border = reinterpret_cast<const unsigned char *>(right_border);
+
+        while (words < max_word && p < border) {
+            if (*p & 0x80) {
+                int utf8_byte_len =
+                    std::popcount(static_cast<std::uint8_t>(*p & 0b11110000));
+                p += utf8_byte_len;
+            } else {
+                p++;
+            }
+            words++;
+        }
+
+        return reinterpret_cast<const char *>(p);
+    };
+
+    while (left < border) {
+        int width;
+
+        right = word_iter_move_right(right, border, line_max_word);
+        std::string tmp_str =
+            std::string(ASS_STYLE_PREFIX) + std::string(left, right - left);
+        width = ass_get_text_width(ass_renderer_, ass_track_, 1,
+                                   const_cast<char *>(tmp_str.c_str()));
+        if (width < max_width) {
+            const char *accept_iter;
+            const char *tmp_right;
+
+            do {
+                accept_iter = right;
+                tmp_right = word_iter_move_right(right, border, 1);
+                if (tmp_right == right) {
+                    break; // fail to move
+                }
+
+                right = tmp_right;
+                tmp_str = std::string(ASS_STYLE_PREFIX) + std::string(left, right - left);
+                width = ass_get_text_width(ass_renderer_, ass_track_, 1,
+                                           const_cast<char *>(tmp_str.c_str()));
+            } while (width < max_width);
+
+            right = accept_iter;
+        } else if (width > max_width) {
+            const char *tmp_right;
+
+            do {
+                tmp_right = word_iter_move_left(right, left, 1);
+                if (tmp_right == right) {
+                    break; // fail to move, may not happen
+                }
+                right = tmp_right;
+                tmp_str = std::string(ASS_STYLE_PREFIX) + std::string(left, right - left);
+                width = ass_get_text_width(ass_renderer_, ass_track_, 1,
+                                           const_cast<char *>(tmp_str.c_str()));
+            } while (width > max_width);
+        }
+
+        assert(left != right);
+
+        // copy to dst
+        memcpy(dst, left, right - left);
+        dst += right - left;
+        if (right != border) { // do not insert break word into last line
+            // insert break word
+            memcpy(dst, new_line_arr, sizeof(new_line_arr));
+            dst += sizeof(new_line_arr);
+        }
+
+        ret++;
+        left = right;
+    }
+
+    *dst++ = '\0';
+    res.resize(dst - const_cast<char *>(res.c_str()));
+
+    text = res;
+    return ret;
+}
+
 class SuperChatMessage {
   public:
     sc::sc_item_t sc_;
@@ -329,18 +497,13 @@ class SuperChatMessage {
         : sc_(std::move(sc)), corner_radius_(corner_radius), font_size_(font_size),
           width_(width) {
         const float line_top_margin = (float)font_size / 6.0f;
-        constexpr float SC_BOX_STR_LEN_COMPENSATION = 0.9f;
+        const int margin_left = corner_radius / 2;
+        const int margin_right = corner_radius / 4;
 
         std::string &sc_content = sc_.content_;
-        auto &sc_content_len = sc_.content_len_;
-        int line_num = static_cast<int>(
-            (sc_content_len * font_size * SC_BOX_STR_LEN_COMPENSATION) / width + 1);
-        if (line_num > 1) {
-            //int line_max_word = round_up(sc_content_len, line_num);
-            int line_max_word =
-                static_cast<int>(width / (font_size * SC_BOX_STR_LEN_COMPENSATION));
-            insert_new_line(sc_content, line_max_word, line_num);
-        }
+        auto break_line_handle = TextProcess::GetInstance();
+        int line_num = break_line_handle->break_word(
+            sc_content, width - margin_left - margin_right, font_size);
 
 
         content_height_ = calc_content_box_height(font_size, line_num, corner_radius);
@@ -394,41 +557,6 @@ class SuperChatMessage {
 
     static int calc_content_box_height(int font_size, int line_num, int corner_radius) {
         return static_cast<int>(line_num * font_size + corner_radius / 2);
-    }
-
-
-    void insert_new_line(std::string &s, int line_max_word, int line_num) {
-        std::string res;
-        char new_line_arr[2] = {'\\', 'N'};
-        size_t sz = s.size();
-        size_t word_count = 0, i = 0;
-        int utf8_byte_len;
-        res.resize(sz + sizeof(new_line_arr) * (line_num - 1));
-        unsigned char *src =
-            reinterpret_cast<unsigned char *>(const_cast<char *>(s.c_str()));
-        unsigned char *dst =
-            reinterpret_cast<unsigned char *>(const_cast<char *>(res.c_str()));
-
-        while (i < sz) {
-            if (src[i] & 0x80) {
-                utf8_byte_len =
-                    std::popcount(static_cast<std::uint8_t>(src[i] & 0b11110000));
-                memcpy(dst, &src[i], utf8_byte_len);
-                dst += utf8_byte_len;
-                i += utf8_byte_len;
-            } else {
-                *dst++ = src[i++];
-            }
-
-            word_count++;
-            // insert \N
-            if (word_count % line_max_word == 0 && i < sz) {
-                memcpy(dst, new_line_arr, sizeof(new_line_arr));
-                dst += sizeof(new_line_arr);
-            }
-        }
-
-        s = res;
     }
 };
 

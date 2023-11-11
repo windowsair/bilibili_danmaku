@@ -157,6 +157,7 @@ if (LIVE_RENDER_BUILD_TESTING)
 
     # superchat ass template test
     set(TEST_SC_TEMPLATE
+            test/test_sc_common.cpp
             test/test_sc_template.cpp
             ../xml2ass/ass_sc.cpp
             ../xml2ass/ass_danmaku.cpp
@@ -170,6 +171,22 @@ if (LIVE_RENDER_BUILD_TESTING)
     add_executable(test_sc_template ${TEST_SC_TEMPLATE}
             ${DANMAKU_THIRDPARTY_SRC}
             ${LIVE_RENDER_THIRDPARTY_SRC})
+    # test_sc_control link lib
+    if (WIN32)
+        target_link_libraries(test_sc_template
+                ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.lib
+                )
+    else ()
+        # Linux version
+        find_package(PkgConfig REQUIRED)
+        set(ENV{PKG_CONFIG_PATH} "$ENV{PKG_CONFIG_PATH}:${DANMAKU_THIRDPARTY_PATH}/libass/linux/")
+        pkg_check_modules(LIBASS_DEP_PKG REQUIRED fontconfig harfbuzz fribidi freetype2)
+
+        target_link_libraries(test_sc_template
+                -L${DANMAKU_THIRDPARTY_PATH}/libass/linux/lib -lass
+                ${LIBASS_DEP_PKG_LDFLAGS}
+                )
+    endif ()
     file(COPY test/sc_content_list.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 

@@ -17,10 +17,6 @@ constexpr int VIDEO_HEIGHT = 1080;
 constexpr int VIDEO_WIDTH = 1920;
 constexpr int FPS = 60;
 
-extern "C" {
-int ass_process_events_line(ASS_Track *track, char *str);
-}
-
 #define TO_R(c) ((c) >> 24)
 #define TO_G(c) (((c) >> 16) & 0xFF)
 #define TO_B(c) (((c) >> 8) & 0xFF)
@@ -59,44 +55,6 @@ inline void blend(image_t *frame, ASS_Image *img, uint64_t offset) {
         blend_single(frame, img, offset);
         img = img->next;
     }
-}
-
-void libass_msg_callback(int level, const char *fmt, va_list va, void *data) {
-    if (level > 6)
-        return;
-    printf("libass: ");
-    vprintf(fmt, va);
-    printf("\n");
-}
-
-void libass_no_msg_callback(int level, const char *fmt, va_list va, void *data) {
-}
-
-inline void libass_init(ASS_Library **ass_library, ASS_Renderer **ass_renderer,
-                        int frame_w, int frame_h, bool enable_message_output) {
-    *ass_library = ass_library_init();
-    if (!(*ass_library)) {
-        printf("ass_library_init failed!\n");
-        std::abort();
-    }
-
-    if (enable_message_output) {
-        ass_set_message_cb(*ass_library, libass_msg_callback, NULL);
-    } else {
-        ass_set_message_cb(*ass_library, libass_no_msg_callback, NULL);
-    }
-
-    ass_set_extract_fonts(*ass_library, 1);
-
-    *ass_renderer = ass_renderer_init(*ass_library);
-    if (!(*ass_renderer)) {
-        printf("ass_renderer_init failed!\n");
-        std::abort();
-    }
-
-    ass_set_frame_size(*ass_renderer, frame_w, frame_h);
-    ass_set_fonts(*ass_renderer, NULL, "sans-serif", ASS_FONTPROVIDER_AUTODETECT, NULL,
-                  1);
 }
 
 inline std::string get_ffmpeg_file_path(const config::live_render_config_t &config) {
