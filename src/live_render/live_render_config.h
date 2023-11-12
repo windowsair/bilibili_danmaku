@@ -76,15 +76,18 @@ typedef struct live_render_config_ : public ass_config_t {
     int sc_max_width_;
     int sc_margin_x_;
     bool sc_y_mirror_;
+    bool sc_price_no_break_;
 
     // live info
     uint64_t user_uid_;
 
     live_render_config_() {
         sc_enable_ = false;
+        sc_price_no_break_ = false;
     }
     live_render_config_(const ass_config_t &cfg) : ass_config_t(cfg) {
         sc_enable_ = false;
+        sc_price_no_break_ = false;
     }
 
 } live_render_config_t;

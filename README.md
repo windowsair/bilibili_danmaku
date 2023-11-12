@@ -124,7 +124,7 @@ $ ./live_render 672353429
 
 ```json
 {
-    "version": "0.0.28",
+    "version": "0.0.29",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
@@ -261,6 +261,12 @@ $ ./live_render 672353429
         "设置为true优先从屏幕上方显示Super Chat"
     ],
 
+    "sc_price_no_break": false,
+    "#sc_price_no_break": [
+        "设置为false,总是在新的一行显示SC金额",
+        "设置为true,如果可以，在用户名同一行的右端部分显示SC金额"
+    ],
+
     "verbose": 0,
     "#verbose": [ "控制台输出等级设定", "0为默认输出", "1屏蔽所有ffmpeg输出", "2屏蔽所有弹幕信息输出",
        "3屏蔽所有ffmpeg和弹幕信息输出", "4屏蔽所有一般统计信息", "5屏蔽所有ffmpeg和一般统计信息输出",
@@ -269,10 +275,6 @@ $ ./live_render 672353429
 
     "bilibili_proxy_address": "",
     "#bilibili_proxy_address": "bilibili的代理地址，仅用于获取直播流地址。如果您不清楚这是做什么的，不要修改此项。例子： https://api.live.bilibili.com/",
-
-    "bilibili_cookie": "",
-    "#bilibili_cookie": "bilibili的cookie，用于获取加密或付费直播源",
-
 
     "adjust_input_video_width": 0,
     "#adjust_input_video_width": [ "重新调整原始直播源视频的宽度，如果不需要调整，设置为0即可",

@@ -40,18 +40,19 @@ void read_file(vector<string> &buffer, string file_name) {
 }
 
 int main() {
-    std::string user_name = "live_render";
+    constexpr bool sc_price_no_break_line = true;
     std::string tmp_user_name, tmp_content;
     std::string res;
     std::vector<std::string> sc_list;
+    std::vector<std::string> username_list;
     int price = 50;
     int font_size = 35;
     int corner_radius = 17;
     int width = 450;
     int x1 = 200;
     int x2 = 200;
-    int y1 = 700;
-    int y2 = 700;
+    int y1 = 300;
+    int y2 = 300;
     int start_time = 1000;
 
     ASS_Library *ass_library = nullptr;
@@ -68,13 +69,17 @@ int main() {
 
     cout << sc_ass_header_str;
     read_file(sc_list, "sc_content_list.txt");
+    read_file(username_list, "sc_username_list.txt");
+    int username_count = username_list.size();
+    int i = 0;
     for (auto &content : sc_list) {
         std::vector<std::string> res_list;
 
-        tmp_user_name = user_name;
+        tmp_user_name = username_list[i++ % username_count];
         tmp_content = content;
         sc::sc_item_t sc{tmp_user_name, tmp_content, 0, price};
-        ass::SuperChatMessage sc_msg{sc, 0, 0, width, corner_radius, font_size};
+        ass::SuperChatMessage sc_msg{
+            sc, 0, 0, width, corner_radius, font_size, sc_price_no_break_line};
 
         sc_msg.getSuperChatAss(x1, y1, x2, y2, start_time, start_time + 1500, res_list);
 

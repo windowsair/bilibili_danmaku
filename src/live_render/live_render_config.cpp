@@ -147,6 +147,9 @@ live_render_config_t get_user_live_render_config() {
         config.sc_max_width_ = doc["sc_max_width"].GetInt();
         config.sc_margin_x_ = doc["sc_margin_x"].GetInt();
         config.sc_y_mirror_ = doc["sc_y_mirror"].GetBool();
+        if (doc.HasMember("sc_price_no_break")) {
+            config.sc_price_no_break_ = doc["sc_price_no_break"].GetBool();
+        }
     }
 
     if (doc.HasMember("adjust_input_video_width")) {

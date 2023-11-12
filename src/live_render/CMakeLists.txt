@@ -187,7 +187,7 @@ if (LIVE_RENDER_BUILD_TESTING)
                 ${LIBASS_DEP_PKG_LDFLAGS}
                 )
     endif ()
-    file(COPY test/sc_content_list.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+    file(COPY test/sc_content_list.txt test/sc_username_list.txt DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 
     # superchat ass control & output control

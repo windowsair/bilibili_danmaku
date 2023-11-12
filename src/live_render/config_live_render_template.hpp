@@ -1,6 +1,6 @@
 ﻿constexpr auto config_live_render_template_json =
     R"--({
-    "version": "0.0.28",
+    "version": "0.0.29",
 
     "ffmpeg_path": "tool/",
     "#ffmpeg_path": "ffmpeg所在的路径，例如ffmpeg位于tool文件夹下",
@@ -135,6 +135,12 @@
     "#sc_y_mirror": [ "Super Chat垂直方向镜像显示",
         "设置为false优先从屏幕下方显示Super Chat",
         "设置为true优先从屏幕上方显示Super Chat"
+    ],
+
+    "sc_price_no_break": false,
+    "#sc_price_no_break": [
+        "设置为false,总是在新的一行显示SC金额",
+        "设置为true,如果可以，在用户名同一行的右端部分显示SC金额"
     ],
 
     "verbose": 0,
@@ -300,6 +306,9 @@ constexpr auto config_live_render_template_schema =
             "minimum": 0
         },
         "sc_y_mirror": {
+            "type": "boolean"
+        },
+        "sc_price_no_break": {
             "type": "boolean"
         },
         "verbose": {

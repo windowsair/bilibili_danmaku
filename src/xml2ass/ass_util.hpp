@@ -240,14 +240,14 @@ constexpr auto SuperChatUserIDColor2 = "236C64";
 constexpr auto SuperChatUserIDColor3 = "0F0F75";
 
 /**
- * |----------------------------|
+ * +----------------------------+
  * | User Name                  |
  * |                            |
  * | Super Chat Price           |
- * |----------------------------|
+ * +----------------------------+
  * | Super Chat Content         |
  * |                            |
- * |----------------------------|
+ * +----------------------------+
  *
  */
 class SuperChatBox {
@@ -329,6 +329,11 @@ class TextProcess {
     static TextProcess *GetInstance() {
         static TextProcess instance{};
         return &instance;
+    }
+
+    int get_text_width(std::string &text) {
+        return ass_get_text_width(ass_renderer_, ass_track_, 1,
+                                  const_cast<char *>(text.c_str()));
     }
 
     /**
@@ -491,26 +496,49 @@ class SuperChatMessage {
     std::string user_box_outline_ass_;
     std::string content_box_outline_ass_;
 
+  private:
+    int margin_left_;
+    int margin_right_;
+    int user_name_width_;
+    bool price_no_break_line_;
+    int no_break_line_price_x_offset_;
+
+  public:
     explicit SuperChatMessage(sc::sc_item_t &sc, int x, int y, int width,
-                              int corner_radius,
-                              int font_size) // TODO: may be we can remove x/y?
+                              int corner_radius, int font_size,
+                              bool price_no_break_line = false)
         : sc_(std::move(sc)), corner_radius_(corner_radius), font_size_(font_size),
-          width_(width) {
+          width_(width), price_no_break_line_(price_no_break_line),
+          no_break_line_price_x_offset_(0) {
         const float line_top_margin = (float)font_size / 6.0f;
-        const int margin_left = corner_radius / 2;
-        const int margin_right = corner_radius / 4;
+        margin_left_ = corner_radius / 2;
+        margin_right_ = corner_radius / 4;
+
+        width_auto_reset();
 
         std::string &sc_content = sc_.content_;
         auto break_line_handle = TextProcess::GetInstance();
         int line_num = break_line_handle->break_word(
-            sc_content, width - margin_left - margin_right, font_size);
-
+            sc_content, width_ - margin_left_ - margin_right_, font_size);
 
         content_height_ = calc_content_box_height(font_size, line_num, corner_radius);
-        user_height_ = calc_user_box_height(font_size, corner_radius);
+        if (price_no_break_line) {
+            bool ret = show_price_on_same_line();
+            if (ret) {
+                user_height_ =
+                    calc_user_box_no_break_line_height(font_size, corner_radius);
+            } else {
+                price_no_break_line_ = false;
+                user_height_ = calc_user_box_height(font_size, corner_radius);
+            }
+        } else {
+            user_height_ = calc_user_box_height(font_size, corner_radius);
+        }
+
         total_height_ = content_height_ + user_height_ + line_top_margin;
 
-        sc_box_ = SuperChatBox{x, y, width, user_height_, content_height_, corner_radius};
+        sc_box_ =
+            SuperChatBox{x, y, width_, user_height_, content_height_, corner_radius_};
 
         user_box_outline_ass_ = sc_box_.getUserBoxOutlineAss();
         content_box_outline_ass_ = sc_box_.getContentBoxOutlineAss();
@@ -555,8 +583,52 @@ class SuperChatMessage {
         return static_cast<int>(font_size + font_size * (0.8f) + corner_radius / 2);
     }
 
+    static int calc_user_box_no_break_line_height(int font_size, int corner_radius) {
+        int margin_bottom = corner_radius / 4;
+        return static_cast<int>(font_size + corner_radius / 2 + margin_bottom);
+    }
+
     static int calc_content_box_height(int font_size, int line_num, int corner_radius) {
         return static_cast<int>(line_num * font_size + corner_radius / 2);
+    }
+
+    // Checks if the username is too long and auto resizes the width
+    void width_auto_reset() {
+        auto text_handle = TextProcess::GetInstance();
+
+        std::string user_name_ass =
+            fmt::format("{{\\fs{}\\b0\\q2}}{}", font_size_, sc_.user_name_);
+
+        user_name_width_ = text_handle->get_text_width(user_name_ass);
+
+        if (user_name_width_ + margin_left_ + margin_right_ > width_) {
+            width_ = user_name_width_ + margin_left_ + margin_right_ + 5; // px
+            price_no_break_line_ = false;
+        }
+    }
+
+    /**
+     * Try to show username and price on the same line.
+     *
+     * @return true: can be shown on same line
+     *         false: should break line
+     */
+    bool show_price_on_same_line() {
+        constexpr int price_padding_left = 3; // px
+
+        auto text_handle = TextProcess::GetInstance();
+
+        std::string price_ass = fmt::format("{{\\b0\\q2}}🔋 {}", sc_.price_);
+        int price_width = text_handle->get_text_width(price_ass);
+        // clang-format off
+        if (margin_left_ + user_name_width_ + price_padding_left + price_width +
+            margin_right_ > width_) {
+            return false;
+        }
+        // clang-format on
+
+        no_break_line_price_x_offset_ = width_ - margin_right_ - price_width;
+        return true;
     }
 };
 
@@ -611,14 +683,26 @@ inline void SuperChatMessage::getSuperChatAss(int startX, int startY, int endX, 
                          sc_.user_name_));
 
     // price -> top layer
-    pos = getPosAss(startX + corner_radius_ / 2, startY + font_size_ + corner_radius_ / 3,
-                    endX + corner_radius_ / 2, endY + font_size_ + corner_radius_ / 3);
-    add_list(fmt::format("Dialogue: 1,{},{},"
-                         "sc,,0000,0000,0000,,"
-                         "{{{}\\c&{}\\fs{}\\b0\\q2}}" // do not use bold
-                         "🔋 {}\n",
-                         start_time, end_time, pos, text_color_,
-                         static_cast<int>(font_size_ * 0.8), sc_.price_));
+    if (price_no_break_line_) {
+        pos =
+            getPosAss(startX + no_break_line_price_x_offset_, startY + corner_radius_ / 3,
+                      endX + no_break_line_price_x_offset_, endY + corner_radius_ / 3);
+        add_list(fmt::format("Dialogue: 1,{},{},"
+                             "sc,,0000,0000,0000,,"
+                             "{{{}\\c&{}\\b0\\q2}}" // do not use bold
+                             "🔋 {}\n",
+                             start_time, end_time, pos, text_color_, sc_.price_));
+    } else {
+        pos = getPosAss(
+            startX + corner_radius_ / 2, startY + font_size_ + corner_radius_ / 3,
+            endX + corner_radius_ / 2, endY + font_size_ + corner_radius_ / 3);
+        add_list(fmt::format("Dialogue: 1,{},{},"
+                             "sc,,0000,0000,0000,,"
+                             "{{{}\\c&{}\\fs{}\\b0\\q2}}" // do not use bold
+                             "🔋 {}\n",
+                             start_time, end_time, pos, text_color_,
+                             static_cast<int>(font_size_ * 0.8), sc_.price_));
+    }
 
     // content -> top layer
     pos = getPosAss(startX + corner_radius_ / 2, startY + user_height_,

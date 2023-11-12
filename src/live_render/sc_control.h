@@ -128,6 +128,7 @@ class ScControl {
     float show_range_;
     int max_height_;
     bool y_mirror_;
+    bool sc_price_no_break_;
     /**
      * @next_fade_out_time_: Exceeding this time indicates that an element has expired
      * and is waiting to be removed. Always updated at the end of fade_in and fade_out events.

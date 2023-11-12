@@ -6,7 +6,8 @@ ScControl::ScControl(ass::sc_ass_render_control *ass_object,
     : ass_object_(ass_object), width_(config.sc_max_width_),
       screen_height_(config.video_height_), show_range_(config.sc_show_range_),
       corner_radius_(17), font_size_(config.sc_font_size_),
-      y_mirror_(config.sc_y_mirror_), x_(config.sc_margin_x_) {
+      y_mirror_(config.sc_y_mirror_), sc_price_no_break_(config.sc_price_no_break_),
+      x_(config.sc_margin_x_) {
     const int line_top_margin = static_cast<int>(font_size_ / 6.0f);
     max_height_ = y_mirror_
                       ? static_cast<int>(screen_height_ * show_range_) + line_top_margin
@@ -37,7 +38,8 @@ void ScControl::updateSuperChatEvent(
         for (auto &item : sc_list) {
             int fade_in_time = item.start_time_;
             ass::SuperChatMessage *pmsg;
-            ass::SuperChatMessage msg{item, 0, 0, width_, corner_radius_, font_size_};
+            ass::SuperChatMessage msg{
+                item, 0, 0, width_, corner_radius_, font_size_, sc_price_no_break_};
 
             this->sc_list_.push_back(std::move(msg));
             pmsg = &this->sc_list_.back();

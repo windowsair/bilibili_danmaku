@@ -2,6 +2,8 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 ColumnLimit: 90
 AlignAfterOpenBracket: Align
+AllowAllParametersOfDeclarationOnNextLine: false
+BinPackArguments: true
 AlignConsecutiveMacros: AcrossEmptyLines
 AllowShortBlocksOnASingleLine: Never
 AllowShortFunctionsOnASingleLine: None
