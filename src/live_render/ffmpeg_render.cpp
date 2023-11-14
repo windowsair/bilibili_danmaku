@@ -297,6 +297,11 @@ void ffmpeg_render::run() {
                                 ass_header_str.size());
     sc_render.create_track(const_cast<char *>(sc_ass_header_str.c_str()),
                            sc_ass_header_str.size());
+    // TODO: free tracker
+    auto sc_tracker =
+        ass_read_memory(ass_library, const_cast<char *>(sc_ass_header_str.c_str()),
+                        sc_ass_header_str.size(), NULL);
+    ass::TextProcess::Init(ass_library, ass_renderer, sc_tracker);
 
     // create ffmpeg subprocess
     struct subprocess_s subprocess;

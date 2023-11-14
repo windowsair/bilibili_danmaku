@@ -477,7 +477,7 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
         "-fflags",
         "+discardcorrupt",
         "-vsync", "passthrough", // forces ffmpeg to extract frames as-is instead of trying to match a framerate
-        "-analyzeduration", "200000", // 200ms
+        "-analyzeduration", "400000", // 400ms
     };
 
 

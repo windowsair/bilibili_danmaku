@@ -271,6 +271,12 @@ void main_worker(struct subprocess_s *subprocess, config::live_render_config_t &
     sc_render.create_track(const_cast<char *>(sc_ass_header_str.c_str()),
                            sc_ass_header_str.size());
 
+    // TODO: free tracker
+    auto sc_tracker =
+        ass_read_memory(ass_library, const_cast<char *>(sc_ass_header_str.c_str()),
+                        sc_ass_header_str.size(), NULL);
+    ass::TextProcess::Init(ass_library, ass_renderer, sc_tracker);
+
     FILE *ffmpeg_ = subprocess_stdin(subprocess);
     FILE *p_stderr = subprocess_stderr(subprocess);
     if (ffmpeg_ == nullptr || p_stderr == nullptr) {
