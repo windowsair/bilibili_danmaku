@@ -323,7 +323,7 @@ void live_danmaku::init_parser() {
     parse_helper_.sc_content_re_ = new RE2(sc_content_re_str);
     assert(parse_helper_.sc_content_re_->ok());
 
-    const auto sc_user_name_re_str = R"(\"uname\":\"(.*?)\",\")";
+    const auto sc_user_name_re_str = R"(\"uname\":\"(.*?)\")";
     parse_helper_.sc_user_name_re_ = new RE2(sc_user_name_re_str);
     assert(parse_helper_.sc_user_name_re_->ok());
 
