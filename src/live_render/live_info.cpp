@@ -427,7 +427,8 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
     }
 
     if (fail_to_get_max_qn) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法获取最高画质直播流，可能是Cookie信息失效\n");
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
+                   "无法获取最高画质直播流，可能是Cookie信息失效\n");
     }
 
     // try to get max quality stream
@@ -440,7 +441,7 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
         int format;
 
         // codec : array
-        auto codec_str = item["format"][0]["codec"][0]["codec_name"].GetString();
+        auto codec_str = item["codec"][0]["codec_name"].GetString();
 
         if (codec_str == std::string("avc")) {
             codec = live_stream_info_t::AVC;
@@ -454,7 +455,7 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
             codec = live_stream_info_t::UNKNOWN_PROTOCOL;
         }
 
-        auto format_str = item["format"][0]["format_name"].GetString();
+        auto format_str = item["format_name"].GetString();
         if (format_str == std::string("flv")) {
             format = live_stream_info_t::FLV;
         } else if (format_str == std::string("ts")) {
@@ -468,9 +469,8 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
         }
 
         // process url list
-
-        auto base_url = item["format"][0]["codec"][0]["base_url"].GetString();
-        auto &url_list = item["format"][0]["codec"][0]["url_info"];
+        auto base_url = item["codec"][0]["base_url"].GetString();
+        auto &url_list = item["codec"][0]["url_info"];
         for (auto &url_info : url_list.GetArray()) {
             auto host = url_info["host"].GetString();
             auto extra = url_info["extra"].GetString();
@@ -481,23 +481,24 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
         }
     };
 
+    for (auto &stream_item : stream_list.GetArray()) {
+        for (auto &format_item : stream_item["format"].GetArray()) {
+            std::string format_name(format_item["format_name"].GetString());
+            if (format_name == "flv") {
+                get_stream_address_list(format_item, live_stream_info_t::FLV);
+            } else if (format_name == "ts") {
+                get_stream_address_list(format_item, live_stream_info_t::TS);
+            } else if (format_name == "fmp4") {
+                get_stream_address_list(format_item, live_stream_info_t::FMP4);
+            }
+        }
+    }
+
     // prefer to use flv
-
-    // get flv stream
-    for (auto &item : stream_list.GetArray()) {
-        std::string format_name(item["format"][0]["format_name"].GetString());
-        if (format_name == "flv") {
-            get_stream_address_list(item, live_stream_info_t::FLV);
-        }
-    }
-
-    // get ts stream
-    for (auto &item : stream_list.GetArray()) {
-        std::string format_name(item["format"][0]["format_name"].GetString());
-        if (format_name == "ts") {
-            get_stream_address_list(item, live_stream_info_t::TS);
-        }
-    }
+    std::sort(ret.begin(), ret.end(),
+              [](const live_stream_info_t &a, const live_stream_info_t &b) {
+                  return a.format_ < b.format_;
+              });
 
     return ret;
 }

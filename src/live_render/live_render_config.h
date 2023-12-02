@@ -80,6 +80,7 @@ typedef struct live_render_config_ : public ass_config_t {
 
     // live info
     uint64_t user_uid_;
+    int live_stream_format_;
 
     live_render_config_() {
         sc_enable_ = false;

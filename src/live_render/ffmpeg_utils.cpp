@@ -272,21 +272,24 @@ inline bool ffmpeg_get_stream_meta_info(const std::string stream_address,
             }
 
             // get displayWidth and displayHeight
-            pos = 0;
-            while (pos != std::string::npos) {
-                pos = buffer.find("x");
-                // , 1920x
-                pos = buffer.find_last_of(",", pos);
-                //  1920x1080
-                substr = buffer.data() + pos + 1;
-
-                ret = sscanf(substr, "%dx%d", &displayWidth, &displayHeight);
-                if (ret == 2) {
-                    break;
-                }
-            }
-
+            // From ffmpeg "avcodec_string()"
+            //   Stream #0:0: Video: h264 (High) (avc1 / 0x31637661), yuv420p(tv, bt709), 1280x720 [SAR 1:1 DAR 16:9], 0 kb/s, 30 fps, 30 tbr, 90k tbn (default)
+            //   Stream #0:0: Video: h264 (High), yuv420p(tv, bt470bg/bt470bg/smpte170m, progressive), 1920x1080, 10240 kb/s, 60 fps, 60 tbr, 1k tbn
+            //   Stream #0:1: Video: h264 (High) ([27][0][0][0] / 0x001B), yuv420p(tv, bt709), 1920x1080, 60 fps, 30 tbr, 90k tbn
+            pos = buffer.find("fps");
             assert(pos != std::string::npos);
+
+            pos = buffer.find_last_of("x", pos);
+            assert(pos != std::string::npos);
+
+            // , 1920x1080
+            pos = buffer.find_last_of(",", pos);
+            assert(pos != std::string::npos);
+            //  1920x1080
+            substr = buffer.data() + pos + 1;
+
+            ret = sscanf(substr, "%dx%d", &displayWidth, &displayHeight);
+            assert(ret == 2);
 
             // get fps
             pos = buffer.find("fps", pos);
@@ -350,13 +353,17 @@ bool init_stream_video_info(const std::vector<live_stream_info_t> &stream_list,
         }
     }
 
-    if (stream_list.empty()) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "无法获取FLV流，重试\n");
-        return false;
+    if (h264_stream_list.empty()) {
+        fmt::print(fg(fmt::color::orange) | fmt::emphasis::italic,
+                   "无法获取FLV流，尝试添加其他流\n");
+        for (auto &item : stream_list) {
+            h264_stream_list.push_back(item);
+        }
     }
 
     bool flag = false;
     for (auto &item : h264_stream_list) {
+        config.live_stream_format_ = static_cast<int>(item.format_);
         if (ffmpeg_get_stream_meta_info(item.address_, config)) {
             flag = true;
             break;
@@ -476,10 +483,15 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
 
         "-fflags",
         "+discardcorrupt",
-        "-vsync", "passthrough", // forces ffmpeg to extract frames as-is instead of trying to match a framerate
         "-analyzeduration", "400000", // 400ms
     };
 
+    if (config.live_stream_format_ == static_cast<int>(live_stream_info_t::FLV)) {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+                // forces ffmpeg to extract frames as-is instead of trying to match a framerate
+                "-vsync", "passthrough",
+            });
+    }
 
     // add hardware decoder
     if (config.decoder_ != "none") {
@@ -494,6 +506,11 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
     std::string ffmpeg_overlay_filter_str;
 
     process_input_video_filter(ffmpeg_overlay_filter_str, config);
+    // fmp4 process
+    if (config.live_stream_format_ == static_cast<int>(live_stream_info_t::FMP4)) {
+        ffmpeg_overlay_filter_str +=
+            fmt::format("setpts=N/({}*TB)[lr_v0_fmp4];[lr_v0_fmp4]", ffmpeg_fps_info);
+    }
 
     // FFmpeg improved the calculation of premultiplied alpha for YUV format.
     // Now we don't have to make extra pixel format conversion anymore.
@@ -640,6 +657,13 @@ void init_ffmpeg_subprocess(struct subprocess_s *subprocess,
         ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
             "-f",
             "mp4",
+        });
+    }
+
+    if (config.live_stream_format_ != static_cast<int>(live_stream_info_t::FLV)) {
+        ffmpeg_cmd_line.insert(ffmpeg_cmd_line.end(),{
+                "-r",
+                ffmpeg_fps_info.c_str(),
         });
     }
 
