@@ -45,7 +45,6 @@
 #include <cstdarg>
 #include <cstdlib>
 #include <sstream>
-#include <stdlib.h>
 #include <string.h>
 #include <string>
 #include <thread>
@@ -54,7 +53,6 @@
 
 namespace ix
 {
-    const std::string WebSocketTransport::kPingMessage("ixwebsocket::heartbeat");
     const int WebSocketTransport::kDefaultPingIntervalSecs(-1);
     const bool WebSocketTransport::kDefaultEnablePong(true);
     const int WebSocketTransport::kClosingMaximumWaitingDelayInMs(300);
@@ -74,6 +72,9 @@ namespace ix
         , _enablePong(kDefaultEnablePong)
         , _pingIntervalSecs(kDefaultPingIntervalSecs)
         , _pongReceived(false)
+        , _setCustomMessage(false)
+        , _kPingMessage("ixwebsocket::heartbeat")
+        , _pingType(SendMessageKind::Ping)
         , _pingCount(0)
         , _lastSendPingTimePoint(std::chrono::steady_clock::now())
     {
@@ -139,7 +140,7 @@ namespace ix
                                                   _enablePerMessageDeflate);
 
             result = webSocketHandshake.clientHandshake(
-                remoteUrl, headers, host, path, port, timeoutSecs);
+                remoteUrl, headers, protocol, host, path, port, timeoutSecs);
 
             if (result.http_status >= 300 && result.http_status < 400)
             {
@@ -170,7 +171,8 @@ namespace ix
     // Server
     WebSocketInitResult WebSocketTransport::connectToSocket(std::unique_ptr<Socket> socket,
                                                             int timeoutSecs,
-                                                            bool enablePerMessageDeflate)
+                                                            bool enablePerMessageDeflate,
+                                                            HttpRequestPtr request)
     {
         std::lock_guard<std::mutex> lock(_socketMutex);
 
@@ -187,7 +189,8 @@ namespace ix
                                               _perMessageDeflateOptions,
                                               _enablePerMessageDeflate);
 
-        auto result = webSocketHandshake.serverHandshake(timeoutSecs, enablePerMessageDeflate);
+        auto result =
+            webSocketHandshake.serverHandshake(timeoutSecs, enablePerMessageDeflate, request);
         if (result.success)
         {
             setReadyState(ReadyState::OPEN);
@@ -202,6 +205,12 @@ namespace ix
 
     void WebSocketTransport::setReadyState(ReadyState readyState)
     {
+        // Lock the _setReadyStateMutex for the duration of this
+        // method. This ensures that only a single thread runs the
+        // logic below avoiding concurrent execution of the
+        // close callback my multiple threads at the same time.
+        std::lock_guard<std::mutex> lock(_setReadyStateMutex);
+
         // No state change, return
         if (_readyState == readyState) return;
 
@@ -248,13 +257,51 @@ namespace ix
         return now - _lastSendPingTimePoint > std::chrono::seconds(_pingIntervalSecs);
     }
 
-    WebSocketSendInfo WebSocketTransport::sendHeartBeat()
+    void WebSocketTransport::setPingMessage(const std::string& message, SendMessageKind pingType)
+    {
+        _setCustomMessage = true;
+        _kPingMessage = message;
+        _pingType = pingType;
+    }
+
+    WebSocketSendInfo WebSocketTransport::sendHeartBeat(SendMessageKind pingMessage)
     {
         _pongReceived = false;
         std::stringstream ss;
-        ss << kPingMessage << "::" << _pingIntervalSecs << "s"
-           << "::" << _pingCount++;
-        return sendPing(ss.str());
+
+        ss << _kPingMessage;
+        if (!_setCustomMessage)
+        {
+            ss << "::" << _pingIntervalSecs << "s"
+               << "::" << _pingCount++;
+        }
+        if (pingMessage == SendMessageKind::Ping)
+        {
+            return sendPing(ss.str());
+        }
+        else if (pingMessage == SendMessageKind::Binary)
+        {
+            WebSocketSendInfo info = sendBinary(ss.str(), nullptr);
+            if (info.success)
+            {
+                std::lock_guard<std::mutex> lck(_lastSendPingTimePointMutex);
+                _lastSendPingTimePoint = std::chrono::steady_clock::now();
+            }
+            return info;
+        }
+        else if (pingMessage == SendMessageKind::Text)
+        {
+            WebSocketSendInfo info = sendText(ss.str(), nullptr);
+            if (info.success)
+            {
+                std::lock_guard<std::mutex> lck(_lastSendPingTimePointMutex);
+                _lastSendPingTimePoint = std::chrono::steady_clock::now();
+            }
+            return info;
+        }
+
+        // unknow type ping message
+        return {};
     }
 
     bool WebSocketTransport::closingDelayExceeded()
@@ -270,7 +317,9 @@ namespace ix
         {
             if (pingIntervalExceeded())
             {
-                if (!_pongReceived)
+                // If it is not a 'ping' message of ping type, there is no need to judge whether
+                // pong will receive it
+                if (_pingType == SendMessageKind::Ping && !_pongReceived)
                 {
                     // ping response (PONG) exceeds the maximum delay, close the connection
                     close(WebSocketCloseConstants::kInternalErrorCode,
@@ -278,7 +327,7 @@ namespace ix
                 }
                 else
                 {
-                    sendHeartBeat();
+                    sendHeartBeat(_pingType);
                 }
             }
         }
@@ -498,8 +547,11 @@ namespace ix
 
             if (_rxbuf.size() < ws.header_size + ws.N)
             {
+                _rxbufWanted = ws.header_size + ws.N;
                 return; /* Need: ws.header_size+ws.N - _rxbuf.size() */
             }
+
+            _rxbufWanted = 0;
 
             if (!ws.fin && (ws.opcode == wsheader_type::PING || ws.opcode == wsheader_type::PONG ||
                             ws.opcode == wsheader_type::CLOSE))
@@ -657,6 +709,7 @@ namespace ix
                 if (_readyState != ReadyState::CLOSING)
                 {
                     // send back the CLOSE frame
+                    setReadyState(ReadyState::CLOSING);
                     sendCloseFrame(code, reason);
 
                     wakeUpFromPoll(SelectInterrupt::kCloseRequest);
@@ -1029,7 +1082,10 @@ namespace ix
             else if (ret <= 0)
             {
                 closeSocket();
-                setReadyState(ReadyState::CLOSED);
+                if (_readyState != ReadyState::CLOSING)
+                {
+                    setReadyState(ReadyState::CLOSED);
+                }
                 return false;
             }
             else
@@ -1045,6 +1101,18 @@ namespace ix
     {
         while (true)
         {
+            // If _rxbufWanted isn't set, don't attempt to read more than kChunkSize
+            // into _rxbuf. If a client is sending frames faster than they can be
+            // processed this would otherwise bloat _rxbuf and further introduce
+            // unnecessary processing overhead due to .erase() in dispatch().
+            //
+            // Further, not reading everything from the socket will eventually
+            // result in back pressure for the client.
+            if (_rxbufWanted == 0 && _rxbuf.size() >= kChunkSize) break;
+
+            // There's also no point in reading more bytes than needed.
+            if (_rxbufWanted > 0 && _rxbuf.size() >= _rxbufWanted) break;
+
             ssize_t ret = _socket->recv((char*) &_readbuf[0], _readbuf.size());
 
             if (ret < 0 && Socket::isWaitNeeded())
@@ -1127,7 +1195,22 @@ namespace ix
     {
         _requestInitCancellation = true;
 
-        if (_readyState == ReadyState::CLOSING || _readyState == ReadyState::CLOSED) return;
+        if (_readyState == ReadyState::CLOSING || _readyState == ReadyState::CLOSED)
+        {
+            // Wake up the socket polling thread, as
+            // Socket::isReadyToRead() might be still waiting the
+            // interrupt event to happen.
+            bool wakeUpPoll = false;
+            {
+              std::lock_guard<std::mutex> lock(_socketMutex);
+              wakeUpPoll = (_socket && _socket->isWakeUpFromPollSupported());
+            }
+            if (wakeUpPoll)
+            {
+                wakeUpFromPoll(SelectInterrupt::kCloseRequest);
+            }
+            return;
+        }
 
         if (closeWireSize == 0)
         {

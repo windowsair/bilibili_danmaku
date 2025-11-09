@@ -180,7 +180,7 @@ namespace
                 bHasUserName = true;
                 break;
             }
-            else if (*LocalString == '/')
+            else if (*LocalString == '/' || *LocalString == '?')
             {
                 // end of <host>:<port> specification
                 bHasUserName = false;
@@ -242,7 +242,7 @@ namespace
                 LocalString++;
                 break;
             }
-            else if (!bHasBracket && (*LocalString == ':' || *LocalString == '/'))
+            else if (!bHasBracket && (*LocalString == ':' || *LocalString == '/' || *LocalString == '?'))
             {
                 // port number is specified
                 break;
@@ -280,12 +280,14 @@ namespace
         }
 
         // skip '/'
-        if (*CurrentString != '/')
+        if (*CurrentString != '/' && *CurrentString != '?')
         {
             return clParseURL(LUrlParserError_NoSlash);
         }
 
-        CurrentString++;
+        if (*CurrentString != '?') {
+            CurrentString++;
+        }
 
         // parse the path
         LocalString = CurrentString;
@@ -333,6 +335,19 @@ namespace
 
         return Result;
     }
+
+    int getProtocolPort(const std::string& protocol)
+    {
+        if (protocol == "ws" || protocol == "http")
+        {
+            return 80;
+        }
+        else if (protocol == "wss" || protocol == "https")
+        {
+            return 443;
+        }
+        return -1;
+    }
 } // namespace
 
 namespace ix
@@ -343,6 +358,18 @@ namespace ix
                           std::string& path,
                           std::string& query,
                           int& port)
+    {
+        bool isProtocolDefaultPort;
+        return parse(url, protocol, host, path, query, port, isProtocolDefaultPort);
+    }
+
+    bool UrlParser::parse(const std::string& url,
+                              std::string& protocol,
+                              std::string& host,
+                              std::string& path,
+                              std::string& query,
+                              int& port,
+                              bool& isProtocolDefaultPort)
     {
         clParseURL res = clParseURL::ParseURL(url);
 
@@ -356,23 +383,12 @@ namespace ix
         path = res.m_Path;
         query = res.m_Query;
 
+        const auto protocolPort = getProtocolPort(protocol);
         if (!res.GetPort(&port))
         {
-            if (protocol == "ws" || protocol == "http")
-            {
-                port = 80;
-            }
-            else if (protocol == "wss" || protocol == "https")
-            {
-                port = 443;
-            }
-            else
-            {
-                // Invalid protocol. Should be caught by regex check
-                // but this missing branch trigger cpplint linter.
-                return false;
-            }
+            port = protocolPort;
         }
+        isProtocolDefaultPort = port == protocolPort;
 
         if (path.empty())
         {

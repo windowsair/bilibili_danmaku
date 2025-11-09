@@ -219,6 +219,10 @@ namespace ix
         if (_gcThread.joinable())
         {
             _stopGc = true;
+            {
+                std::lock_guard<std::mutex> lock{ _conditionVariableMutexGC };
+                _canContinueGC = true;
+            }
             _conditionVariableGC.notify_one();
             _gcThread.join();
             _stopGc = false;
@@ -268,7 +272,10 @@ namespace ix
         // Set the socket to non blocking mode, so that accept calls are not blocking
         SocketConnect::configure(_serverFd);
 
-        setThreadName("SocketServer::accept");
+        // Use a cryptic name to stay within the 16 bytes limit thread name limitation
+        // $ echo Srv:gc:64000 | wc -c
+        // 13
+        setThreadName("Srv:ac:" + std::to_string(_port));
 
         for (;;)
         {
@@ -425,7 +432,10 @@ namespace ix
 
     void SocketServer::runGC()
     {
-        setThreadName("SocketServer::GC");
+        // Use a cryptic name to stay within the 16 bytes limit thread name limitation
+        // $ echo Srv:gc:64000 | wc -c
+        // 13
+        setThreadName("Srv:gc:" + std::to_string(_port));
 
         for (;;)
         {
@@ -445,7 +455,10 @@ namespace ix
             if (!_stopGc)
             {
                 std::unique_lock<std::mutex> lock(_conditionVariableMutexGC);
-                _conditionVariableGC.wait(lock);
+                if(!_canContinueGC) {
+                    _conditionVariableGC.wait(lock, [this]{ return _canContinueGC; });
+                }
+                _canContinueGC = false;
             }
         }
     }
@@ -459,6 +472,10 @@ namespace ix
     {
         // a connection got terminated, we can run the connection thread GC,
         // so wake up the thread responsible for that
+        {
+            std::lock_guard<std::mutex> lock{ _conditionVariableMutexGC };
+            _canContinueGC = true;
+        }
         _conditionVariableGC.notify_one();
     }
 

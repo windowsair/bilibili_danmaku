@@ -26,6 +26,7 @@
 
 #ifdef _WIN32
 // For manipulating the certificate store
+#include <windows.h>
 #include <wincrypt.h>
 #endif
 
@@ -49,7 +50,7 @@ namespace
         X509_STORE* opensslStore = SSL_CTX_get_cert_store(ssl);
 
         int certificateCount = 0;
-        while (certificateIterator = CertEnumCertificatesInStore(systemStore, certificateIterator))
+        while ((certificateIterator = CertEnumCertificatesInStore(systemStore, certificateIterator)))
         {
             X509* x509 = d2i_X509(NULL,
                                   (const unsigned char**) &certificateIterator->pbCertEncoded,
@@ -293,15 +294,25 @@ namespace ix
      */
     bool SocketOpenSSL::checkHost(const std::string& host, const char* pattern)
     {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        return true;
+#else
+
 #ifdef _WIN32
         return PathMatchSpecA(host.c_str(), pattern);
 #else
         return fnmatch(pattern, host.c_str(), 0) != FNM_NOMATCH;
 #endif
+
+#endif
     }
 
     bool SocketOpenSSL::openSSLCheckServerCert(SSL* ssl,
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
                                                const std::string& hostname,
+#else
+                                               const std::string& /* hostname */,
+#endif
                                                std::string& errMsg)
     {
         X509* server_cert = SSL_get_peer_certificate(ssl);
@@ -339,12 +350,12 @@ namespace ix
         {
             int cn_pos = X509_NAME_get_index_by_NID(
                 X509_get_subject_name((X509*) server_cert), NID_commonName, -1);
-            if (cn_pos)
+            if (cn_pos >= 0)
             {
                 X509_NAME_ENTRY* cn_entry =
                     X509_NAME_get_entry(X509_get_subject_name((X509*) server_cert), cn_pos);
 
-                if (cn_entry)
+                if (cn_entry != nullptr)
                 {
                     ASN1_STRING* cn_asn1 = X509_NAME_ENTRY_get_data(cn_entry);
                     char* cn = (char*) ASN1_STRING_data(cn_asn1);
@@ -390,6 +401,11 @@ namespace ix
             int connect_result = SSL_connect(_ssl_connection);
             if (connect_result == 1)
             {
+                if (_tlsOptions.disable_hostname_validation)
+                {
+                    return true;
+                }
+
                 return openSSLCheckServerCert(_ssl_connection, host, errMsg);
             }
             int reason = SSL_get_error(_ssl_connection, connect_result);
@@ -754,8 +770,11 @@ namespace ix
             // (The docs say that this should work from 1.0.2, and is the default from
             // 1.1.0, but it does not. To be on the safe side, the manual test
             // below is enabled for all versions prior to 1.1.0.)
-            X509_VERIFY_PARAM* param = SSL_get0_param(_ssl_connection);
-            X509_VERIFY_PARAM_set1_host(param, host.c_str(), 0);
+            if (!_tlsOptions.disable_hostname_validation)
+            {
+                X509_VERIFY_PARAM* param = SSL_get0_param(_ssl_connection);
+                X509_VERIFY_PARAM_set1_host(param, host.c_str(), host.size());
+            }
 #endif
             handshakeSuccessful = openSSLClientHandshake(host, errMsg, isCancellationRequested);
         }

@@ -6,11 +6,12 @@
 cmake_minimum_required(VERSION 3.4.1...3.17.2)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake;${CMAKE_MODULE_PATH}")
 
-project(ixwebsocket C CXX)
+project(ixwebsocket LANGUAGES C CXX VERSION 11.4.6)
 
 set (CMAKE_CXX_STANDARD 11)
 set (CXX_STANDARD_REQUIRED ON)
 set (CMAKE_CXX_EXTENSIONS OFF)
+set (CMAKE_EXPORT_COMPILE_COMMANDS yes)
 
 option (BUILD_DEMO OFF)
 
@@ -66,6 +67,7 @@ set( IXWEBSOCKET_SOURCES
 )
 
 set( IXWEBSOCKET_HEADERS
+    ixwebsocket/IXBase64.h
     ixwebsocket/IXBench.h
     ixwebsocket/IXCancellationRequest.h
     ixwebsocket/IXConnectionState.h
@@ -134,6 +136,7 @@ if (USE_TLS)
     else() # default to OpenSSL on all other platforms
       if (NOT USE_MBED_TLS) # Unless mbedtls is requested
         set(USE_OPEN_SSL ON)
+        set(requires "openssl")
       endif()
     endif()
 
@@ -163,10 +166,9 @@ if(BUILD_SHARED_LIBS)
         ${IXWEBSOCKET_SOURCES}
         ${IXWEBSOCKET_HEADERS}
     )
-    
-    # Set library version
-    set_target_properties(ixwebsocket PROPERTIES VERSION 11.3.2)
 
+    # Set library version
+    set_target_properties(ixwebsocket PROPERTIES VERSION ${PROJECT_VERSION})
 else()
     # Static library
     add_library( ixwebsocket
@@ -234,11 +236,7 @@ endif()
 option(USE_ZLIB "Enable zlib support" TRUE)
 
 if (USE_ZLIB)
-  # This ZLIB_FOUND check is to help find a cmake manually configured zlib
-  if (NOT ZLIB_FOUND)
-    find_package(ZLIB REQUIRED)
-  endif()
-  target_include_directories(ixwebsocket PUBLIC $<BUILD_INTERFACE:${ZLIB_INCLUDE_DIRS}>)
+  find_package(ZLIB REQUIRED)
   target_link_libraries(ixwebsocket PRIVATE ZLIB::ZLIB)
 
   target_compile_definitions(ixwebsocket PUBLIC IXWEBSOCKET_USE_ZLIB)
@@ -253,7 +251,7 @@ if (WIN32)
   endif()
 endif()
 
-if (UNIX)
+if (UNIX AND NOT APPLE)
   set(THREADS_PREFER_PTHREAD_FLAG TRUE)
   find_package(Threads)
   target_link_libraries(ixwebsocket PRIVATE Threads::Threads)
@@ -289,10 +287,18 @@ if (IXWEBSOCKET_INSTALL)
           PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ixwebsocket/
   )
 
+  configure_file("${CMAKE_CURRENT_LIST_DIR}/ixwebsocket-config.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/ixwebsocket-config.cmake" @ONLY)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/ixwebsocket-config.cmake" DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/ixwebsocket")
+  
+  set(prefix ${CMAKE_INSTALL_PREFIX})
+  configure_file("${CMAKE_CURRENT_LIST_DIR}/ixwebsocket.pc.in" "${CMAKE_CURRENT_BINARY_DIR}/ixwebsocket.pc" @ONLY)
+  install(FILES "${CMAKE_CURRENT_BINARY_DIR}/ixwebsocket.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+
   install(EXPORT ixwebsocket
-          FILE ixwebsocket-config.cmake
+          FILE ixwebsocket-targets.cmake
           NAMESPACE ixwebsocket::
-          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ixwebsocket)
+          DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ixwebsocket
+  )
 endif()
 
 if (USE_WS OR USE_TEST)

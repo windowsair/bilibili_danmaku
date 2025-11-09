@@ -7,6 +7,7 @@
 #pragma once
 
 #include "IXCancellationRequest.h"
+#include "IXHttp.h"
 #include "IXSocket.h"
 #include "IXWebSocketHttpHeaders.h"
 #include "IXWebSocketInitResult.h"
@@ -30,12 +31,15 @@ namespace ix
 
         WebSocketInitResult clientHandshake(const std::string& url,
                                             const WebSocketHttpHeaders& extraHeaders,
+                                            const std::string& protocol,
                                             const std::string& host,
                                             const std::string& path,
                                             int port,
                                             int timeoutSecs);
 
-        WebSocketInitResult serverHandshake(int timeoutSecs, bool enablePerMessageDeflate);
+        WebSocketInitResult serverHandshake(int timeoutSecs,
+                                            bool enablePerMessageDeflate,
+                                            HttpRequestPtr request = nullptr);
 
     private:
         std::string genRandomString(const int len);

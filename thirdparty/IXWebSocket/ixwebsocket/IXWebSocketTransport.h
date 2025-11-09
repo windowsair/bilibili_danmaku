@@ -18,9 +18,10 @@
 #include "IXWebSocketHttpHeaders.h"
 #include "IXWebSocketPerMessageDeflate.h"
 #include "IXWebSocketPerMessageDeflateOptions.h"
-#include "IXWebSocketSendInfo.h"
 #include "IXWebSocketSendData.h"
+#include "IXWebSocketSendInfo.h"
 #include <atomic>
+#include <cstdint>
 #include <functional>
 #include <list>
 #include <memory>
@@ -86,7 +87,8 @@ namespace ix
         // Server
         WebSocketInitResult connectToSocket(std::unique_ptr<Socket> socket,
                                             int timeoutSecs,
-                                            bool enablePerMessageDeflate);
+                                            bool enablePerMessageDeflate,
+                                            HttpRequestPtr request = nullptr);
 
         PollResult poll();
         WebSocketSendInfo sendBinary(const IXWebSocketSendData& message,
@@ -108,8 +110,12 @@ namespace ix
         void dispatch(PollResult pollResult, const OnMessageCallback& onMessageCallback);
         size_t bufferedAmount() const;
 
+        // set ping heartbeat message
+        void setPingMessage(const std::string& message, SendMessageKind pingType);
+
         // internal
-        WebSocketSendInfo sendHeartBeat();
+        // send any type of ping packet, not only 'ping' type
+        WebSocketSendInfo sendHeartBeat(SendMessageKind pingType);
 
     private:
         std::string _url;
@@ -152,6 +158,10 @@ namespace ix
         // data messages. That buffer is resized
         std::vector<uint8_t> _rxbuf;
 
+        // If set to a positive value, only read bytes from the socket until
+        // _rxbuf has reached this size to avoid unnecessary erase churn.
+        uint64_t _rxbufWanted = 0;
+
         // Contains all messages that are waiting to be sent
         std::vector<uint8_t> _txbuf;
         mutable std::mutex _txbufMutex;
@@ -179,6 +189,8 @@ namespace ix
 
         // Hold the state of the connection (OPEN, CLOSED, etc...)
         std::atomic<ReadyState> _readyState;
+        // Mutex to serialize setReadyState() execution.
+        std::mutex _setReadyStateMutex;
 
         OnCloseCallback _onCloseCallback;
         std::string _closeReason;
@@ -214,7 +226,10 @@ namespace ix
         std::atomic<bool> _pongReceived;
 
         static const int kDefaultPingIntervalSecs;
-        static const std::string kPingMessage;
+
+        bool _setCustomMessage;
+        std::string _kPingMessage;
+        SendMessageKind _pingType;
         std::atomic<uint64_t> _pingCount;
 
         // We record when ping are being sent so that we can know when to send the next one

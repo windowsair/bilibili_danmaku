@@ -14,6 +14,7 @@
 #include "IXNetSystem.h"
 #include "IXSocket.h"
 #include "IXSocketConnect.h"
+#include <cstdint>
 #include <string.h>
 
 #ifdef _WIN32
@@ -46,6 +47,13 @@ namespace ix
         mbedtls_x509_crt_init(&_cacert);
         mbedtls_x509_crt_init(&_cert);
         mbedtls_pk_init(&_pkey);
+        // Initialize the PSA Crypto API if required by the version of Mbed TLS (3.6.0).
+        // This allows the X.509/TLS libraries to use PSA for crypto operations.
+        // See: https://github.com/Mbed-TLS/mbedtls/blob/development/docs/use-psa-crypto.md
+        if (MBEDTLS_VERSION_MAJOR >= 3 && MBEDTLS_VERSION_MINOR >= 6 && MBEDTLS_VERSION_PATCH >= 0)
+        {
+            psa_crypto_init();
+        }
     }
 
     bool SocketMbedTLS::loadSystemCertificates(std::string& errorMsg)
@@ -195,10 +203,13 @@ namespace ix
             return false;
         }
 
-        if (!host.empty() && mbedtls_ssl_set_hostname(&_ssl, host.c_str()) != 0)
+        if (!_tlsOptions.disable_hostname_validation)
         {
-            errMsg = "SNI setup failed";
-            return false;
+            if (!host.empty() && mbedtls_ssl_set_hostname(&_ssl, host.c_str()) != 0)
+            {
+                errMsg = "SNI setup failed";
+                return false;
+            }
         }
 
         return true;
@@ -310,6 +321,11 @@ namespace ix
         mbedtls_entropy_free(&_entropy);
         mbedtls_x509_crt_free(&_cacert);
         mbedtls_x509_crt_free(&_cert);
+        mbedtls_pk_free(&_pkey);
+        if (MBEDTLS_VERSION_MAJOR >= 3 && MBEDTLS_VERSION_MINOR >= 6 && MBEDTLS_VERSION_PATCH >= 0)
+        {
+            mbedtls_psa_crypto_free();
+        }
 
         Socket::close();
     }
@@ -346,6 +362,11 @@ namespace ix
             if (res > 0)
             {
                 return res;
+            }
+
+            if (res == 0)
+            {
+                errno = ECONNRESET;
             }
 
             if (res == MBEDTLS_ERR_SSL_WANT_READ || res == MBEDTLS_ERR_SSL_WANT_WRITE)

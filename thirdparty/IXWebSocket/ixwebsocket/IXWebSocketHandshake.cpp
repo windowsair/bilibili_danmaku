@@ -6,6 +6,7 @@
 
 #include "IXWebSocketHandshake.h"
 
+#include "IXBase64.h"
 #include "IXHttp.h"
 #include "IXSocketConnect.h"
 #include "IXStrCaseCompare.h"
@@ -16,7 +17,6 @@
 #include <iostream>
 #include <random>
 #include <sstream>
-
 
 namespace ix
 {
@@ -87,6 +87,7 @@ namespace ix
     WebSocketInitResult WebSocketHandshake::clientHandshake(
         const std::string& url,
         const WebSocketHttpHeaders& extraHeaders,
+        const std::string& protocol,
         const std::string& host,
         const std::string& path,
         int port,
@@ -106,19 +107,17 @@ namespace ix
             return WebSocketInitResult(false, 0, ss.str());
         }
 
-        //
-        // Generate a random 24 bytes string which looks like it is base64 encoded
-        // y3JJHMbDL1EzLkh9GBhXDw==
-        // 0cb3Vd9HkbpVVumoS3Noka==
+        // Generate a random 16 bytes string and base64 encode it.
         //
         // See https://stackoverflow.com/questions/18265128/what-is-sec-websocket-key-for
-        //
-        std::string secWebSocketKey = genRandomString(22);
-        secWebSocketKey += "==";
+        std::string secWebSocketKey = macaron::Base64::Encode(genRandomString(16));
 
         std::stringstream ss;
         ss << "GET " << path << " HTTP/1.1\r\n";
-        ss << "Host: " << host << ":" << port << "\r\n";
+        if (extraHeaders.find("Host") == extraHeaders.end())
+        {
+            ss << "Host: " << host << ":" << port << "\r\n";
+        }
         ss << "Upgrade: websocket\r\n";
         ss << "Connection: Upgrade\r\n";
         ss << "Sec-WebSocket-Version: 13\r\n";
@@ -128,6 +127,12 @@ namespace ix
         if (extraHeaders.find("User-Agent") == extraHeaders.end())
         {
             ss << "User-Agent: " << userAgent() << "\r\n";
+        }
+
+        // Set an origin header if missing
+        if (extraHeaders.find("Origin") == extraHeaders.end())
+        {
+            ss << "Origin: " << protocol << "://" << host << ":" << port << "\r\n";
         }
 
         for (auto& it : extraHeaders)
@@ -245,28 +250,42 @@ namespace ix
     }
 
     WebSocketInitResult WebSocketHandshake::serverHandshake(int timeoutSecs,
-                                                            bool enablePerMessageDeflate)
+                                                            bool enablePerMessageDeflate,
+                                                            HttpRequestPtr request)
     {
         _requestInitCancellation = false;
 
         auto isCancellationRequested =
             makeCancellationRequestWithTimeout(timeoutSecs, _requestInitCancellation);
 
-        // Read first line
-        auto lineResult = _socket->readLine(isCancellationRequested);
-        auto lineValid = lineResult.first;
-        auto line = lineResult.second;
+        std::string method;
+        std::string uri;
+        std::string httpVersion;
 
-        if (!lineValid)
+        if (request)
         {
-            return sendErrorResponse(400, "Error reading HTTP request line");
+            method = request->method;
+            uri = request->uri;
+            httpVersion = request->version;
         }
+        else
+        {
+            // Read first line
+            auto lineResult = _socket->readLine(isCancellationRequested);
+            auto lineValid = lineResult.first;
+            auto line = lineResult.second;
 
-        // Validate request line (GET /foo HTTP/1.1\r\n)
-        auto requestLine = Http::parseRequestLine(line);
-        auto method = std::get<0>(requestLine);
-        auto uri = std::get<1>(requestLine);
-        auto httpVersion = std::get<2>(requestLine);
+            if (!lineValid)
+            {
+                return sendErrorResponse(400, "Error reading HTTP request line");
+            }
+
+            // Validate request line (GET /foo HTTP/1.1\r\n)
+            auto requestLine = Http::parseRequestLine(line);
+            method = std::get<0>(requestLine);
+            uri = std::get<1>(requestLine);
+            httpVersion = std::get<2>(requestLine);
+        }
 
         if (method != "GET")
         {
@@ -279,14 +298,22 @@ namespace ix
                                      "Invalid HTTP version, need HTTP/1.1, got: " + httpVersion);
         }
 
-        // Retrieve and validate HTTP headers
-        auto result = parseHttpHeaders(_socket, isCancellationRequested);
-        auto headersValid = result.first;
-        auto headers = result.second;
-
-        if (!headersValid)
+        WebSocketHttpHeaders headers;
+        if (request)
         {
-            return sendErrorResponse(400, "Error parsing HTTP headers");
+            headers = request->headers;
+        }
+        else
+        {
+            // Retrieve and validate HTTP headers
+            auto result = parseHttpHeaders(_socket, isCancellationRequested);
+            auto headersValid = result.first;
+            headers = result.second;
+
+            if (!headersValid)
+            {
+                return sendErrorResponse(400, "Error parsing HTTP headers");
+            }
         }
 
         if (headers.find("sec-websocket-key") == headers.end())

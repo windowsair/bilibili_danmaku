@@ -16,11 +16,12 @@
 #include "IXWebSocketHttpHeaders.h"
 #include "IXWebSocketMessage.h"
 #include "IXWebSocketPerMessageDeflateOptions.h"
-#include "IXWebSocketSendInfo.h"
 #include "IXWebSocketSendData.h"
+#include "IXWebSocketSendInfo.h"
 #include "IXWebSocketTransport.h"
 #include <atomic>
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -53,6 +54,8 @@ namespace ix
         void setPerMessageDeflateOptions(
             const WebSocketPerMessageDeflateOptions& perMessageDeflateOptions);
         void setTLSOptions(const SocketTLSOptions& socketTLSOptions);
+        void setPingMessage(const std::string& sendMessage,
+                            SendMessageKind pingType = SendMessageKind::Ping);
         void setPingInterval(int pingIntervalSecs);
         void enablePong();
         void disablePong();
@@ -88,7 +91,7 @@ namespace ix
                                        const OnProgressCallback& onProgressCallback = nullptr);
         WebSocketSendInfo sendText(const std::string& text,
                                    const OnProgressCallback& onProgressCallback = nullptr);
-        WebSocketSendInfo ping(const std::string& text);
+        WebSocketSendInfo ping(const std::string& text,SendMessageKind pingType = SendMessageKind::Ping);
 
         void close(uint16_t code = WebSocketCloseConstants::kNormalClosureCode,
                    const std::string& reason = WebSocketCloseConstants::kNormalClosureMessage);
@@ -103,6 +106,7 @@ namespace ix
 
         const std::string getUrl() const;
         const WebSocketPerMessageDeflateOptions getPerMessageDeflateOptions() const;
+        const std::string getPingMessage() const;
         int getPingInterval() const;
         size_t bufferedAmount() const;
 
@@ -114,6 +118,8 @@ namespace ix
         uint32_t getMaxWaitBetweenReconnectionRetries() const;
         uint32_t getMinWaitBetweenReconnectionRetries() const;
         const std::vector<std::string>& getSubProtocols();
+
+        void setAutoThreadName(bool enabled);
 
     private:
         WebSocketSendInfo sendMessage(const IXWebSocketSendData& message,
@@ -128,7 +134,8 @@ namespace ix
         // Server
         WebSocketInitResult connectToSocket(std::unique_ptr<Socket>,
                                             int timeoutSecs,
-                                            bool enablePerMessageDeflate);
+                                            bool enablePerMessageDeflate,
+                                            HttpRequestPtr request = nullptr);
 
         WebSocketTransport _ws;
 
@@ -169,11 +176,16 @@ namespace ix
         // Optional ping and pong timeout
         int _pingIntervalSecs;
         int _pingTimeoutSecs;
+        std::string _pingMessage;
+        SendMessageKind _pingType;
         static const int kDefaultPingIntervalSecs;
         static const int kDefaultPingTimeoutSecs;
 
         // Subprotocols
         std::vector<std::string> _subProtocols;
+
+        // enable or disable auto set thread name
+        bool _autoThreadName;
 
         friend class WebSocketServer;
     };

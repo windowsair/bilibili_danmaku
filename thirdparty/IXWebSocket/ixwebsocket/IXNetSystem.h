@@ -6,6 +6,12 @@
 
 #pragma once
 
+#include <cstdint>
+
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#endif
+
 #ifdef _WIN32
 
 #ifndef WIN32_LEAN_AND_MEAN

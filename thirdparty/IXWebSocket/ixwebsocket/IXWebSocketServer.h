@@ -33,7 +33,8 @@ namespace ix
                         int backlog = SocketServer::kDefaultTcpBacklog,
                         size_t maxConnections = SocketServer::kDefaultMaxConnections,
                         int handshakeTimeoutSecs = WebSocketServer::kDefaultHandShakeTimeoutSecs,
-                        int addressFamily = SocketServer::kDefaultAddressFamily);
+                        int addressFamily = SocketServer::kDefaultAddressFamily,
+                        int pingIntervalSeconds = WebSocketServer::kPingIntervalSeconds);
         virtual ~WebSocketServer();
         virtual void stop() final;
 
@@ -55,11 +56,13 @@ namespace ix
         int getHandshakeTimeoutSecs();
         bool isPongEnabled();
         bool isPerMessageDeflateEnabled();
+
     private:
         // Member variables
         int _handshakeTimeoutSecs;
         bool _enablePong;
         bool _enablePerMessageDeflate;
+        int _pingIntervalSeconds;
 
         OnConnectionCallback _onConnectionCallback;
         OnClientMessageCallback _onClientMessageCallback;
@@ -68,10 +71,16 @@ namespace ix
         std::set<std::shared_ptr<WebSocket>> _clients;
 
         const static bool kDefaultEnablePong;
+        const static int kPingIntervalSeconds;
 
         // Methods
         virtual void handleConnection(std::unique_ptr<Socket> socket,
                                       std::shared_ptr<ConnectionState> connectionState);
         virtual size_t getConnectedClientsCount() final;
+
+    protected:
+        void handleUpgrade(std::unique_ptr<Socket> socket,
+                           std::shared_ptr<ConnectionState> connectionState,
+                           HttpRequestPtr request = nullptr);
     };
 } // namespace ix
