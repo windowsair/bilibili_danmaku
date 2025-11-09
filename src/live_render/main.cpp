@@ -124,6 +124,12 @@ int main(int argc, char **argv) {
         live.disable_danmaku_stat_info();
     }
 
+    if (config.bilibili_cookie_.empty()) {
+        fmt::print(fg(fmt::color::red), "未指定Cookie，获取最高画质直播流可能会失败！\n");
+    }
+
+    live.set_user_cookie(config.bilibili_cookie_);
+
     // step1: get live info: room_id, user uid
     auto room_id = std::stoull(argv[1]);
     auto room_detail = live.get_room_detail(room_id);
@@ -141,10 +147,6 @@ int main(int argc, char **argv) {
     if (room_detail.room_detail_str_.empty()) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "获取直播间详细信息失败\n");
         std::abort();
-    }
-
-    if (config.bilibili_cookie_.empty()) {
-        fmt::print(fg(fmt::color::red), "未指定Cookie，获取最高画质直播流可能会失败！\n");
     }
 
     // capture live danmaku: thread 1

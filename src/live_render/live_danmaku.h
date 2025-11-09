@@ -19,9 +19,10 @@
 #pragma pack(push, 1)
 typedef struct {
     uint32_t packet_len;
-    uint8_t magic[4]; // don't know... maybe header_len?
-    uint32_t com_1;
-    uint32_t com_2;
+    uint16_t header_len;
+    uint16_t version;
+    uint32_t type;
+    uint32_t packet_id;
 } live_danmaku_req_header_t;
 #pragma pack(pop)
 
@@ -73,6 +74,9 @@ typedef struct live_detail {
     }
 } live_detail_t;
 
+class bili_wbi;
+void bili_wbi_delete(bili_wbi* ctx);
+
 class live_danmaku {
   public:
     live_danmaku()
@@ -117,6 +121,10 @@ class live_danmaku {
     std::mutex live_start_mutex_;
     std::condition_variable live_start_cv_;
 
+private:
+    std::unique_ptr<bili_wbi, decltype(&bili_wbi_delete)> wbi_ctx_{ nullptr, bili_wbi_delete };
+    std::string user_cookie_;
+
   public:
     live_detail_t get_room_detail(uint64_t live_id);
 
@@ -129,6 +137,10 @@ class live_danmaku {
     std::string get_username(uint64_t room_id);
 
     void init_blacklist();
+
+    void set_user_cookie(std::string& str) {
+        user_cookie_ = str;
+    }
 
     void run(std::string room_info, config::live_render_config_t &live_config);
 

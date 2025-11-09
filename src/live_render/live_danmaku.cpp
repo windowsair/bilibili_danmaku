@@ -86,12 +86,12 @@ void live_danmaku::run(std::string room_info, config::live_render_config_t &live
 
         auto packet_len = sizeof(live_danmaku_req_header_t) + room_info.size();
         live_danmaku_req_header_t start_header = {
-            .packet_len = htonl(packet_len), .com_1 = htonl(7), .com_2 = htonl(1)};
-
-        start_header.magic[0] = 0x00;
-        start_header.magic[1] = 0x10;
-        start_header.magic[2] = 0x00;
-        start_header.magic[3] = 0x01;
+            .packet_len = htonl(packet_len),
+            .header_len = htons(sizeof(live_danmaku_req_header_t)),
+            .version = htons(1),
+            .type = htonl(7),
+            .packet_id = htonl(1)
+        };
 
         std::string start_msg_buffer;
         start_msg_buffer.resize(packet_len);
