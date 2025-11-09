@@ -13,8 +13,8 @@ endif ()
 function(copy_lib)
     if (WIN32)
         file(COPY
-                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-1_1-x64.dll
-                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-1_1-x64.dll
+                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-3-x64.dll
+                ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-3-x64.dll
                 ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
                 DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
     endif ()
@@ -294,14 +294,14 @@ install(TARGETS live_render
         DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
 if (WIN32)
-    install(FILES ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-1_1-x64.dll
-            ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-1_1-x64.dll
+    install(FILES ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-3-x64.dll
+            ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-3-x64.dll
             ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
             CONFIGURATIONS Debug
             DESTINATION ${CMAKE_BINARY_DIR}/bin)
 
-    install(FILES ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-1_1-x64.dll
-            ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-1_1-x64.dll
+    install(FILES ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libcrypto-3-x64.dll
+            ${DANMAKU_THIRDPARTY_PATH}/openssl/x64-windows/bin/libssl-3-x64.dll
             ${DANMAKU_THIRDPARTY_PATH}/libass/x64-windows/ass.dll
             CONFIGURATIONS Release
             DESTINATION ${CMAKE_BINARY_DIR}/bin)
