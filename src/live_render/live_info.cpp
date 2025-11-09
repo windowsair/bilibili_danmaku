@@ -149,6 +149,10 @@ class bili_wbi {
         std::string ret;
 
         ret = fetch_bili_key(user_cookie);
+        if (ret.empty()) {
+            return;
+        }
+
         key_ = get_key(ret);
     }
 
