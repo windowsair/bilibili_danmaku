@@ -36,7 +36,7 @@ jobs:
     - name: Install dependency(Mac)
       if: matrix.os == 'macos-latest'
       shell: bash
-      run: brew install openssl@1.1 && ls /usr/local/opt/openssl && ls /usr/local/opt/
+      run: brew install openssl@3.6
 
     - name: Install dependency(Ubuntu)
       if: matrix.os == 'ubuntu-latest'
