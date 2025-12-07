@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <iostream>
@@ -661,11 +661,6 @@ live_danmaku::get_live_room_stream(uint64_t room_id, int qn, std::string proxy_a
     if (fail_to_get_max_qn) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                    "无法获取最高画质直播流，可能是Cookie信息失效\n");
-    }
-
-    // try to get max quality stream
-    if (max_qn > current_qn) {
-        return get_live_room_stream(room_id, max_qn, proxy_address);
     }
 
     auto get_stream_address_list = [&ret](auto &item, int protocol) {
