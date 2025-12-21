@@ -244,12 +244,12 @@ inline void ass_blend_div255(image_t *frame, ASS_Image *img, uint64_t offset) {
     }
 }
 
-extern void blend_single_avx2(image_t *frame, ASS_Image *img, uint64_t offset);
+extern void ass_blend_avx2(image_t *frame, ASS_Image *img, uint64_t offset);
 
 void ass_blend(image_t *frame, ASS_Image *img, uint64_t offset) {
     if (false) {
     }
-#ifdef ASS_TARGET_x86_
+#ifdef ASS_TARGET_x86
     else if (has_avx2())
         ass_blend_avx2(frame, img, offset);
     else if (has_ssse3())
