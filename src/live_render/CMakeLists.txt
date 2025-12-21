@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.10)
 project(live_render)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -28,7 +28,12 @@ set(LIVE_RENDER_SOURCES
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
         ../xml2ass/danmaku_filter.cpp
-        live_monitor.cpp live_monitor.h live_render_config.cpp ffmpeg_utils.cpp ffmpeg_utils.h ass_render_utils.h sc_control.cpp)
+        live_monitor.cpp live_monitor.h
+        live_render_config.cpp
+        ffmpeg_utils.cpp ffmpeg_utils.h
+        ass_render_utils.h
+        sc_control.cpp
+        ass_render.cpp)
 
 ## TODO: windows only
 if (WIN32)

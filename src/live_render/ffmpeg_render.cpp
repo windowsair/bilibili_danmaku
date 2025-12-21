@@ -1,4 +1,4 @@
-﻿/**
+/**
  *  Process danmaku recv, ass render and ffmpeg overlay sender
  */
 #ifdef _MSC_VER
@@ -10,6 +10,7 @@
 #include <thread>
 
 #include "ass_danmaku.h"
+#include "ass_render.h"
 #include "ass_render_utils.h"
 #include "sc_control.h"
 #include "danmaku_handle.h"
@@ -33,53 +34,6 @@ std::string kTest_sc_string;
 
 extern "C" {
 int ass_process_events_line(ASS_Track *track, char *str);
-}
-
-#define TO_R(c) ((c) >> 24)
-#define TO_G(c) (((c) >> 16) & 0xFF)
-#define TO_B(c) (((c) >> 8) & 0xFF)
-#define TO_A(c) ((c)&0xFF)
-
-// RGBA img blend
-inline void blend_single(image_t *frame, ASS_Image *img, uint64_t offset) {
-    int x, y;
-    unsigned char opacity = 255 - TO_A(img->color);
-    unsigned char r = TO_R(img->color);
-    unsigned char g = TO_G(img->color);
-    unsigned char b = TO_B(img->color);
-
-    unsigned char *src;
-    unsigned char *dst;
-
-    src = img->bitmap;
-    dst = (frame->buffer + offset) + img->dst_y * frame->stride + img->dst_x * 4;
-    for (y = 0; y < img->h; ++y) {
-        for (x = 0; x < img->w; ++x) {
-            uint32_t k = ((uint32_t)src[x]) * opacity;
-            // possible endianness problems...
-            // would anyone actually use big endian machine??
-            dst[x * 4] = (k * r + (255 * 255 - k) * dst[x * 4]) / (255 * 255);
-            dst[x * 4 + 1] = (k * g + (255 * 255 - k) * dst[x * 4 + 1]) / (255 * 255);
-            dst[x * 4 + 2] = (k * b + (255 * 255 - k) * dst[x * 4 + 2]) / (255 * 255);
-            dst[x * 4 + 3] = (k * 255 + (255 * 255 - k) * dst[x * 4 + 3]) / (255 * 255);
-        }
-        src += img->stride;
-        dst += frame->stride;
-    }
-}
-
-inline void blend(image_t *frame, ASS_Image *img, uint64_t offset) {
-    while (img) {
-        blend_single(frame, img, offset);
-        img = img->next;
-    }
-}
-
-inline void sc_blend(image_t *frame, ASS_Image *img, uint64_t offset) {
-    while (img) {
-        blend_single(frame, img, offset);
-        img = img->next;
-    }
 }
 
 void libass_msg_callback(int level, const char *fmt, va_list va, void *data) {
@@ -533,54 +487,54 @@ void ffmpeg_render::run() {
 
 
         img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
-        blend(frame, img, 0);
+        ass::ass_blend(frame, img, 0);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
         img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
-        blend(frame, img, buffer_count * 1);
+        ass::ass_blend(frame, img, buffer_count * 1);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
         img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
-        blend(frame, img, buffer_count * 2);
+        ass::ass_blend(frame, img, buffer_count * 2);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
         img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
-        blend(frame, img, buffer_count * 3);
+        ass::ass_blend(frame, img, buffer_count * 3);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
         img = ass_render_frame(ass_renderer, danmaku_render.get_track(), tm, NULL);
-        blend(frame, img, buffer_count * 4);
+        ass::ass_blend(frame, img, buffer_count * 4);
         double_tm += step;
         tm = static_cast<int>(double_tm);
 
         // sc layer is above danmaku layer
         if (config_.sc_enable_) [[unlikely]] {
             img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
-            sc_blend(frame, img, 0);
+            ass::ass_blend(frame, img, 0);
             sc_double_tm += step;
             sc_tm = static_cast<int>(sc_double_tm);
 
             img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
-            sc_blend(frame, img, buffer_count * 1);
+            ass::ass_blend(frame, img, buffer_count * 1);
             sc_double_tm += step;
             sc_tm = static_cast<int>(sc_double_tm);
 
             img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
-            sc_blend(frame, img, buffer_count * 2);
+            ass::ass_blend(frame, img, buffer_count * 2);
             sc_double_tm += step;
             sc_tm = static_cast<int>(sc_double_tm);
 
             img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
-            sc_blend(frame, img, buffer_count * 3);
+            ass::ass_blend(frame, img, buffer_count * 3);
             sc_double_tm += step;
             sc_tm = static_cast<int>(sc_double_tm);
 
             img = ass_render_frame(ass_renderer, sc_render.get_track(), sc_tm, NULL);
-            sc_blend(frame, img, buffer_count * 4);
+            ass::ass_blend(frame, img, buffer_count * 4);
             sc_double_tm += step;
             sc_tm = static_cast<int>(sc_double_tm);
         }
