@@ -95,6 +95,9 @@ class ScControl {
     explicit ScControl(ass::sc_ass_render_control *ass_object,
                        config::live_render_config_t &config);
 
+    explicit ScControl(ass::sc_ass_render_control *ass_object,
+                       config::ass_config_t &config);
+
     void
     updateSuperChatEvent(ass::sc_ass_render_control *ass_object,
                          config::ass_config_t &config, int base_time,

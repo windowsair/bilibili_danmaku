@@ -27,11 +27,11 @@ set(LIVE_RENDER_SOURCES
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
         ../xml2ass/danmaku_filter.cpp
+        "../xml2ass/sc_control.cpp"
         live_monitor.cpp live_monitor.h
         live_render_config.cpp
         ffmpeg_utils.cpp ffmpeg_utils.h
         ass_render_utils.h
-        sc_control.cpp
         ass_render.cpp
         ass_render_avx2.cpp)
 
@@ -206,12 +206,12 @@ if (LIVE_RENDER_BUILD_TESTING)
     # superchat ass control & output control
     set(TEST_SC_COMMON
             test/test_sc_common.cpp
-            sc_control.cpp
             live_render_config.cpp
             ../xml2ass/ass_danmaku.cpp
             ../xml2ass/ass_config.cpp
             ../xml2ass/ass_util.hpp
             ../xml2ass/sc_item.h
+            "../xml2ass/sc_control.cpp"
             ../xml2ass/file_helper.cpp
             ${DANMAKU_THIRDPARTY_PATH}/simdutf/simdutf.cpp
             ${DANMAKU_THIRDPARTY_PATH}/fmt/src/format.cc

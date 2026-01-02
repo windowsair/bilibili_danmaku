@@ -19,6 +19,23 @@ ScControl::ScControl(ass::sc_ass_render_control *ass_object,
     state_ = Default::getInstance();
 }
 
+ScControl::ScControl(ass::sc_ass_render_control *ass_object, config::ass_config_t &config)
+    : ass_object_(ass_object), width_(config.sc_max_width_),
+      screen_height_(config.video_height_), show_range_(config.sc_show_range_),
+      corner_radius_(17), font_size_(config.sc_font_size_),
+      y_mirror_(config.sc_y_mirror_), sc_price_no_break_(config.sc_price_no_break_),
+      x_(config.sc_margin_x_) {
+    const int line_top_margin = static_cast<int>(font_size_ / 6.0f);
+    max_height_ = y_mirror_
+                      ? static_cast<int>(screen_height_ * show_range_) + line_top_margin
+                      : static_cast<int>(screen_height_ * show_range_);
+    next_show_time_ = INT32_MAX;
+    next_fade_out_time_ = INT32_MAX;
+    next_end_time_ = INT32_MAX;
+
+    state_ = Default::getInstance();
+}
+
 void ScControlState::changeState(ScControl *control, ScControlState *state) {
     control->changeState(state);
 }
