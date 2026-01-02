@@ -30,8 +30,7 @@ void ScControl::changeState(ScControlState *state) {
 // TODO: unused parameter
 void ScControl::updateSuperChatEvent(
     ass::sc_ass_render_control *ass_object, config::ass_config_t &config, int base_time,
-    int duration_time, moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *queue,
-    live_monitor *monitor) {
+    moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *queue) {
     while (auto p = queue->peek()) {
         std::vector<sc::sc_item_t> &sc_list = *p;
 
@@ -52,7 +51,7 @@ void ScControl::updateSuperChatEvent(
         queue->pop();
     }
 
-    state_->updateSuperChat(this, base_time, duration_time);
+    state_->updateSuperChat(this, base_time);
 }
 
 int ScControl::getItemTotalHeight() {
@@ -294,7 +293,7 @@ void ScControl::updateNextFadeOutTimeInShowDeque() {
     next_fade_out_time_ = min_time;
 }
 
-void Default::updateSuperChat(ScControl *control, int base_time, int duration_time) {
+void Default::updateSuperChat(ScControl *control, int base_time) {
     int ret = 0;
     std::vector<sc_show_info_t *> interest_list; // items want to insert
 
@@ -393,7 +392,7 @@ void Default::updateSuperChat(ScControl *control, int base_time, int duration_ti
     changeState(control, AnimeFadeIn::getInstance());
 }
 
-void AnimeFadeIn::updateSuperChat(ScControl *control, int base_time, int duration_time) {
+void AnimeFadeIn::updateSuperChat(ScControl *control, int base_time) {
     if (base_time < control->next_show_time_) {
         return;
     }
@@ -404,7 +403,7 @@ void AnimeFadeIn::updateSuperChat(ScControl *control, int base_time, int duratio
     changeState(control, Default::getInstance());
 }
 
-void AnimeFadeOut::updateSuperChat(ScControl *control, int base_time, int duration_time) {
+void AnimeFadeOut::updateSuperChat(ScControl *control, int base_time) {
     if (base_time < control->next_end_time_) {
         return;
     }

@@ -23,7 +23,6 @@ endfunction(copy_lib)
 set(LIVE_RENDER_SOURCES
         live_danmaku.cpp live_danmaku.h ffmpeg_render.cpp ffmpeg_render.h
         live_info.cpp
-        ../xml2ass/ass_sc.cpp
         ../xml2ass/ass_danmaku.cpp
         ../xml2ass/ass_config.cpp
         ../xml2ass/danmaku.cpp
@@ -173,7 +172,7 @@ if (LIVE_RENDER_BUILD_TESTING)
     set(TEST_SC_TEMPLATE
             test/test_sc_common.cpp
             test/test_sc_template.cpp
-            ../xml2ass/ass_sc.cpp
+
             ../xml2ass/ass_danmaku.cpp
             ../xml2ass/ass_config.cpp
             ../xml2ass/ass_util.hpp
@@ -209,7 +208,6 @@ if (LIVE_RENDER_BUILD_TESTING)
             test/test_sc_common.cpp
             sc_control.cpp
             live_render_config.cpp
-            ../xml2ass/ass_sc.cpp
             ../xml2ass/ass_danmaku.cpp
             ../xml2ass/ass_config.cpp
             ../xml2ass/ass_util.hpp

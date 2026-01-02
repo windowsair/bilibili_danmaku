@@ -56,8 +56,7 @@ class ScControl;
 class ScControlState {
   public:
     ScControlState() = default;
-    virtual void updateSuperChat(ScControl *control, int base_time,
-                                 int duration_time) = 0;
+    virtual void updateSuperChat(ScControl *control, int base_time) = 0;
 
   protected:
     void changeState(ScControl *control, ScControlState *state);
@@ -66,7 +65,7 @@ class ScControlState {
 class Default : public ScControlState {
   public:
     static Default *getInstance();
-    void updateSuperChat(ScControl *control, int base_time, int duration_time) override;
+    void updateSuperChat(ScControl *control, int base_time) override;
 
   protected:
     Default() = default;
@@ -76,7 +75,7 @@ class Default : public ScControlState {
 class AnimeFadeIn : public ScControlState {
   public:
     static AnimeFadeIn *getInstance();
-    void updateSuperChat(ScControl *control, int base_time, int duration_time) override;
+    void updateSuperChat(ScControl *control, int base_time) override;
 
   protected:
     AnimeFadeIn() = default;
@@ -85,7 +84,7 @@ class AnimeFadeIn : public ScControlState {
 class AnimeFadeOut : public ScControlState {
   public:
     static AnimeFadeOut *getInstance();
-    void updateSuperChat(ScControl *control, int base_time, int duration_time) override;
+    void updateSuperChat(ScControl *control, int base_time) override;
 
   protected:
     AnimeFadeOut() = default;
@@ -98,9 +97,8 @@ class ScControl {
 
     void
     updateSuperChatEvent(ass::sc_ass_render_control *ass_object,
-                         config::ass_config_t &config, int base_time, int duration_time,
-                         moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *queue,
-                         live_monitor *monitor);
+                         config::ass_config_t &config, int base_time,
+                         moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *queue);
 
     friend class ScControlState;
     friend class Default;

@@ -385,7 +385,6 @@ void ffmpeg_render::run() {
     double step = ((double)(1000) / (double)(config_.fps_));
     double double_tm = 0;
     double sc_double_tm = 0;
-    double sc_double_end_update_tm = 0;
     int sc_tm = 0;
 
     ASS_Image *img;
@@ -394,16 +393,8 @@ void ffmpeg_render::run() {
         using namespace std::chrono_literals;
 
         if (this->config_.sc_enable_) {
-            int sc_end_time;
-
-            for (int i = 0; i < 5; i++) {
-                sc_double_end_update_tm += step;
-            }
-            sc_end_time = static_cast<int>(sc_double_end_update_tm);
-
             sc_control.updateSuperChatEvent(&sc_render, this->config_, sc_tm,
-                                            sc_double_end_update_tm - sc_tm,
-                                            this->sc_queue_, this->live_monitor_handle_);
+                                            this->sc_queue_);
         }
 
         update_danmaku_event(&danmaku_render, handle, this->config_, tm, false,
