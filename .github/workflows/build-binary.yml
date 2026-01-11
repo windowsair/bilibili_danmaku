@@ -3,6 +3,8 @@ name: Build Binary
 on:
   push:
     branches: [ master, dev, ci_test ]
+    tags:
+      - '**'
     paths-ignore:
       - '**/README.md'
       - 'assets/**'
