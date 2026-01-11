@@ -34,11 +34,14 @@ set(LIVE_RENDER_SOURCES
         ffmpeg_utils.cpp
         ass_render_utils.cpp
         ass_render.cpp
-        ass_render_avx2.cpp)
+        ass_render_avx2.cpp
+        ass_render_ssse3.cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     set_source_files_properties(ass_render_avx2.cpp
                                 PROPERTIES COMPILE_OPTIONS -mavx2)
+    set_source_files_properties(ass_render_ssse3.cpp
+                                PROPERTIES COMPILE_OPTIONS -mssse3)
 elseif(MSVC)
     set_source_files_properties(ass_render_avx2.cpp
                                 PROPERTIES COMPILE_OPTIONS /arch:AVX2)

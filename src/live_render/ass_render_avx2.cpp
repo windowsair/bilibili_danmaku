@@ -6,11 +6,6 @@
 #include "ass_render.h"
 
 namespace ass {
-#define TO_R(c) ((c) >> 24)
-#define TO_G(c) (((c) >> 16) & 0xFF)
-#define TO_B(c) (((c) >> 8) & 0xFF)
-#define TO_A(c) ((c) & 0xFF)
-
 inline __m256i _mm256_fast_div_255_epu16(__m256i value) {
     return _mm256_srli_epi16(
         _mm256_add_epi16(_mm256_add_epi16(value, _mm256_set1_epi16(1)),
