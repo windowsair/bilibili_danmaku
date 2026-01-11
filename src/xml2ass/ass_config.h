@@ -36,6 +36,15 @@ typedef struct ass_config_ {
     std::string chat_server_;
     std::string chat_id_;
 
+    // sc config
+    bool sc_enable_;
+    int sc_font_size_;
+    float sc_show_range_;
+    float sc_alpha_;
+    int sc_max_width_;
+    int sc_margin_x_;
+    bool sc_y_mirror_;
+    bool sc_price_no_break_;
 } ass_config_t;
 
 ass_config_t get_user_ass_config();

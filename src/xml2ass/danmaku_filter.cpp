@@ -1,6 +1,5 @@
 ﻿#include <filesystem>
 #include <fstream>
-#include <iostream>
 
 #include "danmaku_filter.h"
 
@@ -17,9 +16,9 @@ void DanmakuFilter::init_blacklist() {
 
     if (!std::filesystem::exists(file_path)) {
         this->is_blacklist_used_ = false;
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "文件不存在\n");
         return;
     } else {
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "使用黑名单文件\n");
         this->is_blacklist_used_ = true;
     }
 
@@ -46,7 +45,7 @@ void DanmakuFilter::init_blacklist() {
         }
 
         RE2 *p = new RE2(item);
-        if (p == nullptr || !p->ok()) {
+        if (!p->ok()) {
             fmt::print(fg(fmt::color::red) | fmt::emphasis::italic,
                        "弹幕黑名单第{}行无效:{}", i, item);
             std::abort();

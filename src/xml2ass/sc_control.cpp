@@ -1,4 +1,6 @@
-﻿#include "sc_control.h"
+﻿#include <algorithm>
+
+#include "sc_control.h"
 
 namespace sc {
 ScControl::ScControl(ass::sc_ass_render_control *ass_object,
@@ -54,8 +56,14 @@ void ScControl::updateSuperChatEvent(
         for (auto &item : sc_list) {
             int fade_in_time = item.start_time_;
             ass::SuperChatMessage *pmsg;
-            ass::SuperChatMessage msg{
-                item, 0, 0, width_, corner_radius_, font_size_, sc_price_no_break_};
+            ass::SuperChatMessage msg{ass::SuperChatMessageUpdateType::immediate,
+                                      item,
+                                      0,
+                                      0,
+                                      width_,
+                                      corner_radius_,
+                                      font_size_,
+                                      sc_price_no_break_};
 
             this->sc_list_.push_back(std::move(msg));
             pmsg = &this->sc_list_.back();
@@ -69,6 +77,101 @@ void ScControl::updateSuperChatEvent(
     }
 
     state_->updateSuperChat(this, base_time);
+}
+
+void ScControl::getSuperChatEventAssList(config::ass_config_t &config,
+                                         std::vector<sc::sc_item_t> &sc_list,
+                                         std::vector<std::string> &res) {
+    std::vector<uint64_t> time_list;
+
+    std::sort(sc_list.begin(), sc_list.end(),
+              [](const sc::sc_item_t &a, const sc::sc_item_t &b) {
+                  return a.start_time_ < b.start_time_;
+              });
+
+    for (auto &item : sc_list) {
+        uint64_t fade_in_time = item.start_time_;
+        ass::SuperChatMessage *pmsg;
+        ass::SuperChatMessage msg{ass::SuperChatMessageUpdateType::delayed,
+                                  item,
+                                  0,
+                                  0,
+                                  width_,
+                                  corner_radius_,
+                                  font_size_,
+                                  sc_price_no_break_};
+
+        this->sc_list_.push_back(std::move(msg));
+        pmsg = &this->sc_list_.back();
+        auto it = this->sc_list_.end();
+        it--;
+
+        wait_in_deque_.emplace_back(pmsg, it, fade_in_time, 0, 0, 0, 0);
+
+        std::vector<uint64_t> time_base_stage1, time_base_stage2, time_base_stage3;
+        uint64_t tmp_time;
+        // base time -> fade_in_time
+        time_base_stage1.push_back(fade_in_time);
+        // stage1: may need update expire item
+        tmp_time = SC_ANIME_FADE_OUT_MOVE_DOWN_TIME + SC_ANIME_FADE_OUT_MOVE_LEFT_TIME +
+                   fade_in_time;
+        time_base_stage1.push_back(tmp_time);
+
+        time_list.insert(time_list.end(), time_base_stage1.begin(),
+                         time_base_stage1.end());
+
+        // stage2: Start to fade in. Two case, move right or (move right + move up)
+        for (auto base_time : time_base_stage1) {
+            tmp_time = base_time + SC_ANIME_FADE_IN_MOVE_RIGHT_TIME;
+            time_base_stage2.push_back(tmp_time);
+            tmp_time += SC_ANIME_FADE_IN_MOVE_UP_TIME;
+            time_base_stage2.push_back(tmp_time);
+        }
+
+        time_list.insert(time_list.end(), time_base_stage2.begin(),
+                         time_base_stage2.end());
+
+        // stage3: Start to fade out.
+        auto alive_time = getItemAliveTime(item.price_);
+        for (auto base_time : time_base_stage2) {
+            tmp_time = base_time + alive_time;
+            time_base_stage3.push_back(tmp_time);
+        }
+        time_list.insert(time_list.end(), time_base_stage3.begin(),
+                         time_base_stage3.end());
+
+        // stage4: fade out end.
+        for (auto base_time : time_base_stage3) {
+            tmp_time = SC_ANIME_FADE_OUT_MOVE_DOWN_TIME +
+                       SC_ANIME_FADE_OUT_MOVE_LEFT_TIME + base_time;
+            time_list.push_back(tmp_time);
+        }
+    }
+
+    // update all event
+    std::ranges::sort(time_list);
+    for (auto time : time_list) {
+        state_->updateSuperChat(this, time);
+    }
+
+    res = std::move(this->ass_finial_event_list_);
+}
+
+void ScControl::updateScItemAss(sc_show_info_t &sc) {
+    auto msg = sc.msg;
+    auto &event = msg->get_event_list();
+
+    std::vector<std::string> ass_line_list;
+    for (auto &e : event) {
+        // fmt::print("X:{}->{}, Y:{}->{}, Time:{}->{}, [{}]\n", e.startX, e.endX,
+        //            e.startY, e.endY, e.startTime, e.endTime, msg->sc_.content_);
+        msg->getSuperChatAss(e.startX, e.startY, e.endX, e.endY, e.startTime, e.endTime,
+                             ass_line_list, true);
+        ass_finial_event_list_.insert(ass_finial_event_list_.end(),
+                                      std::make_move_iterator(ass_line_list.begin()),
+                                      std::make_move_iterator(ass_line_list.end()));
+        ass_line_list.clear();
+    }
 }
 
 int ScControl::getItemTotalHeight() {
@@ -90,7 +193,7 @@ int ScControl::updateExpireItem(int base_time) {
     }
 
     for (auto it = show_deque_.begin(); it != show_deque_.end(); it++) {
-        if (it->fade_out_time < base_time) {
+        if (it->fade_out_time <= base_time) {
             interest_list.push_back(it);
         }
     }
@@ -132,7 +235,8 @@ int ScControl::updateExpireItem(int base_time) {
     // | ***0     |      | ***0     |      | ***0     |
     // |          |      |          |      |          |
     // +----------+      +----------+      +----------+
-    ass_object_->flush_track();
+    if (ass_object_)
+        ass_object_->flush_track();
     for (auto &it : interest_list) {
         sc_show_info_t &item = *it;
         item.fade_out_time = start_time;
@@ -172,7 +276,8 @@ int ScControl::updateExpireItem(int base_time) {
         item.msg->getSuperChatAss(x_, y2, x_, y2, move_down_end_time, end_time, ass_list);
     }
 
-    ass_object_->update_event_line(ass_list);
+    if (ass_object_)
+        ass_object_->update_event_line(ass_list);
     next_end_time_ = move_down_end_time;
     return ret;
 }
@@ -185,7 +290,8 @@ int ScControl::addNewItem(std::vector<sc_show_info_t *> &sc_list, int base_time)
     int y1, y2;
     std::vector<std::string> ass_list;
 
-    ass_object_->flush_track();
+    if (ass_object_)
+        ass_object_->flush_track();
     // Initial state -> Add new item.
     // The old items are moved upwards to free up space for new items.
     //
@@ -279,11 +385,11 @@ int ScControl::addNewItem(std::vector<sc_show_info_t *> &sc_list, int base_time)
         wait_in_deque_.erase(it);
     }
 
-    ass_object_->update_event_line(ass_list);
+    if (ass_object_)
+        ass_object_->update_event_line(ass_list);
     next_show_time_ = move_right_end_time;
     return 0;
 }
-
 
 int ScControl::getItemAliveTime(int price) {
     if (price < 50) {
@@ -430,6 +536,9 @@ void AnimeFadeOut::updateSuperChat(ScControl *control, int base_time) {
          it != control->fade_out_deque_.end();) {
         auto &item = *it;
         if (item.end_time < base_time) {
+            if (control->ass_object_ == nullptr) {
+                control->updateScItemAss(item);
+            }
             control->sc_list_.erase(item.it);
             it = control->fade_out_deque_.erase(it);
         } else {

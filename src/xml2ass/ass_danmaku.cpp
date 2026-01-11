@@ -144,7 +144,7 @@ get_ass_header_default(const config::ass_config_t &config,
 
     int ass_font_size = config.font_size_ * config.font_scale_;
 
-    return fmt::format(
+    std::string ret = fmt::format(
         ass_header_format, "title"_a = "hello", "chat_server"_a = config.chat_server_,
         "chat_id"_a = config.chat_id_, "event_count"_a = ass_dialogue_list.size(),
         "play_res_x"_a = config.video_width_, "play_res_y"_a = config.video_height_,
@@ -152,6 +152,21 @@ get_ass_header_default(const config::ass_config_t &config,
         "font_size"_a = ass_font_size, "font_alpha"_a = ass_font_alpha,
         "font_color"_a = ass_font_color, "font_bold"_a = config.font_bold_ ? -1 : 0,
         "font_outline"_a = ass_font_outline, "font_shadow"_a = ass_font_shadow);
+
+    if (config.sc_enable_) {
+        std::string sc_font_alpha =
+            fmt::format("{:02X}", static_cast<uint8_t>(255 * (1.0f - config.sc_alpha_)));
+
+        ret += fmt::format(
+            ass_sc_style_format, "font_name"_a = config.font_family_,
+            "font_size"_a = config.sc_font_size_, "font_alpha"_a = sc_font_alpha,
+            "font_color"_a = ass_font_color, "font_bold"_a = config.font_bold_ ? -1 : 0,
+            "font_outline"_a = ass_font_outline, "font_shadow"_a = ass_font_shadow);
+    }
+
+    ret += ass_header_event_prefix;
+
+    return ret;
 }
 
 inline std::string get_ass_event_impl(const config::ass_config_t &config,
@@ -191,8 +206,7 @@ inline std::string get_ass_event_impl(const config::ass_config_t &config,
     return ss;
 }
 
-std::string get_sc_ass_header(const config::ass_config_t &config,
-                              std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
+std::string get_sc_ass_header(const config::ass_config_t &config) {
     using namespace fmt::literals;
 
     std::string ass_font_color = rgb2bgr(config.font_color_);
@@ -267,6 +281,22 @@ std::string get_ass_header(const config::ass_config_t &config,
         std::abort();
     }
 
+    // not support sc custom style
+    if (config.sc_enable_) {
+        std::string sc_font_alpha =
+            fmt::format("{:02X}", static_cast<uint8_t>(255 * (1.0f - config.sc_alpha_)));
+
+        std::string ass_font_color = rgb2bgr(config.font_color_);
+        std::string ass_font_outline = fmt::format("{:.1f}", config.font_outline_);
+        std::string ass_font_shadow = fmt::format("{:.1f}", config.font_shadow_);
+
+        ret += fmt::format(
+            ass_sc_style_format, "font_name"_a = config.font_family_,
+            "font_size"_a = config.sc_font_size_, "font_alpha"_a = sc_font_alpha,
+            "font_color"_a = ass_font_color, "font_bold"_a = config.font_bold_ ? -1 : 0,
+            "font_outline"_a = ass_font_outline, "font_shadow"_a = ass_font_shadow);
+    }
+
     ret += ass_header_event_prefix;
 
     input_file.close();
@@ -279,8 +309,9 @@ std::string get_ass_event(const config::ass_config_t &config,
     return get_ass_event_impl(config, item);
 }
 
-int ass_render(const std::string &output_file_name, const config::ass_config_t &config,
-               std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list) {
+int ass_save_to_file(const std::string &output_file_name, const config::ass_config_t &config,
+               std::vector<danmaku::ass_dialogue_t> &ass_dialogue_list,
+               std::vector<std::string> &ass_sc_list) {
 
     auto out = fmt::output_file(output_file_name);
     // header
@@ -289,6 +320,10 @@ int ass_render(const std::string &output_file_name, const config::ass_config_t &
     // body event
     for (auto &item : ass_dialogue_list) {
         out.print("{}", get_ass_event(config, item));
+    }
+
+    for (auto &item : ass_sc_list) {
+        out.print("{}", item);
     }
 
     out.flush();

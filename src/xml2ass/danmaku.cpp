@@ -3,6 +3,8 @@
 
 #include "ass_danmaku.h"
 #include "danmaku_handle.h"
+#include "sc_control.h"
+#include "sc_item.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
 #include "thirdparty/fmt/include/fmt/core.h"
@@ -17,17 +19,11 @@ inline std::string_view trim(std::string_view s) {
     return s;
 }
 
-/**
- *
- * @param file_path
- * @param danmaku_all_list
- * @return  0: success
- *          other: fail
- */
 int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc,
                                      pugi::xml_parse_result &parse_result,
                                      std::string file_path, DanmakuFilter &filter,
                                      std::vector<danmaku_item_t> &danmaku_all_list,
+                                     std::vector<sc::sc_item_t> &sc_list,
                                      danmaku_info_t &danmaku_info) {
 
     parse_result = doc.load_file(file_path.c_str());
@@ -67,7 +63,27 @@ int DanmakuHandle::parse_danmaku_xml(pugi::xml_document &doc,
         if (!filter.danmaku_item_pre_process(danmaku_all_list.back())) {
             danmaku_all_list.pop_back();
         }
+    }
 
+    // <sc ts="12946.915" uid="..." user="..." price="30">...</sc>
+    for (auto &d : root_node.children("sc")) {
+        //// FIXME: escape space
+        char *origin_context = const_cast<char *>(d.text().get());
+
+        if (*origin_context == '\0') {
+            continue; // does not have value
+        }
+
+        const char *ts = d.attribute("ts").value();
+        const char *user = d.attribute("user").value();
+        const char *price = d.attribute("price").value();
+
+        std::string trim_context = std::string(trim(origin_context));
+        std::string username = std::string(user);
+
+        uint64_t start_time = atof(ts) * 1000.0f;
+        int price_val = atoi(price);
+        sc_list.emplace_back(username, trim_context, start_time, price_val);
     }
 
     return 0;
@@ -398,20 +414,30 @@ template int DanmakuHandle::process_danmaku_dialogue_move<
 // do not share config parameter cuz we will change it.
 int DanmakuHandle::danmaku_main_process(std::string xml_file,
                                         config::ass_config_t &config,
-                                        DanmakuFilter &filter) {
+                                        DanmakuFilter &filter,
+                                        ass::SuperChatRenderFactory &sc_factory) {
     std::vector<danmaku_item_t> danmaku_all_list, danmaku_move_list, danmaku_pos_list;
+    std::vector<sc::sc_item_t> sc_list;
+    std::vector<std::string> sc_result_list;
+
     danmaku_info_t danmaku_info;
     pugi::xml_document doc;
     pugi::xml_parse_result parse_result;
 
     int ret = parse_danmaku_xml(doc, parse_result, xml_file, filter, danmaku_all_list,
-                                danmaku_info);
+                                sc_list, danmaku_info);
     if (ret != 0) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "{}:无效的XML文件\n",
                    xml_file);
         return -1;
     }
-    if (danmaku_all_list.empty()) {
+
+    if (config.sc_enable_) {
+        sc::ScControl sc_control{nullptr, config};
+        sc_control.getSuperChatEventAssList(config, sc_list, sc_result_list);
+    }
+
+    if (danmaku_all_list.empty() && sc_result_list.empty()) {
         fmt::print(fg(fmt::color::red) | fmt::emphasis::italic, "{}:未找到有效项目\n",
                    xml_file);
         return 0;
@@ -428,16 +454,20 @@ int DanmakuHandle::danmaku_main_process(std::string xml_file,
         mp_color[item.font_color_]++;
     }
 
-    int font_color =
-        std::max_element(mp_color.begin(), mp_color.end(),
-                         [](const auto &x, const auto &y) { return x.second < y.second; })
-            ->first;
-    int font_size =
-        std::max_element(mp_size.begin(), mp_size.end(),
-                         [](const auto &x, const auto &y) { return x.second < y.second; })
-            ->first;
+    int font_color = 0xffffffff;
+    int font_size = 25;
 
-    ret = process_danmaku_list(danmaku_all_list, danmaku_move_list, danmaku_pos_list);
+    if (!danmaku_all_list.empty()) {
+        font_color = std::max_element(
+                         mp_color.begin(), mp_color.end(),
+                         [](const auto &x, const auto &y) { return x.second < y.second; })
+                         ->first;
+        font_size = std::max_element(
+                        mp_size.begin(), mp_size.end(),
+                        [](const auto &x, const auto &y) { return x.second < y.second; })
+                        ->first;
+        ret = process_danmaku_list(danmaku_all_list, danmaku_move_list, danmaku_pos_list);
+    }
 
     config.font_size_ = font_size;
     config.font_color_ = font_color;
@@ -470,7 +500,7 @@ int DanmakuHandle::danmaku_main_process(std::string xml_file,
         ass_file = xml_file + ".ass";
     }
 
-    ass::ass_render(ass_file, config, ass_result_list);
+    ass::ass_save_to_file(ass_file, config, ass_result_list, sc_result_list);
 
     return 0;
 }

@@ -6,11 +6,13 @@
 #include <array>
 #include <bit>
 
+#include "ass_render_utils.h"
 #include "sc_item.h"
 #include "ass_danmaku.h"
 
 #include "thirdparty/fmt/include/fmt/format.h"
 #include "thirdparty/fmt/include/fmt/core.h"
+#include "thirdparty/libass/include/ass.h"
 
 typedef struct ass_library ASS_Library;
 typedef struct ass_renderer ASS_Renderer;
@@ -469,15 +471,35 @@ inline int TextProcess::break_word(std::string &text, int max_width, int font_si
         left = right;
     }
 
-    *dst++ = '\0';
     res.resize(dst - const_cast<char *>(res.c_str()));
 
     text = res;
     return ret;
 }
 
+struct SuperChatEvent {
+    explicit SuperChatEvent(int startX, int startY, int endX, int endY, int startTime,
+                            int endTime)
+        : startX(startX), startY(startY), endX(endX), endY(endY), startTime(startTime),
+          endTime(endTime) {
+    }
+
+    int startX;
+    int startY;
+    int endX;
+    int endY;
+    int startTime;
+    int endTime;
+};
+
+enum class SuperChatMessageUpdateType {
+    immediate = 0,
+    delayed = 1,
+};
+
 class SuperChatMessage {
   public:
+    SuperChatMessageUpdateType updateType_;
     sc::sc_item_t sc_;
     SuperChatBox sc_box_;
 
@@ -485,8 +507,8 @@ class SuperChatMessage {
     int content_height_;
     int user_height_;
     int width_;
-    const int corner_radius_;
-    const int font_size_;
+    int corner_radius_;
+    int font_size_;
 
     std::string text_color_;
     std::string user_box_color_;
@@ -502,14 +524,15 @@ class SuperChatMessage {
     int user_name_width_;
     bool price_no_break_line_;
     int no_break_line_price_x_offset_;
+    std::vector<struct SuperChatEvent> event_list_;
 
   public:
-    explicit SuperChatMessage(sc::sc_item_t &sc, int x, int y, int width,
-                              int corner_radius, int font_size,
+    explicit SuperChatMessage(SuperChatMessageUpdateType updateType, sc::sc_item_t &sc,
+                              int x, int y, int width, int corner_radius, int font_size,
                               bool price_no_break_line = false)
-        : sc_(std::move(sc)), corner_radius_(corner_radius), font_size_(font_size),
-          width_(width), price_no_break_line_(price_no_break_line),
-          no_break_line_price_x_offset_(0) {
+        : updateType_(updateType), sc_(std::move(sc)), corner_radius_(corner_radius),
+          font_size_(font_size), width_(width), price_no_break_line_(price_no_break_line),
+          no_break_line_price_x_offset_(0), user_name_width_(0) {
         const float line_top_margin = (float)font_size / 6.0f;
         margin_left_ = corner_radius / 2;
         margin_right_ = corner_radius / 4;
@@ -572,7 +595,12 @@ class SuperChatMessage {
     SuperChatMessage &operator=(SuperChatMessage &&) = default;
 
     void getSuperChatAss(int startX, int startY, int endX, int endY, int startTime,
-                         int endTime, std::vector<std::string> &line_list);
+                         int endTime, std::vector<std::string> &line_list,
+                         bool force_get);
+
+    std::vector<struct SuperChatEvent> &get_event_list() {
+        return event_list_;
+    }
 
   private:
     static int round_up(int num, int divisor) {
@@ -632,9 +660,35 @@ class SuperChatMessage {
     }
 };
 
+inline void updateEventList(int startX, int startY, int endX, int endY, int startTime,
+                            int endTime, std::vector<struct SuperChatEvent> &event_list) {
+    if (event_list.empty()) {
+        event_list.emplace_back(startX, startY, endX, endY, startTime, endTime);
+        return;
+    }
+
+    auto &last = event_list.back();
+    if (last.endTime > startTime)
+        last.endTime = startTime;
+
+    // merge same event
+    if (last.startX == last.endX && last.startY == last.endY && startX == endX &&
+        startY == endY && last.startX == startX && last.startY == startY) {
+        last.endTime = endTime;
+    } else {
+        event_list.emplace_back(startX, startY, endX, endY, startTime, endTime);
+    }
+}
+
 inline void SuperChatMessage::getSuperChatAss(int startX, int startY, int endX, int endY,
                                               int startTime, int endTime,
-                                              std::vector<std::string> &line_list) {
+                                              std::vector<std::string> &line_list,
+                                              bool force_get = false) {
+    if (force_get == false && updateType_ != SuperChatMessageUpdateType::immediate) {
+        return updateEventList(startX, startY, endX, endY, startTime, endTime,
+                               event_list_);
+    }
+
     std::string pos;
     std::string start_time = ass::time2ass(startTime);
     std::string end_time = ass::time2ass(endTime);

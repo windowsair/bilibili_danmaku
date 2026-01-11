@@ -6,7 +6,8 @@
 
 #include "danmaku.h"
 #include "danmaku_filter.h"
-
+#include "sc_item.h"
+#include "ass_render_utils.h"
 
 namespace danmaku {
 
@@ -20,6 +21,7 @@ class DanmakuHandle {
     int parse_danmaku_xml(pugi::xml_document &doc, pugi::xml_parse_result &parse_result,
                           std::string file_path, DanmakuFilter &filter,
                           std::vector<danmaku_item_t> &danmaku_all_list,
+                          std::vector<sc::sc_item_t> &sc_list,
                           danmaku_info_t &danmaku_info);
     int process_danmaku_list(const std::vector<danmaku_item_t> &danmaku_all_list,
                              std::vector<danmaku_item_t> &danmaku_move_list,
@@ -36,7 +38,8 @@ class DanmakuHandle {
                                       std::vector<ass_dialogue_t> &ass_result_list);
 
     int danmaku_main_process(std::string xml_file, config::ass_config_t &config,
-                             DanmakuFilter &filter);
+                             DanmakuFilter &filter,
+                             ass::SuperChatRenderFactory &sc_factory);
 
     float get_max_danmaku_end_time(int move_time, int pos_time);
 

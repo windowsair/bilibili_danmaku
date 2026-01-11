@@ -7,10 +7,9 @@
 #include <vector>
 
 #include "ass_danmaku.h"
+#include "ass_render_utils.h"
 #include "file_helper.h"
 #include "danmaku_handle.h"
-
-
 #include "git.h"
 
 #include "thirdparty/fmt/include/fmt/color.h"
@@ -49,6 +48,8 @@ int main(int argc, char **argv) {
         return -1;
     }
 
+    ass::SuperChatRenderFactory sc_factory{user_config};
+
     std::vector<std::string> input_files;
     for (int i = 1; i < argc; i++) {
         input_files.push_back(argv[i]);
@@ -69,7 +70,7 @@ int main(int argc, char **argv) {
         for (auto &item : valid_file_list) {
             std::thread([&]() {
                 danmaku::DanmakuHandle handle;
-                handle.danmaku_main_process(item, user_config, filter);
+                handle.danmaku_main_process(item, user_config, filter, sc_factory);
                 count--;
                 cv.notify_all();
             }).detach();
@@ -82,7 +83,7 @@ int main(int argc, char **argv) {
         }
     } else if (valid_file_list.size() == 1) {
         danmaku::DanmakuHandle handle;
-        handle.danmaku_main_process(valid_file_list[0], user_config, filter);
+        handle.danmaku_main_process(valid_file_list[0], user_config, filter, sc_factory);
     }
 
     auto job_end_time = std::chrono::high_resolution_clock::now();

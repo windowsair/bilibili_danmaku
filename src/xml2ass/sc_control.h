@@ -8,9 +8,9 @@
 
 #include "ass_util.hpp"
 #include "ass_render_utils.h"
-#include "live_monitor.h"
-#include "thirdparty/readerwriterqueue/readerwriterqueue.h"
+#include "live_render_config.h"
 
+#include "thirdparty/readerwriterqueue/readerwriterqueue.h"
 
 namespace sc {
 constexpr int SC_INSERT_TIMEOUT = 10 * 1000;
@@ -98,10 +98,17 @@ class ScControl {
     explicit ScControl(ass::sc_ass_render_control *ass_object,
                        config::ass_config_t &config);
 
-    void
-    updateSuperChatEvent(ass::sc_ass_render_control *ass_object,
-                         config::ass_config_t &config, int base_time,
-                         moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *queue);
+    void updateSuperChatEvent(
+        ass::sc_ass_render_control *ass_object, config::ass_config_t &config,
+        int base_time, moodycamel::ReaderWriterQueue<std::vector<sc::sc_item_t>> *queue);
+
+    // start for xml2ass
+    void getSuperChatEventAssList(config::ass_config_t &config,
+                                  std::vector<sc::sc_item_t> &sc_list,
+                                  std::vector<std::string> &res);
+    // for delayed item
+    void updateScItemAss(sc_show_info_t &sc);
+    // end for xml2ass
 
     friend class ScControlState;
     friend class Default;
@@ -119,7 +126,6 @@ class ScControl {
   private:
     void changeState(ScControlState *state);
     ScControlState *state_;
-
 
   private:
     ass::sc_ass_render_control *ass_object_;
@@ -139,6 +145,7 @@ class ScControl {
     std::list<sc_show_info_t> wait_in_deque_;
     std::list<sc_show_info_t> show_deque_;
     std::list<sc_show_info_t> fade_out_deque_;
+    std::vector<std::string> ass_finial_event_list_;
 };
 
 

@@ -36,44 +36,6 @@ extern "C" {
 int ass_process_events_line(ASS_Track *track, char *str);
 }
 
-void libass_msg_callback(int level, const char *fmt, va_list va, void *data) {
-    if (level > 6)
-        return;
-    printf("libass: ");
-    vprintf(fmt, va);
-    printf("\n");
-}
-
-void libass_no_msg_callback(int level, const char *fmt, va_list va, void *data) {
-}
-
-inline void libass_init(ASS_Library **ass_library, ASS_Renderer **ass_renderer,
-                        int frame_w, int frame_h, bool enable_message_output) {
-    *ass_library = ass_library_init();
-    if (!(*ass_library)) {
-        printf("ass_library_init failed!\n");
-        std::abort();
-    }
-
-    if (enable_message_output) {
-        ass_set_message_cb(*ass_library, libass_msg_callback, NULL);
-    } else {
-        ass_set_message_cb(*ass_library, libass_no_msg_callback, NULL);
-    }
-
-    ass_set_extract_fonts(*ass_library, 1);
-
-    *ass_renderer = ass_renderer_init(*ass_library);
-    if (!(*ass_renderer)) {
-        printf("ass_renderer_init failed!\n");
-        std::abort();
-    }
-
-    ass_set_frame_size(*ass_renderer, frame_w, frame_h);
-    ass_set_fonts(*ass_renderer, NULL, "sans-serif", ASS_FONTPROVIDER_AUTODETECT, NULL,
-                  1);
-}
-
 inline void wait_queue_ready(
     moodycamel::ReaderWriterQueue<std::vector<danmaku::danmaku_item_t>> *queue) {
 
@@ -220,7 +182,7 @@ void ffmpeg_render::run() {
     bool enable_libass_output =
         !(config_.verbose_ & static_cast<int>(config::systemVerboseMaskEnum::NO_FFMPEG));
 
-    libass_init(&ass_library, &ass_renderer, config_.video_width_, config_.video_height_,
+    ass::libass_init(&ass_library, &ass_renderer, config_.video_width_, config_.video_height_,
                 enable_libass_output);
 
     std::vector<danmaku::ass_dialogue_t> ass_dialogue_list;
@@ -233,9 +195,9 @@ void ffmpeg_render::run() {
         copy_cfg.font_size_ = copy_cfg.sc_font_size_;
         copy_cfg.font_alpha_ = copy_cfg.sc_alpha_;
 
-        sc_ass_header_str = ass::get_sc_ass_header(copy_cfg, ass_dialogue_list);
+        sc_ass_header_str = ass::get_sc_ass_header(copy_cfg);
     } else {
-        sc_ass_header_str = ass::get_sc_ass_header(config_, ass_dialogue_list);
+        sc_ass_header_str = ass::get_sc_ass_header(config_);
     }
 
     kTest_sc_string = sc_ass_header_str;
