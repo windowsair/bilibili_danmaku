@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 
 #include "sc_control.h"
 
@@ -91,6 +91,7 @@ void ScControl::getSuperChatEventAssList(config::ass_config_t &config,
 
     for (auto &item : sc_list) {
         uint64_t fade_in_time = item.start_time_;
+        int price = item.price_;
         ass::SuperChatMessage *pmsg;
         ass::SuperChatMessage msg{ass::SuperChatMessageUpdateType::delayed,
                                   std::move(item),
@@ -132,7 +133,7 @@ void ScControl::getSuperChatEventAssList(config::ass_config_t &config,
                          time_base_stage2.end());
 
         // stage3: Start to fade out.
-        auto alive_time = getItemAliveTime(item.price_);
+        auto alive_time = getItemAliveTime(price);
         for (auto base_time : time_base_stage2) {
             tmp_time = base_time + alive_time;
             time_base_stage3.push_back(tmp_time);
