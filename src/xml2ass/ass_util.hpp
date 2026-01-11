@@ -527,7 +527,7 @@ class SuperChatMessage {
     std::vector<struct SuperChatEvent> event_list_;
 
   public:
-    explicit SuperChatMessage(SuperChatMessageUpdateType updateType, sc::sc_item_t &sc,
+    explicit SuperChatMessage(SuperChatMessageUpdateType updateType, sc::sc_item_t &&sc,
                               int x, int y, int width, int corner_radius, int font_size,
                               bool price_no_break_line = false)
         : updateType_(updateType), sc_(std::move(sc)), corner_radius_(corner_radius),

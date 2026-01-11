@@ -57,7 +57,7 @@ void ScControl::updateSuperChatEvent(
             int fade_in_time = item.start_time_;
             ass::SuperChatMessage *pmsg;
             ass::SuperChatMessage msg{ass::SuperChatMessageUpdateType::immediate,
-                                      item,
+                                      std::move(item),
                                       0,
                                       0,
                                       width_,
@@ -93,7 +93,7 @@ void ScControl::getSuperChatEventAssList(config::ass_config_t &config,
         uint64_t fade_in_time = item.start_time_;
         ass::SuperChatMessage *pmsg;
         ass::SuperChatMessage msg{ass::SuperChatMessageUpdateType::delayed,
-                                  item,
+                                  std::move(item),
                                   0,
                                   0,
                                   width_,

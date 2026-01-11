@@ -78,8 +78,8 @@ int main() {
         tmp_user_name = username_list[i++ % username_count];
         tmp_content = content;
         sc::sc_item_t sc{tmp_user_name, tmp_content, 0, price};
-        ass::SuperChatMessage sc_msg{
-            sc, 0, 0, width, corner_radius, font_size, sc_price_no_break_line};
+        ass::SuperChatMessage sc_msg{ass::SuperChatMessageUpdateType::immediate,
+            std::move(sc), 0, 0, width, corner_radius, font_size, sc_price_no_break_line};
 
         sc_msg.getSuperChatAss(x1, y1, x2, y2, start_time, start_time + 1500, res_list);
 
